@@ -177,12 +177,12 @@ describe('CommunityBottomSheet interactions', () => {
 
   test('계약에 없는 국가 코드는 코드 그대로 보여준다', async () => {
     jest.mocked(useCommunityFeed).mockReturnValue(postsResult());
-    jest.mocked(useCountries).mockReturnValue(countriesResult({ data: ['KR', 'FR'] }));
+    jest.mocked(useCountries).mockReturnValue(countriesResult({ data: ['KR', 'XX'] }));
     const { user } = await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
 
     await user.press(screen.getByTestId('v2-community-sheet-filter'));
 
-    expect(screen.getByTestId('v2-community-country-FR')).toHaveTextContent('FR');
+    expect(screen.getByTestId('v2-community-country-XX')).toHaveTextContent('XX');
   });
 
   test('국가 목록 조회가 실패하면 메뉴에서 재시도할 수 있다', async () => {

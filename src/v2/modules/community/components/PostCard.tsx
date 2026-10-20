@@ -7,7 +7,7 @@ import styled, { useTheme } from 'styled-components/native';
 import ChatDotsIcon from '../../../../assets/v2/icons/community/chat-dots-16.svg';
 import EtcVerticalIcon from '../../../../assets/v2/icons/community/etc-vertical.svg';
 import StarOutlineIcon from '../../../../assets/v2/icons/community/star-outline-16.svg';
-import { formatRelativeMinutes } from '../../../shared/i18n/formatters';
+import { formatCommunityTime } from '../model/communityTime';
 import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityPostSummary } from '../api/communityApi';
 import { extraPhotoCount, joinMeta } from '../model/photoCount';
@@ -55,10 +55,7 @@ export default function PostCard({ categoryName, ownerActions, showDivider = tru
   // The preview is the first 150 characters of the body, line breaks included;
   // the card shows it as a single line.
   const preview = post.contentPreview?.replace(/\s+/g, ' ').trim();
-  const createdTime = post.createdAt ? new Date(post.createdAt).getTime() : Number.NaN;
-  const relativeTime = Number.isFinite(createdTime)
-    ? formatRelativeMinutes(Math.max(0, Math.floor((now.getTime() - createdTime) / 60_000)), i18n.language)
-    : '';
+  const relativeTime = formatCommunityTime(post.createdAt, now, i18n.language);
   const info = joinMeta([
     post.region,
     relativeTime,

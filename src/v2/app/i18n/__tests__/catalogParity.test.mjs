@@ -90,6 +90,7 @@ const LANGUAGE_RULES = {
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
       'countries.ar', 'countries.br', 'countries.ca', 'countries.sg',
+      'community.countries.CQ', // Foundation includes Sark before this Node ICU's region catalog.
       'auth.signup.email',
       'map.search.confirm',
       'onboarding.preferences.travelPurposes.popUp',
@@ -104,6 +105,7 @@ const LANGUAGE_RULES = {
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
       'countries.ar', 'countries.pt',
+      'community.countries.CQ', // Foundation includes Sark before this Node ICU's region catalog.
       'community.countries.CN',
       'community.countries.VN',
       'countries.cn',
@@ -120,9 +122,12 @@ const LANGUAGE_RULES = {
     extraPluralCategories: ['many'],
     forbiddenScripts: [HANGUL, KANA, HAN],
     // Brand names plus words Brazilian Portuguese spells like English (China, Status, Info, OK, Pop-up).
+    // Foundation's official French country name is also a valid proper name.
     untranslatedAllowlist: new Set([
       ...LATIN_BRAND_AND_UNIT_KEYS,
       'countries.ar', 'countries.pt',
+      'community.countries.CI', // Côte d’Ivoire, the Foundation region-name spelling.
+      'community.countries.CQ', // Foundation includes Sark before this Node ICU's region catalog.
       'community.countries.CN',
       'countries.cn',
       'map.categories.popup',
@@ -228,9 +233,14 @@ for (const language of translatedLanguages) {
       : [];
     assert.deepEqual(wrongVariant, [], 'wrong script variant');
 
+    const regionNames = new Intl.DisplayNames([language], { type: 'region', style: 'short' });
     const untranslated = [...translated]
       .filter(([key, value]) => {
         if (allowlist.has(key) || !/[A-Za-z]{2}/.test(withoutMarkup(value))) return false;
+        // Latin-script region names can legitimately match English (Andorra,
+        // Argentina). Require an exact localized CLDR match, not a namespace skip.
+        const regionCode = /^community\.countries\.([A-Z]{2})$/.exec(key)?.[1];
+        if (!rules.nativeScript && regionCode && regionNames.of(regionCode) === value) return false;
         // Non-Latin languages must use their own script; Latin ones must differ from English.
         return rules.nativeScript ? !rules.nativeScript.test(value) : value === reference.get(key);
       })

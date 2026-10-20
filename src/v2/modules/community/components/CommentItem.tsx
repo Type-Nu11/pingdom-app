@@ -6,7 +6,7 @@ import styled, { useTheme } from 'styled-components/native';
 import StarFilledIcon from '../../../../assets/v2/icons/community/star-filled.svg';
 import StarOutlineIcon from '../../../../assets/v2/icons/community/star-outline-16.svg';
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
-import { formatRelativeMinutes } from '../../../shared/i18n/formatters';
+import { formatCommunityTime } from '../model/communityTime';
 import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityComment } from '../api/communityApi';
 
@@ -41,10 +41,7 @@ export default function CommentItem({
   const theme = useTheme();
   const authorName = comment.authorName ?? '';
   const content = comment.content ?? '';
-  const minutesAgo = comment.createdAt
-    ? Math.floor((now.getTime() - new Date(comment.createdAt).getTime()) / 60_000)
-    : 0;
-  const relativeTime = comment.createdAt ? formatRelativeMinutes(minutesAgo, i18n.language) : '';
+  const relativeTime = formatCommunityTime(comment.createdAt, now, i18n.language);
   const isReply = variant === 'reply';
   const avatarSize = isReply ? 28 : 32;
   const liked = comment.liked ?? false;

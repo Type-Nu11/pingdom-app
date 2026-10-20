@@ -1,6 +1,10 @@
+// Standard localized region names from Foundation Locale, bundled for Hermes
+// devices without Intl.DisplayNames. Product copy for the six Figma choices wins.
+import countryNames from './countryNames.json';
+
 export const communityResources = {
   en: {
-    countries: { KR: 'South Korea', US: 'United States', JP: 'Japan', VN: 'Vietnam', CN: 'China', TH: 'Thailand' },
+    countries: { ...countryNames.en, KR: 'South Korea', US: 'United States', JP: 'Japan', VN: 'Vietnam', CN: 'China', TH: 'Thailand' },
     filter: { open: 'Filter by country', dismiss: 'Close country filter', hintSelect: 'Shows posts from this country', hintClear: 'Clears the country filter', loading: 'Loading countries…', loadError: "Couldn't load countries.", retry: 'Retry' },
     title: 'Community',
     categories: { all: 'All', spot: 'Spots', diary: 'Diary', ledger: 'Expenses' },
@@ -145,7 +149,7 @@ export const communityResources = {
     },
   },
   ko: {
-    countries: { KR: '한국', US: '미국', JP: '일본', VN: '베트남', CN: '중국', TH: '태국' },
+    countries: { ...countryNames.ko, KR: '한국', US: '미국', JP: '일본', VN: '베트남', CN: '중국', TH: '태국' },
     filter: { open: '국가 필터', dismiss: '국가 필터 닫기', hintSelect: '이 국가의 게시글만 보여줘요', hintClear: '국가 필터를 해제해요', loading: '국가 목록을 불러오는 중…', loadError: '국가 목록을 불러오지 못했어요.', retry: '다시 시도' },
     title: '커뮤니티',
     categories: { all: '전체', spot: '스팟', diary: '다이어리', ledger: '가계부' },
@@ -290,7 +294,7 @@ export const communityResources = {
     },
   },
   ja: {
-    countries: { KR: '韓国', US: 'アメリカ', JP: '日本', VN: 'ベトナム', CN: '中国', TH: 'タイ' },
+    countries: { ...countryNames.ja, KR: '韓国', US: 'アメリカ', JP: '日本', VN: 'ベトナム', CN: '中国', TH: 'タイ' },
     filter: { open: '国で絞り込む', dismiss: '国フィルターを閉じる', hintSelect: 'この国の投稿だけを表示します', hintClear: '国フィルターを解除します', loading: '国の一覧を読み込み中…', loadError: '国の一覧を読み込めませんでした。', retry: '再試行' },
     title: 'コミュニティ',
     categories: { all: 'すべて', spot: 'スポット', diary: '日記', ledger: '家計簿' },
@@ -435,7 +439,7 @@ export const communityResources = {
     },
   },
   'zh-CN': {
-    countries: { KR: '韩国', US: '美国', JP: '日本', VN: '越南', CN: '中国', TH: '泰国' },
+    countries: { ...countryNames['zh-CN'], KR: '韩国', US: '美国', JP: '日本', VN: '越南', CN: '中国', TH: '泰国' },
     filter: { open: '按国家筛选', dismiss: '关闭国家筛选', hintSelect: '仅显示该国家的帖子', hintClear: '取消国家筛选', loading: '正在加载国家列表…', loadError: '无法加载国家列表。', retry: '重试' },
     title: '社区',
     categories: { all: '全部', spot: '地点', diary: '日记', ledger: '记账' },
@@ -543,7 +547,7 @@ export const communityResources = {
     },
   },
   'zh-TW': {
-    countries: { KR: '韓國', US: '美國', JP: '日本', VN: '越南', CN: '中國', TH: '泰國' },
+    countries: { ...countryNames['zh-TW'], KR: '韓國', US: '美國', JP: '日本', VN: '越南', CN: '中國', TH: '泰國' },
     filter: { open: '依國家篩選', dismiss: '關閉國家篩選', hintSelect: '只顯示該國家的貼文', hintClear: '取消國家篩選', loading: '正在載入國家清單…', loadError: '無法載入國家清單。', retry: '再試一次' },
     title: '社群',
     categories: { all: '全部', spot: '景點', diary: '日記', ledger: '記帳' },
@@ -651,7 +655,7 @@ export const communityResources = {
     },
   },
   vi: {
-    countries: { KR: 'Hàn Quốc', US: 'Mỹ', JP: 'Nhật Bản', VN: 'Việt Nam', CN: 'Trung Quốc', TH: 'Thái Lan' },
+    countries: { ...countryNames.vi, KR: 'Hàn Quốc', US: 'Mỹ', JP: 'Nhật Bản', VN: 'Việt Nam', CN: 'Trung Quốc', TH: 'Thái Lan' },
     filter: { open: 'Lọc theo quốc gia', dismiss: 'Đóng bộ lọc quốc gia', hintSelect: 'Chỉ hiển thị bài viết từ quốc gia này', hintClear: 'Bỏ bộ lọc quốc gia', loading: 'Đang tải danh sách quốc gia…', loadError: 'Không thể tải danh sách quốc gia.', retry: 'Thử lại' },
     title: 'Cộng đồng',
     categories: { all: 'Tất cả', spot: 'Địa điểm', diary: 'Nhật ký', ledger: 'Chi tiêu' },
@@ -778,7 +782,7 @@ export const communityResources = {
     },
   },
   es: {
-    countries: { KR: 'Corea del Sur', US: 'Estados Unidos', JP: 'Japón', VN: 'Vietnam', CN: 'China', TH: 'Tailandia' },
+    countries: { ...countryNames.es, KR: 'Corea del Sur', US: 'Estados Unidos', JP: 'Japón', VN: 'Vietnam', CN: 'China', TH: 'Tailandia' },
     filter: { open: 'Filtrar por país', dismiss: 'Cerrar filtro de país', hintSelect: 'Muestra solo publicaciones de este país', hintClear: 'Quita el filtro de país', loading: 'Cargando países…', loadError: 'No se pudieron cargar los países.', retry: 'Reintentar' },
     title: 'Comunidad',
     categories: { all: 'Todo', spot: 'Lugares', diary: 'Diario', ledger: 'Gastos' },
@@ -907,7 +911,7 @@ export const communityResources = {
     },
   },
   'pt-BR': {
-    countries: { KR: 'Coreia do Sul', US: 'Estados Unidos', JP: 'Japão', VN: 'Vietnã', CN: 'China', TH: 'Tailândia' },
+    countries: { ...countryNames['pt-BR'], KR: 'Coreia do Sul', US: 'Estados Unidos', JP: 'Japão', VN: 'Vietnã', CN: 'China', TH: 'Tailândia' },
     filter: { open: 'Filtrar por país', dismiss: 'Fechar filtro de país', hintSelect: 'Mostra apenas publicações deste país', hintClear: 'Remove o filtro de país', loading: 'Carregando países…', loadError: 'Não foi possível carregar os países.', retry: 'Tentar novamente' },
     title: 'Comunidade',
     categories: { all: 'Tudo', spot: 'Lugares', diary: 'Diário', ledger: 'Gastos' },
@@ -1038,6 +1042,7 @@ export const communityResources = {
 
   th: {
     "countries": {
+      ...countryNames.th,
       "KR": "เกาหลีใต้",
       "US": "สหรัฐอเมริกา",
       "JP": "ญี่ปุ่น",
