@@ -2501,8 +2501,8 @@ export default function MapBottomSheet({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [feed, setFeed] = useState<'local' | 'national'>('local');
-  const [localCategory, setLocalCategory] = useState<SheetCategory>('popup');
-  const [nationalCategory, setNationalCategory] = useState<SheetCategory>('popup');
+  const [localCategory, setLocalCategory] = useState<SheetCategory>('all');
+  const [nationalCategory, setNationalCategory] = useState<SheetCategory>('all');
   const [activePlaceDetailTab, setActivePlaceDetailTab] = useState<PlaceDetailTab>('info');
   const [activePreviewAction, setActivePreviewAction] = useState<PreviewActionKind | null>(null);
   const [photoViewer, setPhotoViewer] = useState<{

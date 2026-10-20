@@ -1604,7 +1604,7 @@ describe('MapBottomSheet recommendations', () => {
 
     ['전체', '팝업', '음악', '음식점', '패션', '뷰티', '전시', '카페', '문화재', '기타']
       .forEach((name) => expect(screen.getByRole('tab', { name })).toBeVisible());
-    expect(screen.getByRole('tab', { name: '팝업', selected: true })).toHaveStyle({
+    expect(screen.getByRole('tab', { name: '전체', selected: true })).toHaveStyle({
       backgroundColor: '#FAEDF0',
       borderColor: '#FE5E84',
     });
@@ -1729,6 +1729,8 @@ describe('MapBottomSheet recommendations', () => {
   test.each(['LIGHT', 'DARK'] as const)('%s 전체 카테고리는 지도 내비게이션과 같은 아이콘을 사용하고 별도 검은 원을 채우지 않는다', async (appearancePreference) => {
     const view = await renderWithProviders(<MapBottomSheet {...categoryProps([])} />, { appearancePreference });
     const all = () => screen.getByRole('tab', { name: '전체' });
+    expect(all().props.accessibilityState).toEqual({ selected: true });
+    await view.user.press(screen.getByRole('tab', { name: '팝업' }));
     // Unselected is the Figma map ring (maping_outline.svg), never a filled silhouette.
     expect(within(all()).getByTestId('map-category-all-outline')).toHaveProp('color',
       (appearancePreference === 'DARK' ? darkColors : lightColors).textSecondary);
@@ -1807,6 +1809,7 @@ describe('MapBottomSheet recommendations', () => {
 
     expect(screen.getByRole('tab', { name: '카페' }).props.accessibilityState)
       .toEqual({ selected: false });
+    expect(screen.getByRole('tab', { name: '전체', selected: true })).toBeOnTheScreen();
     expect(screen.getByText('전국 카테고리 인기 장소')).toBeOnTheScreen();
     expect(screen.queryByText('카테고리별 user님 주변 인기 장소들')).not.toBeOnTheScreen();
     expect(screen.queryByText('피드 전환 카페')).not.toBeOnTheScreen();
