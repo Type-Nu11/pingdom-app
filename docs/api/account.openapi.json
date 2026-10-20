@@ -1,0 +1,894 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "PingDom account and session API",
+    "version": "v0",
+    "description": "Snapshot extracted from the current server OpenAPI contract for the mobile account/session feature."
+  },
+  "servers": [
+    {
+      "url": "http://54.116.166.107:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/auth/password-reset/request": {
+      "post": {
+        "tags": [
+          "Common"
+        ],
+        "summary": "비밀번호 재설정 토큰 발급",
+        "description": "이메일 주소로 비밀번호 재설정 토큰을 발급하고 메일 발송 이벤트를 생성합니다.",
+        "operationId": "requestPasswordReset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "비밀번호 재설정 요청 접수"
+          },
+          "400": {
+            "description": "입력값 검증 실패",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "입력값을 확인해주세요.",
+                  "errors": {
+                    "email": "이메일 형식이 올바르지 않습니다."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/password-reset/confirm": {
+      "post": {
+        "tags": [
+          "Common"
+        ],
+        "summary": "비밀번호 재설정 완료",
+        "description": "메일로 발급된 재설정 토큰을 검증해 새 비밀번호를 설정합니다.",
+        "operationId": "confirmPasswordReset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "비밀번호 재설정 성공"
+          },
+          "400": {
+            "description": "입력값 검증 실패 또는 유효하지 않은 재설정 토큰",
+            "content": {
+              "*/*": {
+                "examples": {
+                  "invalid-token": {
+                    "description": "invalid-token",
+                    "value": {
+                      "message": "비밀번호 재설정 토큰이 올바르지 않습니다.",
+                      "code": "INVALID_PASSWORD_RESET_TOKEN"
+                    }
+                  },
+                  "expired-token": {
+                    "description": "expired-token",
+                    "value": {
+                      "message": "비밀번호 재설정 토큰이 만료되었습니다.",
+                      "code": "EXPIRED_PASSWORD_RESET_TOKEN"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Common"
+        ],
+        "summary": "로그아웃",
+        "description": "HttpOnly Cookie의 Refresh Token을 검증한 뒤 현재 저장된 Refresh Token을 제거하고 Cookie를 만료 처리합니다.",
+        "operationId": "logout",
+        "responses": {
+          "204": {
+            "description": "로그아웃 성공",
+            "headers": {
+              "Set-Cookie": {
+                "description": "만료된 HttpOnly Refresh Token Cookie",
+                "style": "simple",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "유효하지 않은 리프레시 토큰",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "유효하지 않은 토큰입니다.",
+                  "code": "INVALID_TOKEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "토큰에 해당하는 사용자를 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "사용자를 찾을 수 없습니다.",
+                  "code": "USER_NOT_FOUND"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/email/resend": {
+      "post": {
+        "tags": [
+          "Common"
+        ],
+        "summary": "인증 메일 재발송",
+        "description": "미인증 사용자의 이메일 인증 코드를 새로 발급하고 인증 메일을 다시 발송합니다.",
+        "operationId": "resendVerificationEmail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailResendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "인증 메일 재발송 성공"
+          },
+          "400": {
+            "description": "입력값 검증 실패",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "입력값을 확인해주세요.",
+                  "errors": {
+                    "email": "이메일 형식이 올바르지 않습니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "이메일에 해당하는 사용자를 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "사용자를 찾을 수 없습니다.",
+                  "code": "USER_NOT_FOUND"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "이미 인증된 이메일",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "이미 이메일 인증이 완료된 사용자입니다.",
+                  "code": "EMAIL_ALREADY_VERIFIED"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/oauth-accounts/google/link": {
+      "post": {
+        "tags": [
+          "App"
+        ],
+        "summary": "Google 계정 연결 시작",
+        "description": "현재 인증된 사용자 계정에 Google OAuth 계정을 연결하기 위한 OAuth 인증 흐름을 시작합니다.",
+        "operationId": "startGoogleLink",
+        "responses": {
+          "200": {
+            "description": "연결 시작 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAccountLinkStartResponse"
+                },
+                "example": {
+                  "provider": "GOOGLE",
+                  "authorizationUrl": "/oauth2/authorization/google",
+                  "message": "Google 계정 연결을 시작합니다."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "유효하지 않은 토큰",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAccountLinkStartResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/oauth-accounts/google": {
+      "delete": {
+        "tags": [
+          "App"
+        ],
+        "summary": "Google 계정 연결 해제",
+        "description": "현재 인증된 사용자 계정에서 Google OAuth 계정 연결을 해제합니다.",
+        "operationId": "unlinkGoogle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthAccountDisconnectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "연결 해제 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAccountResponse"
+                },
+                "example": {
+                  "provider": "GOOGLE",
+                  "linked": false,
+                  "message": "Google 계정 연결을 해제했습니다."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "유효하지 않은 토큰 또는 현재 비밀번호 불일치",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAccountResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "연결된 Google 계정을 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAccountResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "마지막 로그인 수단 보호 정책 위반",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAccountResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/export": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "내 데이터 내보내기",
+        "description": "현재 인증된 사용자의 계정 정보, 전체 북마크, 최근 좋아요한 지도 이미지 ID 최대 50개, 여행 일정, Claim 이력과 만료되지 않은 현재 행동 의도를 JSON으로 조회합니다.",
+        "operationId": "exportMyData",
+        "responses": {
+          "200": {
+            "description": "내보내기 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDataExportResponse"
+                },
+                "example": {
+                  "user": {
+                    "id": 1,
+                    "username": "pingdom_user",
+                    "profileImageUrl": "https://cdn.pingdom.com/profiles/user1.png"
+                  },
+                  "bookmarks": [
+                    {
+                      "id": 10,
+                      "placeId": 123
+                    }
+                  ],
+                  "likedMapImageIds": [
+                    981,
+                    812,
+                    700
+                  ],
+                  "travelSchedules": [
+                    {
+                      "id": 31,
+                      "startDate": "2026-08-01",
+                      "endDate": "2026-08-03",
+                      "state": "SCHEDULED"
+                    }
+                  ],
+                  "currentActivityIntent": {
+                    "intent": "CAFE",
+                    "expiresAt": "2026-08-01T14:00:00"
+                  },
+                  "merchantPlaceClaims": [
+                    {
+                      "id": 40,
+                      "placeId": 123,
+                      "status": "REJECTED",
+                      "claimReason": "매장 운영자입니다.",
+                      "reviewReason": "사업자 주소 불일치",
+                      "reviewedAt": "2026-07-16T10:00:00",
+                      "createdAt": "2026-07-15T14:00:00"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않은 요청 또는 유효하지 않은 토큰",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "유효하지 않은 토큰입니다.",
+                  "code": "INVALID_TOKEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "사용자를 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "example": {
+                  "message": "사용자를 찾을 수 없습니다.",
+                  "code": "USER_NOT_FOUND"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EmailResendRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "인증 메일을 다시 받을 이메일 주소",
+            "example": "pingdom@example.com"
+          }
+        },
+        "description": "이메일 인증 메일 재발송 요청 정보"
+      },
+      "ExportBookmarkResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "북마크 ID",
+            "format": "int64",
+            "example": 10
+          },
+          "placeId": {
+            "type": "integer",
+            "description": "북마크 대상 장소 ID",
+            "format": "int64",
+            "example": 123
+          }
+        },
+        "description": "사용자 북마크 전체 목록"
+      },
+      "ExportCurrentActivityIntentResponse": {
+        "type": "object",
+        "properties": {
+          "intent": {
+            "type": "string",
+            "description": "현재 행동 의도",
+            "example": "CAFE",
+            "enum": [
+              "EXPLORE",
+              "EAT",
+              "CAFE",
+              "SHOP",
+              "ATTEND_EVENT",
+              "NIGHTLIFE"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "행동 의도 만료 시각",
+            "format": "date-time"
+          }
+        },
+        "description": "만료되지 않은 현재 행동 의도. 없으면 null",
+        "nullable": true
+      },
+      "ExportMerchantOwnerProfileResponse": {
+        "type": "object",
+        "properties": {
+          "businessName": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactEmail": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "REJECTED",
+              "REVOKED"
+            ]
+          },
+          "placeIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        },
+        "description": "Merchant Owner 신청 및 프로필. 없으면 null",
+        "nullable": true
+      },
+      "ExportMerchantPlaceClaimResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "placeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED",
+              "CANCELED"
+            ]
+          },
+          "claimReason": {
+            "type": "string"
+          },
+          "reviewReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "상점 장소 Claim 요청 이력"
+      },
+      "ExportMerchantVerificationResponse": {
+        "type": "object",
+        "properties": {
+          "legalName": {
+            "type": "string"
+          },
+          "businessName": {
+            "type": "string"
+          },
+          "businessRegistrationNumber": {
+            "type": "string"
+          },
+          "identityStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "businessStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "reviewReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "description": "Merchant 신원 및 사업자 검증 신청. 없으면 null",
+        "nullable": true
+      },
+      "ExportTouristCouponResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offerId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ISSUED",
+              "REDEEMED",
+              "EXPIRED"
+            ]
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "redeemedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "description": "사용자가 발급받은 관광객 Coupon 이력"
+      },
+      "ExportTouristOfferResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "placeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "benefitDescription": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "CLOSED"
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "issuedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "couponValidityDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "Merchant Owner가 만든 관광객 전용 Offer 이력"
+      },
+      "ExportTravelScheduleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "여행 일정 ID",
+            "format": "int64",
+            "example": 1
+          },
+          "startDate": {
+            "type": "string",
+            "description": "여행 시작일",
+            "format": "date",
+            "example": "2026-08-01"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "여행 종료일",
+            "format": "date",
+            "example": "2026-08-04"
+          },
+          "state": {
+            "type": "string",
+            "description": "저장된 일정 상태",
+            "example": "SCHEDULED",
+            "enum": [
+              "SCHEDULED",
+              "CANCELLED"
+            ]
+          }
+        },
+        "description": "사용자 여행 일정 목록"
+      },
+      "ExportUserResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "사용자 ID",
+            "format": "int64",
+            "example": 1
+          },
+          "username": {
+            "type": "string",
+            "description": "사용자 아이디",
+            "example": "pingdom_user"
+          },
+          "profileImageUrl": {
+            "type": "string",
+            "description": "프로필 이미지 URL",
+            "nullable": true,
+            "example": "https://cdn.pingdom.com/profiles/user1.png"
+          }
+        },
+        "description": "사용자 기본 정보"
+      },
+      "OAuthAccountDisconnectRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "description": "마지막 OAuth 계정을 해제할 때 확인할 현재 비밀번호",
+            "nullable": true,
+            "example": "password123"
+          }
+        },
+        "description": "OAuth 계정 연결 해제 요청"
+      },
+      "OAuthAccountLinkStartResponse": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "OAuth Provider",
+            "example": "GOOGLE"
+          },
+          "authorizationUrl": {
+            "type": "string",
+            "description": "브라우저가 이동할 OAuth 인증 시작 URL",
+            "example": "/oauth2/authorization/google"
+          },
+          "message": {
+            "type": "string",
+            "description": "처리 결과 메시지",
+            "example": "Google 계정 연결을 시작합니다."
+          }
+        },
+        "description": "OAuth 계정 연결 시작 응답"
+      },
+      "OAuthAccountResponse": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "OAuth Provider",
+            "example": "GOOGLE"
+          },
+          "linked": {
+            "type": "boolean",
+            "description": "연결 여부",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "description": "처리 결과 메시지",
+            "example": "Google 계정 연결을 해제했습니다."
+          }
+        },
+        "description": "OAuth 계정 상태 응답"
+      },
+      "PasswordResetConfirmRequest": {
+        "required": [
+          "confirmPassword",
+          "email",
+          "newPassword",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "비밀번호를 재설정할 이메일 주소",
+            "example": "pingdom@example.com"
+          },
+          "token": {
+            "type": "string",
+            "description": "메일로 발급된 비밀번호 재설정 토큰"
+          },
+          "newPassword": {
+            "maxLength": 2147483647,
+            "minLength": 8,
+            "type": "string",
+            "description": "변경할 새 비밀번호",
+            "example": "newSecurePass123!"
+          },
+          "confirmPassword": {
+            "maxLength": 2147483647,
+            "minLength": 8,
+            "type": "string",
+            "description": "새 비밀번호 확인 입력",
+            "example": "newSecurePass123!"
+          }
+        },
+        "description": "비밀번호 재설정 완료 요청 정보"
+      },
+      "PasswordResetRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "비밀번호 재설정 메일을 받을 이메일 주소",
+            "example": "pingdom@example.com"
+          }
+        },
+        "description": "비밀번호 재설정 토큰 발급 요청 정보"
+      },
+      "UserDataExportResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/ExportUserResponse"
+          },
+          "bookmarks": {
+            "type": "array",
+            "description": "사용자 북마크 전체 목록",
+            "items": {
+              "$ref": "#/components/schemas/ExportBookmarkResponse"
+            }
+          },
+          "likedMapImageIds": {
+            "type": "array",
+            "description": "최근 좋아요한 지도 이미지 ID 목록. 최대 50개",
+            "items": {
+              "type": "integer",
+              "description": "최근 좋아요한 지도 이미지 ID 목록. 최대 50개",
+              "format": "int64"
+            }
+          },
+          "travelSchedules": {
+            "type": "array",
+            "description": "사용자 여행 일정 목록",
+            "items": {
+              "$ref": "#/components/schemas/ExportTravelScheduleResponse"
+            }
+          },
+          "currentActivityIntent": {
+            "$ref": "#/components/schemas/ExportCurrentActivityIntentResponse"
+          },
+          "merchantOwnerProfile": {
+            "$ref": "#/components/schemas/ExportMerchantOwnerProfileResponse"
+          },
+          "merchantPlaceClaims": {
+            "type": "array",
+            "description": "상점 장소 Claim 요청 이력",
+            "items": {
+              "$ref": "#/components/schemas/ExportMerchantPlaceClaimResponse"
+            }
+          },
+          "merchantVerification": {
+            "$ref": "#/components/schemas/ExportMerchantVerificationResponse"
+          },
+          "touristOffers": {
+            "type": "array",
+            "description": "Merchant Owner가 만든 관광객 전용 Offer 이력",
+            "items": {
+              "$ref": "#/components/schemas/ExportTouristOfferResponse"
+            }
+          },
+          "touristCoupons": {
+            "type": "array",
+            "description": "사용자가 발급받은 관광객 Coupon 이력",
+            "items": {
+              "$ref": "#/components/schemas/ExportTouristCouponResponse"
+            }
+          }
+        },
+        "description": "사용자 데이터 내보내기 응답"
+      }
+    }
+  }
+}

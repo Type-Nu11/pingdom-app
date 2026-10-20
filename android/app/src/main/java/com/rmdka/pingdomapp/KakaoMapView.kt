@@ -57,13 +57,16 @@ class KakaoMapView(
     companion object {
         private const val TAG = "KakaoMapView"
         private const val MARKER_LAYER_ID = "pingdom_markers"
+        private const val USER_LOCATION_LAYER_ID = "pingdom_user_location"
         private const val MARKER_STYLE_ID_PREFIX = "pingdom_hot_marker_style"
         private const val USER_LOCATION_STYLE_ID = "pingdom_user_location_style"
         private const val USER_LOCATION_LABEL_ID = "pingdom_user_location_label"
         private const val MARKER_LAYER_Z_ORDER = 10
+        private const val USER_LOCATION_LAYER_Z_ORDER = 20
         private const val USER_LOCATION_COLOR = 0xFFFF1956.toInt()
         private const val PLACE_MARKER_ANCHOR_X = 0.5f
         private const val PLACE_MARKER_TIP_RATIO_Y = 0.62f
+        private const val PLACE_MARKER_WIDTH_DP = 32f
         private const val DEFAULT_MARKER_FALLBACK_TIP_RATIO_Y = 35f / 37f
         private const val HOT_MARKER_FALLBACK_TIP_RATIO_Y = 49f / 81f
         private const val PLACE_MARKER_SIDE_SAFE_PADDING_PX = 12
@@ -80,8 +83,10 @@ class KakaoMapView(
     private var zoomLevel: Int = 7
     private var kakaoMap: KakaoMap? = null
     private var markerLayer: LabelLayer? = null
+    private var userLocationLayer: LabelLayer? = null
     private var markers: List<MapMarker> = emptyList()
     private var lastAppliedCamera: Triple<Double, Double, Int>? = null
+    private var lastAppliedUserLocation: Pair<Double, Double>? = null
 
     init {
         Log.d(TAG, "init: creating Kakao MapView")
@@ -117,8 +122,9 @@ class KakaoMapView(
                     true
                 }
                 kakaoMap.setOnMapClickListener { map, _, point, poi ->
-                    if (poi?.layerId == MARKER_LAYER_ID && poi.poiId.isNotBlank()) {
-                        emitMarkerPress(poi.poiId)
+                    if (poi?.layerId == MARKER_LAYER_ID) {
+                        // Clickable labels are delivered by setOnLabelClickListener above.
+                        // Kakao also invokes this map callback for the same physical tap.
                         return@setOnMapClickListener
                     }
 
@@ -128,7 +134,6 @@ class KakaoMapView(
                     emitNearestMarkerPress(map, point)
                 }
                 Log.d(TAG, "onMapReady: Kakao map is ready")
-                Toast.makeText(reactContext, "KakaoMap ready", Toast.LENGTH_SHORT).show()
                 applyCameraIfReady()
                 updateUserLocationIfReady()
                 updateMarkersIfReady()
@@ -170,7 +175,10 @@ class KakaoMapView(
     }
 
     fun setMarkers(value: ReadableArray?) {
-        markers = parseMarkers(value)
+        val nextMarkers = parseMarkers(value)
+        if (nextMarkers == markers) return
+
+        markers = nextMarkers
         updateMarkersIfReady()
     }
 
@@ -280,7 +288,6 @@ class KakaoMapView(
 
         layer.removeAll()
         addPlaceMarkerLabels(layer, manager)
-        addUserLocationLabelIfReady(layer, manager)
     }
 
     private fun getMarkerLayer(manager: LabelManager): LabelLayer? {
@@ -297,6 +304,23 @@ class KakaoMapView(
 
         layer?.setClickable(true)
         markerLayer = layer
+        return layer
+    }
+
+    private fun getUserLocationLayer(manager: LabelManager): LabelLayer? {
+        val layer = userLocationLayer
+            ?: manager.getLayer(USER_LOCATION_LAYER_ID)
+            ?: manager.addLayer(
+                LabelLayerOptions.from(USER_LOCATION_LAYER_ID)
+                    .setCompetitionType(CompetitionType.None)
+                    .setCompetitionUnit(CompetitionUnit.IconFirst)
+                    .setOrderingType(OrderingType.Rank)
+                    .setZOrder(USER_LOCATION_LAYER_Z_ORDER)
+                    .setClickable(false)
+            )
+
+        layer?.setClickable(false)
+        userLocationLayer = layer
         return layer
     }
 
@@ -342,8 +366,8 @@ class KakaoMapView(
 
     private fun normalizeMarkerCategory(value: String?): String {
         return when (value) {
-            "etc", "fashion", "food", "game", "music" -> value
-            else -> "music"
+            "art", "beauty", "cafe", "etc", "fashion", "food", "game", "heritage", "music", "popup" -> value
+            else -> "etc"
         }
     }
 
@@ -355,45 +379,50 @@ class KakaoMapView(
     }
 
     private fun createPlaceMarkerBitmapSpec(category: String, markerType: String): PlaceMarkerBitmapSpec {
-        val resourceName = "map_marker_${markerType}_$category"
+        // All marker states share the V2 category artwork. Selection is expressed by
+        // visibility/camera state in JS instead of falling back to legacy native artwork.
+        val resourceName = "map_marker_default_$category"
         val resourceId = resources.getIdentifier(resourceName, "drawable", reactContext.packageName)
-        val sourceBitmap = if (resourceId != 0) BitmapFactory.decodeResource(resources, resourceId) else null
-        val originalBitmap = if (sourceBitmap != null) {
-            sourceBitmap
+        val fallbackResourceId = resources.getIdentifier(
+            "map_marker_default_etc",
+            "drawable",
+            reactContext.packageName
+        )
+        val decodedBitmap = BitmapFactory.decodeResource(
+            resources,
+            if (resourceId != 0) resourceId else fallbackResourceId
+        )
+        val targetWidthPx = (PLACE_MARKER_WIDTH_DP * resources.displayMetrics.density).roundToInt()
+        val targetHeightPx = (decodedBitmap.height * (targetWidthPx.toFloat() / decodedBitmap.width)).roundToInt()
+        val markerBitmap = if (decodedBitmap.width == targetWidthPx) {
+            decodedBitmap
         } else {
-            when (markerType) {
-                "hot" -> createHotMarkerBitmap(category)
-                "search" -> createSearchMarkerBitmap()
-                else -> createDefaultMarkerBitmap(category)
-            }
+            Bitmap.createScaledBitmap(decodedBitmap, targetWidthPx, targetHeightPx, true)
         }
         val bottomSafePaddingPx =
             if (markerType == "hot") HOT_MARKER_BOTTOM_SAFE_PADDING_PX else NORMAL_MARKER_BOTTOM_SAFE_PADDING_PX
         val canvasBitmap = createMarkerCanvasBitmap(
-            source = originalBitmap,
+            source = markerBitmap,
             sideSafePaddingPx = PLACE_MARKER_SIDE_SAFE_PADDING_PX,
             bottomSafePaddingPx = bottomSafePaddingPx
         )
-        val rawAnchorY = if (sourceBitmap != null) {
-            PLACE_MARKER_TIP_RATIO_Y
-        } else if (markerType == "hot") {
-            HOT_MARKER_FALLBACK_TIP_RATIO_Y
-        } else {
-            DEFAULT_MARKER_FALLBACK_TIP_RATIO_Y
-        }
+        val rawAnchorY = PLACE_MARKER_TIP_RATIO_Y
         val anchorY = computePaddedAnchorY(
-            rawHeightPx = originalBitmap.height,
+            rawHeightPx = markerBitmap.height,
             rawAnchorY = rawAnchorY,
             topPaddingPx = 0,
             bottomPaddingPx = bottomSafePaddingPx
         )
 
-        if (originalBitmap != canvasBitmap) {
-            originalBitmap.recycle()
+        if (decodedBitmap != markerBitmap) {
+            decodedBitmap.recycle()
+        }
+        if (markerBitmap != canvasBitmap) {
+            markerBitmap.recycle()
         }
         Log.d(
             TAG,
-            "placeMarkerBitmap type=$markerType originalSize=${originalBitmap.width}x${originalBitmap.height} canvasSize=${canvasBitmap.width}x${canvasBitmap.height} anchorY=$anchorY"
+            "placeMarkerBitmap type=$markerType canvasSize=${canvasBitmap.width}x${canvasBitmap.height} anchorY=$anchorY"
         )
 
         return PlaceMarkerBitmapSpec(
@@ -707,12 +736,19 @@ class KakaoMapView(
         val map = kakaoMap ?: return
         val lat = userLat ?: return
         val lng = userLng ?: return
+        val manager = map.labelManager ?: return
+        val nextLocation = Pair(lat, lng)
 
-        updateMarkersIfReady()
+        if (lastAppliedUserLocation != nextLocation) {
+            val layer = getUserLocationLayer(manager) ?: return
+            layer.removeAll()
+            addUserLocationLabelIfReady(layer, manager)
+            lastAppliedUserLocation = nextLocation
+        }
 
         if (followUser) {
             val target = LatLng.from(lat, lng)
-            val update = CameraUpdateFactory.newCenterPosition(target, map.zoomLevel)
+            val update = CameraUpdateFactory.newCenterPosition(target, zoomLevel)
             map.moveCamera(update, CameraAnimation.from(300))
         }
     }

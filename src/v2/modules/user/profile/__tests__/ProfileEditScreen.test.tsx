@@ -1,0 +1,650 @@
+import type { AppDialogAction } from '../../../../shared/components/AppDialogProvider';
+import React from 'react';
+import { Linking } from 'react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import * as ImagePicker from 'expo-image-picker';
+
+import { ApiError } from '../../../../shared/api';
+import { renderWithProviders } from '../../../../app/testing/testProviders';
+import { profileApi } from '../api/profileApi';
+import type { Profile } from '../model/profile.types';
+import ProfileEditScreen from '../screens/ProfileEditScreen';
+
+jest.mock('expo-image-picker', () => ({
+  launchCameraAsync: jest.fn(),
+  launchImageLibraryAsync: jest.fn(),
+  requestCameraPermissionsAsync: jest.fn(),
+  requestMediaLibraryPermissionsAsync: jest.fn(),
+}));
+
+const PROFILE: Profile = {
+  birthYear: 1998,
+  country: 'KR',
+  email: 'pingdom@example.com',
+  id: 1,
+  language: 'ko',
+  profileImageUrl: null,
+  username: 'pingdom_user',
+};
+
+function alertMessages(spy: jest.SpyInstance) {
+  return spy.mock.calls.map((call) => call[0] as string);
+}
+
+// Exercise the dialog actions; shared dialog rendering is verified separately.
+async function chooseAvatarOption(
+  user: ReturnType<typeof import('@testing-library/react-native').userEvent.setup>,
+  alertSpy: jest.SpyInstance,
+  label: string,
+) {
+  await user.press(await screen.findByRole('button', { name: '프로필 이미지 변경' }));
+  const sheet = [...alertSpy.mock.calls].reverse().find((call) => call[0] === '프로필 사진 변경');
+  const button = (sheet?.[2] as { onPress?: () => void; text: string }[]).find(
+    (option) => option.text === label,
+  );
+  await act(async () => { button?.onPress?.(); });
+}
+
+async function enterPasswordChange(user: ReturnType<typeof import('@testing-library/react-native').userEvent.setup>) {
+  await user.type(screen.getByLabelText('현재 비밀번호'), 'current123');
+  await user.type(screen.getByLabelText('새 비밀번호'), 'newpassword1');
+  await user.type(screen.getByLabelText('새 비밀번호 확인'), 'newpassword1');
+}
+
+async function renameUsername(
+  user: ReturnType<typeof import('@testing-library/react-native').userEvent.setup>,
+  value = 'renamed_user',
+) {
+  const input = await screen.findByLabelText('아이디');
+  await user.clear(input);
+  await user.type(input, value);
+}
+
+describe('ProfileEditScreen', () => {
+  test('프로필이 늦게 도착해도 아이디 입력칸을 채운다', async () => {
+    let resolveProfile: (profile: Profile) => void = () => {};
+    jest.spyOn(profileApi, 'getProfile').mockImplementation(
+      () => new Promise<Profile>((resolve) => { resolveProfile = resolve; }),
+    );
+
+    await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    // 프로필이 도착하기 전에는 아이디 칸이 비어 있다.
+    expect(screen.queryByDisplayValue('pingdom_user')).toBeNull();
+
+    await act(async () => { resolveProfile(PROFILE); });
+
+    // 첫 렌더에서만 초기화하면 이 시점에도 계속 비어 있게 된다.
+    await waitFor(() => expect(screen.getByDisplayValue('pingdom_user')).toBeTruthy());
+  });
+
+  test('사용자가 고친 아이디를 이후 프로필 응답이 덮어쓰지 않는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+
+    const { queryClient, user } = await renderWithProviders(
+      <ProfileEditScreen onBack={jest.fn()} />,
+    );
+
+    const input = await screen.findByDisplayValue('pingdom_user');
+    await user.clear(input);
+    await user.type(input, 'new_name');
+
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ['v2', 'users', 'me'] });
+    });
+
+    expect(screen.getByDisplayValue('new_name')).toBeTruthy();
+  });
+
+  test('첫 프로필 응답 전에는 입력 폼 대신 스켈레톤을 표시한다', async () => {
+    let resolveProfile: (profile: Profile) => void = () => {};
+    jest.spyOn(profileApi, 'getProfile').mockImplementation(
+      () => new Promise<Profile>((resolve) => { resolveProfile = resolve; }),
+    );
+
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    expect(screen.getByRole('progressbar', { name: '프로필을 불러오는 중' })).toBeVisible();
+    expect(screen.queryByLabelText('아이디')).toBeNull();
+    await act(async () => { resolveProfile(PROFILE); });
+    await screen.findByDisplayValue('pingdom_user');
+    await user.clear(screen.getByLabelText('아이디'));
+    await user.type(screen.getByLabelText('아이디'), 'typed_after');
+    expect(screen.getByDisplayValue('typed_after')).toBeVisible();
+  });
+
+  test('프로필 조회 실패 상태에서는 저장을 비활성화하고 요청하지 않는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockRejectedValue(new Error('profile failed'));
+    const changeUsername = jest.spyOn(profileApi, 'changeUsername');
+
+    await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    const saveButtons = await waitFor(() => {
+      const buttons = screen.getAllByRole('button', { name: '변경 사항 저장하기' });
+      expect(buttons).toHaveLength(2);
+      return buttons;
+    });
+    for (const button of saveButtons) {
+      expect(button.props.accessibilityState.disabled).toBe(true);
+      fireEvent.press(button);
+    }
+    expect(changeUsername).not.toHaveBeenCalled();
+  });
+
+  test('새 비밀번호가 8자 미만이면 요청을 보내지 않는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changePassword = jest.spyOn(profileApi, 'changePassword');
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    await screen.findByDisplayValue('pingdom_user');
+    await user.type(screen.getByPlaceholderText('현재 비밀번호를 입력하세요'), 'current123');
+    await user.type(screen.getByPlaceholderText('8자 이상 입력하세요'), 'short');
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    expect(changePassword).not.toHaveBeenCalled();
+    expect(alertMessages(alertSpy)).toContain('비밀번호는 8자 이상이어야 합니다');
+  });
+
+  test('새 비밀번호와 확인이 다르면 요청을 보내지 않는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changePassword = jest.spyOn(profileApi, 'changePassword');
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    await screen.findByDisplayValue('pingdom_user');
+    await user.type(screen.getByPlaceholderText('현재 비밀번호를 입력하세요'), 'current123');
+    await user.type(screen.getByPlaceholderText('8자 이상 입력하세요'), 'newpassword1');
+    await user.type(screen.getByPlaceholderText('새 비밀번호를 다시 입력하세요'), 'newpassword2');
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    expect(changePassword).not.toHaveBeenCalled();
+    expect(alertMessages(alertSpy)).toContain('새 비밀번호가 서로 다릅니다');
+  });
+
+  test('현재 비밀번호 없이 새 비밀번호만 입력하면 막는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changePassword = jest.spyOn(profileApi, 'changePassword');
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    await screen.findByDisplayValue('pingdom_user');
+    await user.type(screen.getByPlaceholderText('8자 이상 입력하세요'), 'newpassword1');
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    expect(changePassword).not.toHaveBeenCalled();
+    expect(alertMessages(alertSpy)).toContain('비밀번호를 변경하려면 현재 비밀번호를 입력하세요');
+  });
+
+  test('아이디와 비밀번호를 함께 바꾸면 두 요청을 모두 보낸다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changeUsername = jest.spyOn(profileApi, 'changeUsername').mockResolvedValue('ok');
+    const changePassword = jest.spyOn(profileApi, 'changePassword').mockResolvedValue('ok');
+    const onBack = jest.fn();
+
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={onBack} />);
+
+    const input = await screen.findByDisplayValue('pingdom_user');
+    await user.clear(input);
+    await user.type(input, 'renamed_user');
+    await user.type(screen.getByPlaceholderText('현재 비밀번호를 입력하세요'), 'current123');
+    await user.type(screen.getByPlaceholderText('8자 이상 입력하세요'), 'newpassword1');
+    await user.type(screen.getByPlaceholderText('새 비밀번호를 다시 입력하세요'), 'newpassword1');
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    await waitFor(() => expect(changeUsername).toHaveBeenCalledWith('renamed_user'));
+    expect(changePassword).toHaveBeenCalledWith({
+      confirmPassword: 'newpassword1',
+      currentPassword: 'current123',
+      newPassword: 'newpassword1',
+    });
+    await waitFor(() => expect(onBack).toHaveBeenCalled());
+  });
+
+  test('아이디만 바꾸면 아이디 요청만 보낸다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changeUsername = jest.spyOn(profileApi, 'changeUsername').mockResolvedValue('ok');
+    const changePassword = jest.spyOn(profileApi, 'changePassword');
+    const onBack = jest.fn();
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={onBack} />);
+
+    await renameUsername(user);
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    await waitFor(() => expect(changeUsername).toHaveBeenCalledWith('renamed_user'));
+    expect(changePassword).not.toHaveBeenCalled();
+    await waitFor(() => expect(onBack).toHaveBeenCalledTimes(1));
+  });
+
+  test('비밀번호만 바꾸면 비밀번호 요청만 보낸다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changeUsername = jest.spyOn(profileApi, 'changeUsername');
+    const changePassword = jest.spyOn(profileApi, 'changePassword').mockResolvedValue('ok');
+    const onBack = jest.fn();
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={onBack} />);
+
+    await screen.findByDisplayValue('pingdom_user');
+    await enterPasswordChange(user);
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    expect(changeUsername).not.toHaveBeenCalled();
+    await waitFor(() => expect(changePassword).toHaveBeenCalled());
+    await waitFor(() => expect(onBack).toHaveBeenCalledTimes(1));
+  });
+
+  test('비밀번호 API 오류 코드는 인증 토큰 오류와 현재 비밀번호 오류를 혼동하지 않는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changePassword = jest.spyOn(profileApi, 'changePassword');
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    await screen.findByDisplayValue('pingdom_user');
+    await enterPasswordChange(user);
+    changePassword.mockRejectedValueOnce(new ApiError('현재 비밀번호 불일치', {
+      code: 'INVALID_CREDENTIALS',
+      status: 401,
+    }));
+    await user.press(screen.getByText('변경 사항 저장하기'));
+    await waitFor(() => expect(alertMessages(alertSpy)).toContain(
+      '현재 비밀번호가 올바르지 않습니다',
+    ));
+
+    changePassword.mockRejectedValueOnce(new ApiError('유효하지 않은 토큰입니다.', {
+      code: 'INVALID_TOKEN',
+      status: 401,
+    }));
+    await user.press(screen.getByText('변경 사항 저장하기'));
+    await waitFor(() => expect(alertMessages(alertSpy)).toContain('비밀번호를 변경하지 못했습니다.'));
+  });
+
+  test('동시 변경에서 아이디 요청 실패 시 비밀번호 요청을 실행하지 않고 아이디 오류를 표시한다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changeUsername = jest.spyOn(profileApi, 'changeUsername').mockRejectedValue(
+      new ApiError('입력값을 확인해주세요.', {
+        fieldErrors: [{ field: 'newUsername', reason: '이미 사용 중인 아이디입니다.' }],
+        status: 400,
+      }),
+    );
+    const changePassword = jest.spyOn(profileApi, 'changePassword');
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    await renameUsername(user);
+    await enterPasswordChange(user);
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    await waitFor(() => expect(changeUsername).toHaveBeenCalled());
+    expect(changePassword).not.toHaveBeenCalled();
+    await waitFor(() => expect(alertMessages(alertSpy)).toContain('아이디를 변경하지 못했습니다.'));
+  });
+
+  test('아이디 성공 후 비밀번호 실패 시 부분 성공을 알리고 프로필 캐시를 다시 조회한다', async () => {
+    let currentProfile = PROFILE;
+    const getProfile = jest.spyOn(profileApi, 'getProfile').mockImplementation(async () => currentProfile);
+    jest.spyOn(profileApi, 'changeUsername').mockImplementation(async () => {
+      currentProfile = { ...PROFILE, username: 'renamed_user' };
+      return 'ok';
+    });
+    jest.spyOn(profileApi, 'changePassword').mockRejectedValue(
+      new ApiError('입력값을 확인해주세요.', {
+        fieldErrors: [{ field: 'currentPassword', reason: '현재 비밀번호가 일치하지 않습니다.' }],
+        status: 400,
+      }),
+    );
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+    const onBack = jest.fn();
+    const { queryClient, user } = await renderWithProviders(
+      <ProfileEditScreen onBack={onBack} />,
+    );
+
+    await renameUsername(user);
+    await enterPasswordChange(user);
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    await waitFor(() => expect(getProfile).toHaveBeenCalledTimes(2));
+    expect(queryClient.getQueryData(['v2', 'users', 'me'])).toEqual(currentProfile);
+    expect(alertMessages(alertSpy)).toContain(
+      '아이디는 변경했지만 비밀번호는 변경하지 못했습니다. 비밀번호를 변경하지 못했습니다.',
+    );
+    expect(onBack).not.toHaveBeenCalled();
+  });
+
+  test('저장 버튼을 즉시 연속 탭해도 mutation과 복귀를 한 번만 실행한다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changeUsername = jest.spyOn(profileApi, 'changeUsername').mockResolvedValue('ok');
+    const onBack = jest.fn();
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={onBack} />);
+
+    await renameUsername(user);
+    const headerSave = screen.getByTestId('v2-profile-edit-save-header');
+    const bottomSave = screen.getByTestId('v2-profile-edit-save-bottom');
+    await act(async () => {
+      headerSave.props.onClick();
+      bottomSave.props.onClick();
+    });
+
+    await waitFor(() => expect(changeUsername).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onBack).toHaveBeenCalledTimes(1));
+  });
+
+  test('뒤로가기 버튼을 즉시 연속 탭해도 복귀를 한 번만 실행한다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const onBack = jest.fn();
+    await renderWithProviders(<ProfileEditScreen onBack={onBack} />);
+
+    const backButton = await screen.findByTestId('v2-profile-edit-back');
+    await act(async () => {
+      backButton.props.onClick();
+      backButton.props.onClick();
+    });
+
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('아이디는 서버 계약의 4~50자 범위를 벗어나면 요청하지 않는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changeUsername = jest.spyOn(profileApi, 'changeUsername');
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    await renameUsername(user, 'abc');
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    expect(changeUsername).not.toHaveBeenCalled();
+    expect(alertMessages(alertSpy)).toContain('아이디는 4자 이상 50자 이하여야 합니다.');
+  });
+
+  test('이미지 권한 거부와 선택 취소를 각각 안전하게 처리한다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const permission = jest.mocked(ImagePicker.requestMediaLibraryPermissionsAsync);
+    const launchPicker = jest.mocked(ImagePicker.launchImageLibraryAsync);
+    const changeImage = jest.spyOn(profileApi, 'changeProfileImage');
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    permission.mockResolvedValueOnce({ granted: false } as never);
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+    expect(alertMessages(alertSpy)).toContain(
+      '프로필 이미지를 변경하려면 사진 접근 권한이 필요합니다. 설정에서 허용해주세요.',
+    );
+
+    permission.mockResolvedValueOnce({ granted: true } as never);
+    launchPicker.mockResolvedValueOnce({ assets: null, canceled: true } as never);
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+    expect(changeImage).not.toHaveBeenCalled();
+  });
+
+  test('서버가 받지 않는 이미지 MIME type은 업로드하지 않는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    jest.mocked(ImagePicker.requestMediaLibraryPermissionsAsync)
+      .mockResolvedValue({ granted: true } as never);
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
+      assets: [{ fileName: 'photo.heic', mimeType: 'image/heic', uri: 'file:///photo.heic' }],
+      canceled: false,
+    } as never);
+    const changeImage = jest.spyOn(profileApi, 'changeProfileImage');
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+
+    expect(changeImage).not.toHaveBeenCalled();
+    expect(alertMessages(alertSpy)).toContain(
+      'JPEG 또는 PNG 이미지만 프로필 이미지로 사용할 수 있습니다.',
+    );
+  });
+
+  test('이미지 업로드 실패는 기존 이미지를 유지하고 성공은 재조회된 URI를 표시한다', async () => {
+    let currentProfile = { ...PROFILE, profileImageUrl: 'https://cdn/old.jpg' };
+    jest.spyOn(profileApi, 'getProfile').mockImplementation(async () => currentProfile);
+    const permission = jest.mocked(ImagePicker.requestMediaLibraryPermissionsAsync)
+      .mockResolvedValue({ granted: true } as never);
+    const launchPicker = jest.mocked(ImagePicker.launchImageLibraryAsync)
+      .mockResolvedValue({
+        assets: [{ fileName: 'photo.jpg', mimeType: 'image/jpeg', uri: 'file:///photo.jpg' }],
+        canceled: false,
+      } as never);
+    const changeImage = jest.spyOn(profileApi, 'changeProfileImage');
+    const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    await screen.findByTestId('v2-profile-edit-avatar-image');
+    changeImage.mockRejectedValueOnce(new Error('upload failed'));
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+    await waitFor(() => expect(alertMessages(alertSpy)).toContain(
+      '프로필 이미지를 변경하지 못했습니다. 다시 시도해주세요.',
+    ));
+    expect(screen.getByTestId('v2-profile-edit-avatar-image').props.source.uri)
+      .toBe('https://cdn/old.jpg');
+
+    changeImage.mockImplementationOnce(async (file) => {
+      expect(file).toEqual({ name: 'photo.jpg', type: 'image/jpeg', uri: 'file:///photo.jpg' });
+      currentProfile = { ...currentProfile, profileImageUrl: 'https://cdn/new.jpg' };
+      return { profileImageUrl: currentProfile.profileImageUrl };
+    });
+    await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+
+    await waitFor(() => expect(screen.getByTestId('v2-profile-edit-avatar-image').props.source.uri)
+      .toBe('https://cdn/new.jpg'));
+    expect(permission).toHaveBeenCalledTimes(2);
+    expect(launchPicker).toHaveBeenCalledTimes(2);
+  });
+
+  describe('프로필 이미지 변경 흐름', () => {
+    const IMAGE_ASSET = { fileName: 'photo.jpg', mimeType: 'image/jpeg', uri: 'file:///photo.jpg' };
+
+    function alertButtons(spy: jest.SpyInstance, title: string) {
+      const call = [...spy.mock.calls].reverse().find((args) => args[0] === title);
+      return (call?.[2] ?? []) as { onPress?: () => void; style?: string; text: string }[];
+    }
+
+    function grantLibrary() {
+      jest.mocked(ImagePicker.requestMediaLibraryPermissionsAsync)
+        .mockResolvedValue({ granted: true } as never);
+      jest.mocked(ImagePicker.launchImageLibraryAsync)
+        .mockResolvedValue({ assets: [IMAGE_ASSET], canceled: false } as never);
+    }
+
+    async function setupWithImage() {
+      jest.spyOn(profileApi, 'getProfile')
+        .mockResolvedValue({ ...PROFILE, profileImageUrl: 'https://cdn/old.jpg' });
+      const alertSpy = jest.spyOn(mockDialog, 'show').mockImplementation(() => {});
+      const view = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+      await screen.findByTestId('v2-profile-edit-avatar-image');
+      return { ...view, alertSpy };
+    }
+
+    test('진입점에 버튼 역할과 라벨이 있고 시트에 앨범·촬영·취소가 순서대로 나온다', async () => {
+      const { alertSpy, user } = await setupWithImage();
+
+      const entry = screen.getByRole('button', { name: '프로필 이미지 변경' });
+      expect(entry).toBeEnabled();
+      await user.press(entry);
+
+      expect(alertSpy).toHaveBeenCalledWith(
+        '프로필 사진 변경',
+        undefined,
+        expect.any(Array),
+        expect.objectContaining({ cancelable: true }),
+      );
+      expect(alertButtons(alertSpy, '프로필 사진 변경').map((button) => button.text))
+        .toEqual(['앨범에서 선택', '사진 촬영', '취소']);
+    });
+
+    test('시트가 열려 있는 동안 다시 눌러도 시트는 한 번만 열린다', async () => {
+      const { alertSpy, user } = await setupWithImage();
+
+      await user.press(screen.getByRole('button', { name: '프로필 이미지 변경' }));
+      await user.press(screen.getByRole('button', { name: '프로필 이미지 변경' }));
+
+      expect(alertSpy.mock.calls.filter((args) => args[0] === '프로필 사진 변경')).toHaveLength(1);
+    });
+
+    test('업로드 중에는 진입점이 비활성화되고 진행 표시가 보이며 요청은 한 번이다', async () => {
+      grantLibrary();
+      let finish: (value: { profileImageUrl: string }) => void = () => {};
+      const upload = jest.spyOn(profileApi, 'changeProfileImage')
+        .mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+
+      await waitFor(() => expect(screen.getByRole('button', { name: '프로필 이미지 변경' })).toBeDisabled());
+      const entry = screen.getByRole('button', { name: '프로필 이미지 변경' });
+      expect(entry.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
+      expect(screen.getByLabelText('프로필 이미지 업로드 중')).toBeOnTheScreen();
+
+      await user.press(entry);
+      expect(alertSpy.mock.calls.filter((args) => args[0] === '프로필 사진 변경')).toHaveLength(1);
+      expect(upload).toHaveBeenCalledTimes(1);
+
+      await act(async () => { finish({ profileImageUrl: 'https://cdn/new.jpg' }); });
+      await waitFor(() => expect(screen.queryByLabelText('프로필 이미지 업로드 중')).toBeNull());
+    });
+
+    test('업로드 실패 안내의 다시 시도는 사진을 다시 고르지 않고 같은 파일을 보낸다', async () => {
+      grantLibrary();
+      const upload = jest.spyOn(profileApi, 'changeProfileImage')
+        .mockRejectedValueOnce(new ApiError('network', { isNetworkError: true }))
+        .mockResolvedValueOnce({ profileImageUrl: 'https://cdn/new.jpg' });
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      await waitFor(() => expect(alertButtons(
+        alertSpy,
+        '프로필 이미지를 변경하지 못했습니다. 다시 시도해주세요.',
+      ).map((button) => button.text)).toEqual(['취소', '다시 시도']));
+      expect(screen.getByTestId('v2-profile-edit-avatar-image').props.source.uri)
+        .toBe('https://cdn/old.jpg');
+
+      const retry = alertButtons(alertSpy, '프로필 이미지를 변경하지 못했습니다. 다시 시도해주세요.')[1];
+      await act(async () => { retry.onPress?.(); });
+
+      await waitFor(() => expect(upload).toHaveBeenCalledTimes(2));
+      expect(upload.mock.calls[1][0]).toEqual({
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+        uri: 'file:///photo.jpg',
+      });
+      expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+    });
+
+    test('용량 초과(413)와 형식 오류(400)는 재시도 없이 각각 안내한다', async () => {
+      grantLibrary();
+      const upload = jest.spyOn(profileApi, 'changeProfileImage')
+        .mockRejectedValueOnce(new ApiError('too large', { status: 413 }))
+        .mockRejectedValueOnce(new ApiError('bad type', { status: 400 }));
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      await waitFor(() => expect(alertMessages(alertSpy)).toContain(
+        '이미지 용량이 너무 큽니다. 더 작은 이미지를 선택해주세요.',
+      ));
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      await waitFor(() => expect(alertMessages(alertSpy)).toContain(
+        'JPEG 또는 PNG 이미지만 프로필 이미지로 사용할 수 있습니다.',
+      ));
+
+      expect(upload).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('v2-profile-edit-avatar-image').props.source.uri)
+        .toBe('https://cdn/old.jpg');
+    });
+
+    test('권한이 거부되면 설정 열기 버튼을 제공하고 업로드하지 않는다', async () => {
+      jest.mocked(ImagePicker.requestMediaLibraryPermissionsAsync)
+        .mockResolvedValue({ canAskAgain: false, granted: false } as never);
+      const upload = jest.spyOn(profileApi, 'changeProfileImage');
+      const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '앨범에서 선택');
+      const message = '프로필 이미지를 변경하려면 사진 접근 권한이 필요합니다. 설정에서 허용해주세요.';
+      await waitFor(() => expect(alertMessages(alertSpy)).toContain(message));
+
+      const buttons = alertButtons(alertSpy, message);
+      expect(buttons.map((button) => button.text)).toEqual(['취소', '설정 열기']);
+      await act(async () => { buttons[1].onPress?.(); });
+
+      expect(openSettings).toHaveBeenCalledTimes(1);
+      expect(upload).not.toHaveBeenCalled();
+    });
+
+    test('사진 촬영을 고르면 카메라 권한과 카메라로 사진을 받는다', async () => {
+      jest.mocked(ImagePicker.requestCameraPermissionsAsync)
+        .mockResolvedValue({ granted: true } as never);
+      jest.mocked(ImagePicker.launchCameraAsync)
+        .mockResolvedValue({ assets: [IMAGE_ASSET], canceled: false } as never);
+      const upload = jest.spyOn(profileApi, 'changeProfileImage')
+        .mockResolvedValue({ profileImageUrl: 'https://cdn/new.jpg' });
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '사진 촬영');
+
+      await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+      expect(ImagePicker.launchCameraAsync).toHaveBeenCalledTimes(1);
+      expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
+    });
+
+    test('카메라 권한이 거부되면 카메라 전용 안내를 보여준다', async () => {
+      jest.mocked(ImagePicker.requestCameraPermissionsAsync)
+        .mockResolvedValue({ granted: false } as never);
+      const { alertSpy, user } = await setupWithImage();
+
+      await chooseAvatarOption(user, alertSpy, '사진 촬영');
+
+      await waitFor(() => expect(alertMessages(alertSpy)).toContain(
+        '프로필 사진을 촬영하려면 카메라 접근 권한이 필요합니다. 설정에서 허용해주세요.',
+      ));
+    });
+
+    test('프로필 이미지 URL이 깨지면 기본 아바타로 대체한다', async () => {
+      await setupWithImage();
+
+      await fireEvent(screen.getByTestId('v2-profile-edit-avatar-image'), 'error');
+
+      expect(screen.queryByTestId('v2-profile-edit-avatar-image')).toBeNull();
+      expect(screen.getByRole('button', { name: '프로필 이미지 변경' })).toBeEnabled();
+    });
+  });
+
+  test('비밀번호 보기 버튼과 저장 버튼이 접근성 상태를 노출한다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={jest.fn()} />);
+
+    await screen.findByDisplayValue('pingdom_user');
+    const showCurrent = screen.getByRole('button', { name: '현재 비밀번호 보기' });
+    expect(showCurrent.props.accessibilityState).toEqual({ selected: false });
+    await user.press(showCurrent);
+    expect(screen.getByRole('button', { name: '현재 비밀번호 숨기기' }).props.accessibilityState)
+      .toEqual({ selected: true });
+
+    for (const saveButton of screen.getAllByRole('button', { name: '변경 사항 저장하기' })) {
+      expect(saveButton.props.accessibilityState).toEqual({ busy: false, disabled: false });
+    }
+    expect(screen.getByTestId('v2-profile-edit-scroll').props)
+      .toMatchObject({ automaticallyAdjustKeyboardInsets: true, keyboardShouldPersistTaps: 'handled' });
+  });
+
+  test('바뀐 값이 없으면 요청 없이 돌아간다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    const changeUsername = jest.spyOn(profileApi, 'changeUsername');
+    const onBack = jest.fn();
+
+    const { user } = await renderWithProviders(<ProfileEditScreen onBack={onBack} />);
+
+    await screen.findByDisplayValue('pingdom_user');
+    await user.press(screen.getByText('변경 사항 저장하기'));
+
+    expect(changeUsername).not.toHaveBeenCalled();
+    expect(onBack).toHaveBeenCalled();
+  });
+});
+
+const mockDialog = { show: jest.fn<void, [string, string?, AppDialogAction[]?, { cancelable?: boolean; onDismiss?: () => void }?]>() };
+jest.mock('../../../../shared/components/AppDialogProvider', () => ({
+  ...jest.requireActual('../../../../shared/components/AppDialogProvider'), useAppDialog: () => mockDialog,
+}));

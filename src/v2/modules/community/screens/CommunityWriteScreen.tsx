@@ -1,0 +1,480 @@
+import Skeleton from '../../../shared/components/Skeleton';
+import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, BackHandler, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import styled, { useTheme } from 'styled-components/native';
+
+import BackButtonIcon from '../../../../assets/v2/icons/community/back-button.svg';
+import CloseMediumIcon from '../../../../assets/v2/icons/community/close-medium.svg';
+// The shared V2 library picker (permission prompt + multi-select) that
+// visit-verification reviews already use.
+import { visitVerificationMediaPicker, type VisitVerificationMediaPicker } from '../../place/visit-verification';
+import { useCategories, useCreatePost } from '../hooks/useCommunity';
+import { usePostPhotoUploads } from '../hooks/usePostPhotoUploads';
+import {
+  communityWriteBannerAction,
+  communityWriteErrorKind,
+  communityWriteHasUnmappedFieldError,
+  communityWriteServerFieldErrors,
+} from '../model/writeSubmitError';
+import {
+  WRITE_CONTENT_MAX_LENGTH,
+  WRITE_TITLE_MAX_LENGTH,
+  validateWriteForm,
+  type WriteFormFieldErrorKey,
+  type WritePlaceTag,
+} from '../model/writeForm';
+import CommunityPlaceCard from '../components/CommunityPlaceCard';
+import CommunityPlacePicker from '../components/CommunityPlacePicker';
+import HeaderIconButton from '../components/HeaderIconButton';
+import WritePhotoSection from '../components/WritePhotoSection';
+import { textStyleCss } from '../../../shared/theme/typography';
+
+export type CommunityWriteScreenProps = {
+  initialCategoryId?: string;
+  /** Photo library picker; injectable so tests don't open the native one. */
+  mediaPicker?: VisitVerificationMediaPicker;
+  onBack: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  onSignIn?: () => void;
+  onSubmitSuccess: (result: { placeIds: number[]; postId: number }) => void;
+};
+
+const VALIDATION_KEY_TO_I18N: Record<WriteFormFieldErrorKey, string> = {
+  categoryRequired: 'community.write_screen.validation.categoryRequired',
+  contentRequired: 'community.write_screen.validation.bodyRequired',
+  contentTooLong: 'community.write_screen.validation.contentTooLong',
+  placeRequired: 'community.write_screen.validation.placeRequired',
+  titleRequired: 'community.write_screen.validation.titleRequired',
+  titleTooLong: 'community.write_screen.validation.titleTooLong',
+};
+
+export default function CommunityWriteScreen({
+  initialCategoryId,
+  mediaPicker = visitVerificationMediaPicker,
+  onBack,
+  onDirtyChange,
+  onSignIn,
+  onSubmitSuccess,
+}: CommunityWriteScreenProps) {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const submissionGuard = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const [manualCategoryId, setManualCategoryId] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [placeTags, setPlaceTags] = useState<WritePlaceTag[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+  const uploads = usePostPhotoUploads();
+  const pickingPhotos = useRef(false);
+  const [isPickingPhotos, setIsPickingPhotos] = useState(false);
+  const [photoPermissionDenied, setPhotoPermissionDenied] = useState(false);
+  const [showUploadInProgress, setShowUploadInProgress] = useState(false);
+
+  const categoriesQuery = useCategories();
+  const categories = useMemo(
+    () => (categoriesQuery.data?.categories ?? []).filter(
+      (category): category is { categoryId: string; categoryName: string } =>
+        Boolean(category.categoryId) && Boolean(category.categoryName),
+    ),
+    [categoriesQuery.data],
+  );
+  const selectedCategoryId = manualCategoryId
+    ?? categories.find((category) => category.categoryId === initialCategoryId)?.categoryId
+    ?? categories[0]?.categoryId
+    ?? null;
+  const selectedCategoryName = categories.find((category) => category.categoryId === selectedCategoryId)?.categoryName;
+
+  const createPost = useCreatePost();
+
+  const fieldErrors = validateWriteForm({
+    categoryId: selectedCategoryId,
+    content,
+    placeTags,
+    title,
+  });
+  const serverFieldErrors = createPost.isError ? communityWriteServerFieldErrors(createPost.error) : {};
+  const fieldErrorText = (field: keyof typeof fieldErrors) => {
+    if (serverFieldErrors[field]) return t('common.apiError.validation.description');
+    if (!showErrors) return undefined;
+    const key = fieldErrors[field];
+    return key ? t(VALIDATION_KEY_TO_I18N[key]) : undefined;
+  };
+
+  const isValid = Object.keys(fieldErrors).length === 0;
+  const isDirty = title.length > 0 || content.length > 0 || placeTags.length > 0 || uploads.photos.length > 0;
+  // Photos must all be uploaded before the post can reference them.
+  const photosReady = !uploads.isUploading && !uploads.hasFailed;
+
+  const pickPhotos = async () => {
+    if (pickingPhotos.current || uploads.remaining <= 0) return;
+    pickingPhotos.current = true;
+    setIsPickingPhotos(true);
+    try {
+      const result = await mediaPicker.pickPhotos(uploads.remaining);
+      setPhotoPermissionDenied(result.status === 'denied');
+      // A cancelled picker returns no photos and leaves the attachments as-is.
+      if (result.status === 'selected') uploads.add(result.photos);
+    } catch {
+      // The native picker failing to open is the same to the user as cancelling.
+    } finally {
+      pickingPhotos.current = false;
+      setIsPickingPhotos(false);
+    }
+  };
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  const submit = () => {
+    if (submissionGuard.current || createPost.isPending || !selectedCategoryId || isBlockedByAuthorization) return;
+    setShowErrors(true);
+    setShowUploadInProgress(uploads.isUploading);
+    if (Object.keys(fieldErrors).length > 0 || !photosReady) return;
+
+    submissionGuard.current = true;
+    createPost.mutate(
+      {
+        categoryId: selectedCategoryId,
+        content: content.trim(),
+        title: title.trim(),
+        ...(placeTags.length > 0 ? { placeIds: placeTags.map((tag) => tag.id) } : {}),
+        ...(uploads.imageIds.length > 0 ? { imageIds: uploads.imageIds } : {}),
+      },
+      {
+        onError: () => {
+          submissionGuard.current = false;
+          // The error banner sits below the place section, off-screen on a
+          // filled-in form; bring it into view.
+          requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+        },
+        onSuccess: (data) => {
+          if (typeof data.postId !== 'number') {
+            submissionGuard.current = false;
+            return;
+          }
+          uploads.markAttached();
+          onDirtyChange?.(false);
+          onSubmitSuccess({ placeIds: data.placeIds ?? [], postId: data.postId });
+        },
+      },
+    );
+  };
+
+  const bannerKind = createPost.isError ? communityWriteErrorKind(createPost.error) : null;
+  const bannerAction = createPost.isError ? communityWriteBannerAction(createPost.error) : 'none';
+  const hasUnmappedServerError = createPost.isError && communityWriteHasUnmappedFieldError(createPost.error);
+  // A 403 means this account cannot post here at all — nothing the user
+  // changes on this form fixes that, so resubmitting is blocked outright
+  // rather than just left to fail again.
+  const isBlockedByAuthorization = bannerKind === 'authorization';
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      Keyboard.dismiss();
+      setPickerOpen(false);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [pickerOpen]);
+
+  if (pickerOpen) {
+    return (
+      <CommunityPlacePicker
+        onClose={() => { Keyboard.dismiss(); setPickerOpen(false); }}
+        onSelect={(place) => {
+          setPlaceTags((current) => (
+            current.some((tag) => tag.id === place.id) ? current : [...current, place]
+          ));
+          Keyboard.dismiss();
+          setPickerOpen(false);
+        }}
+      />
+    );
+  }
+
+  return (
+    <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-write-screen">
+      <Header>
+        <HeaderIconButton
+          Icon={BackButtonIcon}
+          accessibilityLabel={t('community.write_screen.back')}
+          accessibilityRole="button"
+          onPress={onBack}
+        />
+        <Title accessibilityRole="header">{t('community.write_screen.title')}</Title>
+        <HeaderSpacer />
+      </Header>
+
+      <KeyboardArea behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Content keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" ref={scrollRef} testID="v2-community-write-content">
+          <Section $gap={16}>
+            <SectionHead>
+              <SectionTitle>{t('community.write_screen.categoryLabel')}</SectionTitle>
+              <SectionSubtitle>{t('community.write_screen.categoryHint')}</SectionSubtitle>
+            </SectionHead>
+            {categoriesQuery.isLoading ? (
+              <Skeleton variant="chips" accessibilityLabel={t('experience.common.loading')} testID="v2-community-write-categories-loading" />
+            ) : categoriesQuery.isError ? (
+              <InlineErrorRow testID="v2-community-write-categories-error">
+                <ValidationText>{t('common.apiError.generic.description')}</ValidationText>
+                <RetryButton accessibilityRole="button" onPress={() => void categoriesQuery.refetch()}>
+                  <RetryLabel>{t('community.write_screen.placePicker.retry')}</RetryLabel>
+                </RetryButton>
+              </InlineErrorRow>
+            ) : (
+              <Chips>
+                {categories.map((category) => {
+                  const selected = category.categoryId === selectedCategoryId;
+                  return (
+                    <CategoryChip
+                      $selected={selected}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      key={category.categoryId}
+                      onPress={() => setManualCategoryId(category.categoryId)}
+                      testID={`v2-community-write-category-${category.categoryId}`}
+                    >
+                      <CategoryChipLabel $selected={selected}>{category.categoryName}</CategoryChipLabel>
+                    </CategoryChip>
+                  );
+                })}
+              </Chips>
+            )}
+            {fieldErrorText('categoryId') ? (
+              <ValidationText accessibilityLiveRegion="polite" accessibilityRole="alert">
+                {fieldErrorText('categoryId')}
+              </ValidationText>
+            ) : null}
+          </Section>
+
+          <Section $gap={12}>
+            <SectionTitle>{t('community.write_screen.titleLabel')}</SectionTitle>
+            <TitleInput
+              accessibilityLabel={t('community.write_screen.titleLabel')}
+              maxLength={WRITE_TITLE_MAX_LENGTH}
+              onBlur={() => setShowErrors(true)}
+              onChangeText={setTitle}
+              placeholder={t('community.write_screen.titlePlaceholder')}
+              placeholderTextColor={theme.colors.textAlternative}
+              testID="v2-community-write-title"
+              value={title}
+            />
+            {fieldErrorText('title') ? (
+              <ValidationText
+                accessibilityLiveRegion="polite"
+                accessibilityRole="alert"
+                testID="v2-community-write-title-error"
+              >
+                {fieldErrorText('title')}
+              </ValidationText>
+            ) : null}
+
+            <BodyInput
+              accessibilityLabel={t('community.write_screen.bodyLabel')}
+              maxLength={WRITE_CONTENT_MAX_LENGTH}
+              multiline
+              onBlur={() => setShowErrors(true)}
+              onChangeText={setContent}
+              placeholder={t('community.write_screen.bodyPlaceholder')}
+              placeholderTextColor={theme.colors.textAlternative}
+              testID="v2-community-write-body"
+              textAlignVertical="top"
+              value={content}
+            />
+            {fieldErrorText('content') ? (
+              <ValidationText
+                accessibilityLiveRegion="polite"
+                accessibilityRole="alert"
+                testID="v2-community-write-body-error"
+              >
+                {fieldErrorText('content')}
+              </ValidationText>
+            ) : null}
+
+            <GuideRow>
+              <GuideDot />
+              <GuideText>{t('community.write_screen.guideText')}</GuideText>
+            </GuideRow>
+          </Section>
+
+          <Section $gap={16}>
+            <WritePhotoSection
+              disabled={isPickingPhotos || createPost.isPending}
+              onOpenSettings={() => void Linking.openSettings()}
+              onPick={() => void pickPhotos()}
+              onRemove={uploads.remove}
+              onRetry={uploads.retry}
+              permissionDenied={photoPermissionDenied}
+              photos={uploads.photos}
+              showUploadInProgress={showUploadInProgress && uploads.isUploading}
+            />
+          </Section>
+
+          <PlaceSection>
+            <SectionHead>
+              <PlaceHead>
+                <PlaceHeadTitle>{t('community.write_screen.placeTagTitle')}</PlaceHeadTitle>
+                {/* Figma shows the selected category next to the heading; a category is
+                    always selected, and a missing required place is reported on submit. */}
+                {selectedCategoryName ? (
+                  <PlaceHeadTag testID="v2-community-write-place-category">{selectedCategoryName}</PlaceHeadTag>
+                ) : null}
+              </PlaceHead>
+              <PlaceSubtitle>{t('community.write_screen.placeTagHint')}</PlaceSubtitle>
+            </SectionHead>
+
+            {placeTags.map((place) => (
+              // The place search result carries a category but no thumbnail or
+              // region, so the shared card shows only what was returned.
+              <CommunityPlaceCard
+                category={place.category}
+                key={place.id}
+                name={place.name}
+                testID={`v2-community-write-place-${place.id}`}
+                trailing={(
+                  <RemovePlace
+                    accessibilityLabel={t('community.write_screen.removePlace', { name: place.name })}
+                    accessibilityRole="button"
+                    onPress={() => setPlaceTags((current) => current.filter((tag) => tag.id !== place.id))}
+                    testID={`v2-community-write-remove-place-${place.id}`}
+                  >
+                    <CloseMediumIcon color={theme.colors.textAlternative} height={19} width={19} />
+                  </RemovePlace>
+                )}
+              />
+            ))}
+
+            <AddPlaceButton
+              accessibilityLabel={t('community.write_screen.addPlace')}
+              accessibilityRole="button"
+              onPress={() => { Keyboard.dismiss(); setPickerOpen(true); }}
+              testID="v2-community-write-add-place"
+            >
+              <AddPlaceLabel>{`+ ${t('community.write_screen.addPlace')}`}</AddPlaceLabel>
+            </AddPlaceButton>
+            {fieldErrorText('placeIds') ? (
+              <ValidationText
+                accessibilityLiveRegion="polite"
+                accessibilityRole="alert"
+                testID="v2-community-write-place-error"
+              >
+                {fieldErrorText('placeIds')}
+              </ValidationText>
+            ) : null}
+          </PlaceSection>
+
+          {createPost.isError && bannerKind !== 'canceled' && hasUnmappedServerError ? (
+            <Section $gap={8}>
+              <ErrorBanner testID="v2-community-write-error-banner">
+                <ErrorBannerText accessibilityLiveRegion="assertive" accessibilityRole="alert">
+                  {bannerKind === 'notFound'
+                    ? t('community.write_screen.errors.placeNotFound')
+                    : t(`common.apiError.${bannerKind}.description`)}
+                </ErrorBannerText>
+                {bannerKind === 'network' || bannerKind === 'generic' ? (
+                  <ErrorBannerText>{t('community.write_screen.errors.networkDuplicateWarning')}</ErrorBannerText>
+                ) : null}
+                {bannerAction === 'retry' ? (
+                  <BannerButton accessibilityRole="button" onPress={submit} testID="v2-community-write-retry">
+                    <BannerButtonLabel>{t('community.write_screen.errors.retry')}</BannerButtonLabel>
+                  </BannerButton>
+                ) : bannerAction === 'signIn' ? (
+                  <BannerButton accessibilityRole="button" onPress={onSignIn} testID="v2-community-write-sign-in">
+                    <BannerButtonLabel>{t('community.write_screen.errors.signIn')}</BannerButtonLabel>
+                  </BannerButton>
+                ) : null}
+              </ErrorBanner>
+            </Section>
+          ) : null}
+          <SubmitBar>
+            <SubmitButton
+              $enabled={isValid && photosReady && !isBlockedByAuthorization}
+              accessibilityRole="button"
+              accessibilityState={{
+                busy: createPost.isPending,
+                disabled: createPost.isPending || !selectedCategoryId || isBlockedByAuthorization,
+              }}
+              disabled={createPost.isPending || !selectedCategoryId || isBlockedByAuthorization}
+              onPress={submit}
+              testID="v2-community-write-submit"
+            >
+              {createPost.isPending ? (
+                <ActivityIndicator
+                  accessibilityLabel={t('community.write_screen.submitBusy')}
+                  color={theme.colors.onPrimary}
+                />
+              ) : (
+                <SubmitLabel $enabled={isValid && photosReady && !isBlockedByAuthorization}>{t('community.write_screen.submit')}</SubmitLabel>
+              )}
+            </SubmitButton>
+          </SubmitBar>
+        </Content>
+      </KeyboardArea>
+    </Screen>
+  );
+}
+
+const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
+const Header = styled.View`height: 44px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px;`;
+const Title = styled(AppText)`flex: 1; text-align: center; color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Medium)}`;
+const HeaderSpacer = styled.View`width: 44px;`;
+const KeyboardArea = styled(KeyboardAvoidingView)`flex: 1;`;
+const Content = styled(ScrollView)`flex: 1;`;
+
+// Figma `Section/*`: 16px/24px padding closed by an 8px `Fill/Normal` band.
+// Category heads sit 16px above the chips; the writing and place blocks 12px.
+const Section = styled.View<{ $gap: number }>`gap: ${({ $gap }) => $gap}px; padding: 16px 24px; border-bottom-width: 8px; border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};`;
+const SectionHead = styled.View`gap: 4px;`;
+const SectionTitle = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
+const SectionSubtitle = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;
+
+const Chips = styled.View`flex-direction: row; flex-wrap: wrap; gap: ${({ theme }) => theme.spacing.sm}px;`;
+const CategoryChip = styled.Pressable<{ $selected: boolean }>`
+  height: 34px;
+  justify-content: center;
+  padding: 0 15px;
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  border-width: 1px;
+  border-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeBorder : theme.colors.backgroundAssistive)};
+  background-color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeTint : theme.colors.backgroundAssistive)};
+`;
+const CategoryChipLabel = styled(AppText)<{ $selected: boolean }>`
+  color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative)};
+  ${({ theme }) => textStyleCss(theme.typography.labelMedium)}
+`;
+
+const InlineErrorRow = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px;`;
+const RetryButton = styled.Pressable`padding: 6px 14px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
+const RetryLabel = styled(AppText)`color: ${({ theme }) => theme.colors.primary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
+
+const TitleInput = styled(AppTextInput)`padding: 14px 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive}; color: ${({ theme }) => theme.colors.text}; ${({ theme }) => textStyleCss(theme.typography.bodyRegular)}`;
+const BodyInput = styled(AppTextInput)`min-height: 139px; padding: 14px 12px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.backgroundAssistive}; color: ${({ theme }) => theme.colors.text}; ${({ theme }) => textStyleCss(theme.typography.labelRegular)}`;
+const GuideRow = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
+const GuideDot = styled.View`width: 3px; height: 3px; border-radius: 2px; background-color: ${({ theme }) => theme.colors.textMuted};`;
+const GuideText = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; ${({ theme }) => textStyleCss(theme.typography.captionRegular)}`;
+const ValidationText = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+
+const PlaceSection = styled.View`gap: 12px; padding: 16px 24px;`;
+const PlaceHead = styled.View`flex-direction: row; align-items: center; gap: 4px;`;
+const PlaceHeadTitle = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.headline2Bold)}`;
+const PlaceHeadTag = styled(AppText)`color: ${({ theme }) => theme.colors.labelAssistive}; ${({ theme }) => textStyleCss(theme.typography.labelMedium)}`;
+const PlaceSubtitle = styled(AppText)`color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.captionRegular)}`;
+// Figma place card (8168:10664): the shared card with a 32px `Fill/Support` remove button.
+const RemovePlace = styled.Pressable`width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.fillSupport};`;
+const AddPlaceButton = styled.Pressable`align-self: flex-start; padding: 10px 16px; border-radius: ${({ theme }) => theme.radius.full}px; border-width: 1px; border-color: ${({ theme }) => theme.colors.border};`;
+const AddPlaceLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.label.fontSize}px; font-weight: 600;`;
+
+const ErrorBanner = styled.View`gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.dangerSoft};`;
+const ErrorBannerText = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const BannerButton = styled.Pressable`align-self: flex-start; padding: 8px 16px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primaryAction};`;
+const BannerButtonLabel = styled(AppText)`color: ${({ theme }) => theme.colors.onPrimary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: 700;`;
+
+const SubmitBar = styled.View`padding: 0 24px 16px;`;
+const SubmitButton = styled.Pressable<{ $enabled: boolean }>`height: 64px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $enabled, theme }) => ($enabled ? theme.colors.primaryAction : theme.colors.disabled)};`;
+const SubmitLabel = styled(AppText)<{ $enabled: boolean }>`color: ${({ $enabled, theme }) => ($enabled ? theme.colors.textInverse : theme.colors.onDisabled)}; ${({ theme }) => textStyleCss(theme.typography.headline1Bold)}`;

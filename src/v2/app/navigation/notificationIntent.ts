@@ -1,4 +1,4 @@
-import type { NotificationRoute } from '../../features/notifications/model/notification.types';
+import type { NotificationRoute } from '../../modules/user/notifications/routing';
 import { parsePlaceId, V2_ROUTES, type V2StackParamList } from './types';
 
 export type NotificationNavigationIntent =

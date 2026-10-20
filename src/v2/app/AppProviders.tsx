@@ -1,25 +1,36 @@
+import './configureDomainMocks';
+import { AppDialogProvider } from '../shared/components/AppDialogProvider';
+import { PlaceMapComposition } from './PlaceMapComposition';
 import { focusManager, QueryClientProvider } from '@tanstack/react-query';
 import React, { type PropsWithChildren, useEffect, useState } from 'react';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ThemeProvider } from 'styled-components/native';
 
-import { i18n, initializeI18n } from '../shared/i18n';
-import { theme } from '../shared/theme';
+import { i18n, initializeI18n } from './i18n';
+import {
+  AppFontFamilyProvider,
+  PRETENDARD_FONT_FAMILY,
+  SYSTEM_FONT_FAMILY,
+  useAppFonts,
+} from '../shared/fonts';
+import { AppThemeProvider } from '../shared/theme';
 import AppErrorBoundary from './AppErrorBoundary';
 import { createQueryClient } from './queryClient';
+import { WakeWordProvider, useSherpaWakeWordAdapter, type WakeWordAdapter } from '../modules/voice-assistant';
 
-export default function AppProviders({ children }: PropsWithChildren) {
+export default function AppProviders({ children, wakeWordAdapter }: PropsWithChildren<{ wakeWordAdapter?: WakeWordAdapter }>) {
+  const sherpaWakeWordAdapter = useSherpaWakeWordAdapter(wakeWordAdapter === undefined);
   const [queryClient] = useState(createQueryClient);
-  const [isI18nReady, setIsI18nReady] = useState(i18n.isInitialized);
+  const [isI18nReady, setIsI18nReady] = useState(false);
+  const fontStatus = useAppFonts();
 
   useEffect(() => {
     let isMounted = true;
 
     void initializeI18n()
-      .catch((error) => {
-        console.warn('[V2 i18n] Initialization failed:', error);
+      .catch(() => {
+        console.warn('[V2 i18n] Initialization failed.');
       })
       .finally(() => {
         if (isMounted) {
@@ -44,19 +55,28 @@ export default function AppProviders({ children }: PropsWithChildren) {
     return () => subscription.remove();
   }, []);
 
-  if (!isI18nReady) {
-    return null;
-  }
+  const activeFontFamily = fontStatus === 'loaded'
+    ? PRETENDARD_FONT_FAMILY
+    : SYSTEM_FONT_FAMILY;
+  const isBootReady = isI18nReady && fontStatus !== 'loading';
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider theme={theme}>
-        <I18nextProvider i18n={i18n}>
-          <AppErrorBoundary>
-            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-          </AppErrorBoundary>
-        </I18nextProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <AppFontFamilyProvider fontFamily={activeFontFamily}>
+      <SafeAreaProvider>
+        <AppThemeProvider fontFamily={activeFontFamily}>
+          {isBootReady ? (
+            <I18nextProvider i18n={i18n}>
+              <AppErrorBoundary>
+                <QueryClientProvider client={queryClient}>
+                  <WakeWordProvider adapter={wakeWordAdapter ?? sherpaWakeWordAdapter}>
+                    <AppDialogProvider><PlaceMapComposition>{children}</PlaceMapComposition></AppDialogProvider>
+                  </WakeWordProvider>
+                </QueryClientProvider>
+              </AppErrorBoundary>
+            </I18nextProvider>
+          ) : null}
+        </AppThemeProvider>
+      </SafeAreaProvider>
+    </AppFontFamilyProvider>
   );
 }

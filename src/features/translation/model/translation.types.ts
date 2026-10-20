@@ -10,9 +10,3 @@ export type TranslationResult = {
   targetLanguage: string;
   translatedText: string;
 };
-
-export type PostTranslation = {
-  isShowingTranslation: boolean;
-  targetLanguage: string;
-  translatedText: string;
-};

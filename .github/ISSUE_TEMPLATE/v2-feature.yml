@@ -1,0 +1,43 @@
+name: V2 feature or migration
+description: Plan a V2-first feature, migration, or legacy-removal task.
+title: ""
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        New work belongs in V2 by default. Select a V1 exception only when the existing V1 path
+        must be changed for compatibility or there is no viable V2 owner yet.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and expected outcome
+      description: Describe the user-visible outcome and acceptance criteria.
+    validations:
+      required: true
+  - type: dropdown
+    id: implementation_target
+    attributes:
+      label: Implementation target
+      options:
+        - V2 (`src/v2/**`) — default
+        - Shared migration boundary
+        - V1 exception (`src/features/**`)
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: legacy_context
+    attributes:
+      label: Legacy dependency and removal plan
+      description: Required for a V1 exception. List affected V1 paths and the removal issue; otherwise write `None`.
+      placeholder: |
+        Affected V1 paths: None
+        Removal issue: None
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Verification
+      description: Include the behavior, test, or performance checks that prove completion.
+    validations:
+      required: true

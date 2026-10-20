@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createInstance } from 'i18next';
+import { createInstance, type Resource } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import {
@@ -7,41 +7,57 @@ import {
   supportedLanguages,
   type SupportedLanguage,
 } from './resources';
+import {
+  applyLanguagePreference,
+  DEFAULT_LANGUAGE,
+  detectDeviceLanguage,
+  normalizeSupportedLanguage,
+  restorePreferredLanguage,
+} from './language';
 
 export const LANGUAGE_STORAGE_KEY = 'language';
-export const DEFAULT_LANGUAGE: SupportedLanguage = 'ko';
+export { DEFAULT_LANGUAGE, detectDeviceLanguage, getLanguageEndonym, isSupportedLanguage, normalizeSupportedLanguage, resolvePreferredLanguage } from './language';
 
 export const i18n = createInstance();
 
-let initializationPromise: Promise<void> | null = null;
+let registeredResources: Resource = resources;
 
-export function isSupportedLanguage(value: unknown): value is SupportedLanguage {
-  return typeof value === 'string'
-    && supportedLanguages.includes(value as SupportedLanguage);
-}
-
-async function readStoredLanguage(): Promise<SupportedLanguage> {
-  try {
-    const storedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
-    return isSupportedLanguage(storedLanguage) ? storedLanguage : DEFAULT_LANGUAGE;
-  } catch (error) {
-    console.warn('[V2 i18n] Failed to restore language:', error);
-    return DEFAULT_LANGUAGE;
+/** Application composition supplies domain bundles; shared never imports domains. */
+export function configureI18nResources(nextResources: Resource): void {
+  registeredResources = nextResources;
+  if (i18n.isInitialized) {
+    for (const [language, namespaces] of Object.entries(nextResources)) {
+      for (const [namespace, bundle] of Object.entries(namespaces)) {
+        i18n.addResourceBundle(language, namespace, bundle, true, true);
+      }
+    }
   }
 }
 
-export function initializeI18n(): Promise<void> {
+let initializationPromise: Promise<void> | null = null;
+let hasExplicitLanguagePreference = false;
+
+export function initializeI18n(profileLanguage?: unknown): Promise<void> {
   if (!initializationPromise) {
     initializationPromise = (async () => {
-      const language = await readStoredLanguage();
+      const restored = await restorePreferredLanguage({
+        deviceLanguage: detectDeviceLanguage(),
+        profileLanguage,
+        storage: AsyncStorage,
+        storageKey: LANGUAGE_STORAGE_KEY,
+      });
+      hasExplicitLanguagePreference = restored.hasStoredPreference;
 
       await i18n.use(initReactI18next).init({
         fallbackLng: DEFAULT_LANGUAGE,
         interpolation: {
           escapeValue: false,
         },
-        lng: language,
-        resources,
+        lng: restored.language,
+        parseMissingKeyHandler: () => resources[DEFAULT_LANGUAGE].translation.common.missingTranslation,
+        returnEmptyString: false,
+        returnNull: false,
+        resources: registeredResources,
         supportedLngs: [...supportedLanguages],
       });
     })().catch((error) => {
@@ -58,13 +74,29 @@ export async function setLanguage(language: SupportedLanguage): Promise<void> {
     await initializeI18n();
   }
 
-  await i18n.changeLanguage(language);
-
-  try {
-    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-  } catch (error) {
-    console.warn('[V2 i18n] Failed to persist language:', error);
+  hasExplicitLanguagePreference = true;
+  const persisted = await applyLanguagePreference({
+    changeLanguage: (nextLanguage) => i18n.changeLanguage(nextLanguage),
+    language,
+    persist: (nextLanguage) => AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage),
+  });
+  if (!persisted) {
+    console.warn('[V2 i18n] Failed to persist language.');
   }
 }
 
-export type { SupportedLanguage } from './resources';
+export async function syncProfileLanguage(profileLanguage: unknown): Promise<void> {
+  if (hasExplicitLanguagePreference) return;
+
+  const language = normalizeSupportedLanguage(profileLanguage);
+  if (!language) return;
+  if (!i18n.isInitialized) await initializeI18n(language);
+  if (i18n.resolvedLanguage !== language) await i18n.changeLanguage(language);
+}
+
+export function resetI18nForTests(): void {
+  initializationPromise = null;
+  hasExplicitLanguagePreference = false;
+}
+
+export { supportedLanguages, type SupportedLanguage } from './resources';

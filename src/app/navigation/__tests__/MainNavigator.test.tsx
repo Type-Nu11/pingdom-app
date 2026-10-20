@@ -1,0 +1,393 @@
+import { screen } from '@testing-library/react-native';
+import React from 'react';
+
+import { createTestI18n, renderWithProviders } from '../../../v2/app/testing/testProviders';
+import { useProfile } from '../../../v2/modules/user/profile';
+import {
+  MapRouteScreen,
+  MyPageRouteScreen,
+  ProfileEditRouteScreen,
+  SettingsRouteScreen,
+  VerifiedPlacesRouteScreen,
+} from '../MainNavigator';
+import { MAIN_ROUTES, type MainScreenProps } from '../types';
+
+jest.mock('../../../v2/modules/place/map/screens/MapScreen', () => {
+  const ReactLibrary = require('react');
+  const ReactNative = require('react-native');
+  return {
+    __esModule: true,
+    default: ({
+      onOpenCommunityPost,
+      onOpenCommunityWrite,
+      onOpenVisitVerification,
+      onStartVisitVerification,
+    }: {
+      onOpenCommunityPost?: (postId: number) => void;
+      onOpenCommunityWrite?: (categoryId?: string) => void;
+      onOpenVisitVerification: () => void;
+      onStartVisitVerification: (placeId: number) => void;
+    }) => ReactLibrary.createElement(
+      ReactNative.View,
+      { testID: 'current-map-screen', style: { backgroundColor: require('styled-components/native').useTheme().colors.background } },
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: onOpenVisitVerification, testID: 'current-map-verification-entry' },
+      ),
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: () => onStartVisitVerification(17), testID: 'selected-place-verification-entry' },
+      ),
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: () => onOpenCommunityPost?.(42), testID: 'community-post-entry' },
+      ),
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: () => onOpenCommunityWrite?.('PLACE'), testID: 'community-write-entry' },
+      ),
+    ),
+  };
+});
+
+jest.mock('../../../v2/modules/user/profile/hooks/useProfile', () => ({
+  useProfile: jest.fn(),
+}));
+
+jest.mock('../../../v2/modules/user/profile/my-page/screens/MyPageScreen', () => {
+  const ReactLibrary = require('react');
+  const ReactNative = require('react-native');
+  return {
+    __esModule: true,
+    default: ({
+      onOpenProfileEdit,
+      onOpenReview,
+      onOpenSettings,
+    }: {
+      onOpenProfileEdit: () => void;
+      onOpenReview: (reviewId: number) => void;
+      onOpenSettings: () => void;
+    }) => ReactLibrary.createElement(
+      ReactNative.View,
+      null,
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: onOpenProfileEdit, testID: 'current-my-page-profile-edit-entry' },
+      ),
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: onOpenSettings, testID: 'current-my-page-settings-entry' },
+      ),
+      ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { onPress: () => onOpenReview(17), testID: 'current-my-page-place-entry' },
+      ),
+    ),
+  };
+});
+
+jest.mock('../../../v2/modules/user/settings/screens/SettingsScreen', () => {
+  const ReactLibrary = require('react');
+  const ReactNative = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ onOpenProfileEdit }: { onOpenProfileEdit: () => void }) => ReactLibrary.createElement(
+      ReactNative.Pressable,
+      { onPress: onOpenProfileEdit, testID: 'current-settings-profile-edit-entry' },
+    ),
+  };
+});
+
+jest.mock('../../../v2/modules/merchant/screens/MerchantMyPageContainer', () => {
+  const ReactLibrary = require('react');
+  const ReactNative = require('react-native');
+  return {
+    __esModule: true,
+    default: ({
+      onCreateEvent,
+      onEditAddress,
+      onEditBusinessHours,
+      onEditPhoneNumber,
+      onOpenAllReviews,
+      onOpenProfileEdit,
+      onOpenVerifiedPlaces,
+    }: Record<string, (() => void) | undefined>) => ReactLibrary.createElement(
+      ReactNative.View,
+      { testID: 'current-merchant-my-page' },
+      ...[
+        ['merchant-create-event-entry', onCreateEvent],
+        ['merchant-edit-address-entry', onEditAddress],
+        ['merchant-edit-hours-entry', onEditBusinessHours],
+        ['merchant-edit-phone-entry', onEditPhoneNumber],
+        ['merchant-all-reviews-entry', onOpenAllReviews],
+        ['merchant-profile-edit-entry', onOpenProfileEdit],
+        ['merchant-verified-places-entry', onOpenVerifiedPlaces],
+      ].filter((entry) => entry[1]).map(([testID, onPress]) => ReactLibrary.createElement(
+        ReactNative.Pressable,
+        { key: testID, onPress, testID },
+      )),
+    ),
+  };
+});
+
+jest.mock('../../../v2/modules/user/profile/screens/ProfileEditScreen', () => {
+  const ReactLibrary = require('react');
+  const ReactNative = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ onBack }: { onBack: () => void }) => ReactLibrary.createElement(
+      ReactNative.Pressable,
+      { onPress: onBack, testID: 'current-profile-edit-back' },
+    ),
+  };
+});
+
+const navigation = {
+  addListener: jest.fn(() => jest.fn()),
+  goBack: jest.fn(),
+  navigate: jest.fn(),
+  setParams: jest.fn(),
+} as unknown as MainScreenProps<'Map'>['navigation'];
+
+const route = {
+  key: 'Map-test',
+  name: MAIN_ROUTES.Map,
+  params: undefined,
+} as MainScreenProps<'Map'>['route'];
+
+describe('현재 지도 경계', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.mocked(useProfile).mockReturnValue({
+      profile: {
+        birthYear: 1998,
+        country: 'KR',
+        email: 'pingdom@example.com',
+        id: 1,
+        language: 'ko',
+        profileImageUrl: null,
+        role: 'USER',
+        username: 'pingdom_user',
+      },
+    } as ReturnType<typeof useProfile>);
+  });
+
+  test('MainNavigator의 지도 화면을 렌더링한다', async () => {
+    const i18n = await createTestI18n();
+    await renderWithProviders(
+      <MapRouteScreen navigation={navigation} route={route} />,
+      { i18n },
+    );
+
+    expect(screen.getByTestId('current-map-screen')).toBeVisible();
+  });
+
+  test('production route preserves the selected dark theme', async () => {
+    await renderWithProviders(
+      <MapRouteScreen navigation={navigation} route={route} />,
+      { appearancePreference: 'DARK' },
+    );
+    expect(screen.getByTestId('current-map-screen')).toHaveStyle({ backgroundColor: '#0F0F11' });
+  });
+
+  test('방문 검증 CTA는 대기 화면 없이 장소 목록으로 연결한다', async () => {
+    const i18n = await createTestI18n();
+    const view = await renderWithProviders(
+      <MapRouteScreen navigation={navigation} route={route} />,
+      { i18n },
+    );
+
+    await view.user.press(screen.getByTestId('current-map-verification-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      MAIN_ROUTES.VisitVerificationPlaces,
+    );
+  });
+
+  test('커뮤니티 시트의 게시글과 글쓰기 진입을 production route로 연결한다', async () => {
+    const i18n = await createTestI18n();
+    const view = await renderWithProviders(
+      <MapRouteScreen navigation={navigation} route={route} />,
+      { i18n },
+    );
+
+    await view.user.press(screen.getByTestId('community-post-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.CommunityDetail, { postId: 42 });
+
+    await view.user.press(screen.getByTestId('community-write-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.CommunityWrite, { initialCategoryId: 'PLACE' });
+  });
+
+  test('선택한 장소에서도 대기 화면 없이 검증 목록에 진입한다', async () => {
+    const i18n = await createTestI18n();
+    const view = await renderWithProviders(
+      <MapRouteScreen navigation={navigation} route={route} />,
+      { i18n },
+    );
+
+    await view.user.press(screen.getByTestId('selected-place-verification-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      MAIN_ROUTES.VisitVerificationPlaces,
+    );
+  });
+
+  test('production 마이페이지에서 프로필 편집으로 진입하고 뒤로 복귀한다', async () => {
+    const myPageRoute = {
+      key: 'MyPage-test',
+      name: MAIN_ROUTES.MyPage,
+      params: undefined,
+    } as MainScreenProps<'MyPage'>['route'];
+    const profileEditRoute = {
+      key: 'ProfileEdit-test',
+      name: MAIN_ROUTES.ProfileEdit,
+      params: undefined,
+    } as MainScreenProps<'ProfileEdit'>['route'];
+    const view = await renderWithProviders(
+      <MyPageRouteScreen navigation={navigation as never} route={myPageRoute} />,
+    );
+
+    await view.user.press(screen.getByTestId('current-my-page-profile-edit-entry'));
+    await view.user.press(screen.getByTestId('current-my-page-profile-edit-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.ProfileEdit);
+    expect(navigation.navigate).toHaveBeenCalledTimes(1);
+
+    await view.rerender(
+      <ProfileEditRouteScreen navigation={navigation as never} route={profileEditRoute} />,
+    );
+    await view.user.press(screen.getByTestId('current-profile-edit-back'));
+    expect(navigation.goBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('production 마이페이지에서 V2 설정으로 진입하고 프로필 편집 route를 유지한다', async () => {
+    const myPageRoute = {
+      key: 'MyPage-test',
+      name: MAIN_ROUTES.MyPage,
+      params: undefined,
+    } as MainScreenProps<'MyPage'>['route'];
+    const settingsRoute = {
+      key: 'Settings-test',
+      name: MAIN_ROUTES.Settings,
+      params: undefined,
+    } as MainScreenProps<'Settings'>['route'];
+    const view = await renderWithProviders(
+      <MyPageRouteScreen navigation={navigation as never} route={myPageRoute} />,
+    );
+
+    await view.user.press(screen.getByTestId('current-my-page-settings-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(MAIN_ROUTES.Settings);
+
+    await view.rerender(
+      <SettingsRouteScreen navigation={navigation as never} route={settingsRoute} />,
+    );
+    await view.user.press(screen.getByTestId('current-settings-profile-edit-entry'));
+    expect(navigation.navigate).toHaveBeenLastCalledWith(MAIN_ROUTES.ProfileEdit);
+  });
+
+  test('MERCHANT 마이페이지는 미지원 액션을 관광객 route와 연결하지 않는다', async () => {
+    jest.mocked(useProfile).mockReturnValue({
+      profile: {
+        birthYear: 1998,
+        country: 'KR',
+        email: 'merchant@example.com',
+        id: 2,
+        language: 'ko',
+        profileImageUrl: null,
+        role: 'MERCHANT_OWNER',
+        username: 'merchant_owner',
+      },
+    } as ReturnType<typeof useProfile>);
+
+    const myPageRoute = {
+      key: 'MerchantMyPage-test',
+      name: MAIN_ROUTES.MyPage,
+      params: undefined,
+    } as MainScreenProps<'MyPage'>['route'];
+    await renderWithProviders(
+      <MyPageRouteScreen navigation={navigation as never} route={myPageRoute} />,
+    );
+
+    expect(screen.getByTestId('current-merchant-my-page')).toBeVisible();
+    expect(screen.queryByTestId('merchant-create-event-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-edit-address-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-edit-hours-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-edit-phone-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-all-reviews-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-profile-edit-entry')).toBeNull();
+    expect(screen.queryByTestId('merchant-verified-places-entry')).toBeNull();
+  });
+
+  test('MERCHANT의 저장된 ProfileEdit route는 관광객 편집 화면을 열지 않는다', async () => {
+    jest.mocked(useProfile).mockReturnValue({
+      isLoading: false,
+      profile: {
+        birthYear: 1998,
+        country: 'KR',
+        email: 'merchant@example.com',
+        id: 2,
+        language: 'ko',
+        profileImageUrl: null,
+        role: 'MERCHANT_OWNER',
+        username: 'merchant_owner',
+      },
+    } as ReturnType<typeof useProfile>);
+    const profileEditRoute = {
+      key: 'ProfileEdit-restore-test',
+      name: MAIN_ROUTES.ProfileEdit,
+      params: undefined,
+    } as MainScreenProps<'ProfileEdit'>['route'];
+
+    await renderWithProviders(
+      <ProfileEditRouteScreen navigation={navigation as never} route={profileEditRoute} />,
+    );
+
+    expect(screen.queryByTestId('current-profile-edit-back')).toBeNull();
+    expect(screen.getByText('이 기능은 현재 앱에서 지원하지 않습니다.')).toBeVisible();
+  });
+
+  test('MERCHANT의 저장된 VerifiedPlaces route는 방문 검증 목록을 열지 않는다', async () => {
+    jest.mocked(useProfile).mockReturnValue({
+      isLoading: false,
+      profile: {
+        birthYear: 1998,
+        country: 'KR',
+        email: 'merchant@example.com',
+        id: 2,
+        language: 'ko',
+        profileImageUrl: null,
+        role: 'MERCHANT_OWNER',
+        username: 'merchant_owner',
+      },
+    } as ReturnType<typeof useProfile>);
+    const verifiedPlacesRoute = {
+      key: 'VerifiedPlaces-restore-test',
+      name: MAIN_ROUTES.VerifiedPlaces,
+      params: undefined,
+    } as MainScreenProps<'VerifiedPlaces'>['route'];
+
+    await renderWithProviders(
+      <VerifiedPlacesRouteScreen
+        navigation={navigation as never}
+        route={verifiedPlacesRoute}
+      />,
+    );
+
+    expect(screen.getByText('이 기능은 현재 앱에서 지원하지 않습니다.')).toBeVisible();
+    expect(screen.queryByText('검증한 장소')).toBeNull();
+  });
+
+  test('마이페이지 검증 장소를 누르면 해당 내 리뷰를 연다', async () => {
+    const myPageRoute = {
+      key: 'MyPage-test',
+      name: MAIN_ROUTES.MyPage,
+      params: undefined,
+    } as MainScreenProps<'MyPage'>['route'];
+    const view = await renderWithProviders(
+      <MyPageRouteScreen navigation={navigation as never} route={myPageRoute} />,
+    );
+
+    await view.user.press(screen.getByTestId('current-my-page-place-entry'));
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      MAIN_ROUTES.MyReview,
+      { reviewId: 17 },
+    );
+  });
+});

@@ -1,0 +1,20 @@
+{
+  "modelId": "sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20",
+  "engineVersion": "1.13.8",
+  "phrase": "Hey Pingdy",
+  "keyword": "Hey_Pingdy",
+  "pronunciation": "HH EY1 P IH1 NG D IY0",
+  "sampleRate": 16000,
+  "files": {
+    "decoder.onnx": "63a22dd60f40fff082ac3e09afa507f6787da36df76ded2fbe145fa233e22c21",
+    "encoder.onnx": "540ff509ed89bd22afe04bf7049a54bb1c95c6d8a18742ea9691910cdb5f859e",
+    "joiner.onnx": "76f7a24ed0c08633af14b2ee377f747af880d3b65eeba2cd3f31f3380fb73e8d",
+    "keywords.txt": "45b8355dd90aeac9b4813f1e57e1f2dd3341ebd101aee34bd386ae943594c64c",
+    "tokens.txt": "2d3f32311f9b692b964da3c90e830258d3e78e013cb0c992dbfb15cd5a1a71b0"
+  },
+  "pronunciations": [
+    "HH EY1 P IH1 NG D IY0",
+    "h ēi p íng d í",
+    "h ēi p ìn d ì"
+  ]
+}

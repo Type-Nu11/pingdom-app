@@ -1,0 +1,176 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { clearActiveForegroundVisitVerificationSession } from '../../v2/modules/place/visit-verification/session';
+import {
+  createNavigationContainerRef,
+  NavigationContainer,
+} from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Linking } from 'react-native';
+
+import AuthNavigator from '../../app/navigation/AuthNavigator';
+import { parseDeepLink } from './deepLink';
+import MainNavigator from '../../app/navigation/MainNavigator';
+import {
+  claimNotificationMessage,
+  createNotificationNavigationIntent,
+  getRootRouteName,
+  toMainNavigatorParams,
+  type MainNavigationIntent,
+} from './navigationIntent';
+import { ROOT_ROUTES, type RootStackParamList } from './types';
+import { useAndroidBackHandler } from './useAndroidBackHandler';
+import { useMapSettingsStore } from '../../v2/modules/place/map/settings';
+import { useAuthStore } from '../../app/store/authStore';
+import { useFcmTokenSync } from '../../v2/modules/user/notifications/lifecycle';
+import { useForegroundNotifications } from '../../v2/modules/user/notifications/lifecycle';
+import { useNotificationOpenSync } from '../../v2/modules/user/notifications/lifecycle';
+import type { NotificationRoute } from '../../v2/modules/user/notifications/routing';
+import {
+  getUnauthenticatedNavigationKey,
+  useOnboardingEntry,
+} from '../../v2/modules/onboarding';
+import {
+  canDeliverProtectedIntent,
+  resolveProductionRootState,
+} from './runtimeState';
+import { claimDeepLinkEvent, type DeepLinkEventReceipt } from './deepLinkDedupe';
+import { useAppNavigationTheme } from '../../v2/shared/theme';
+import { useStartupPermissions } from '../../v2/app/permissions';
+import { AppLoadingScreen } from '../../v2/shared/components';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+export default function RootNavigator() {
+  const navigationTheme = useAppNavigationTheme();
+  const startupPermissions = useStartupPermissions();
+  const queryClient = useQueryClient();
+  const bootstrapAuth = useAuthStore((state) => state.bootstrapAuth);
+  const isHydrating = useAuthStore((state) => state.isHydrating);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const hasAuthenticated = useAuthStore((state) => state.hasAuthenticated);
+  const { complete: completeOnboarding, hydrate: hydrateOnboarding, state: onboardingState } =
+    useOnboardingEntry();
+  const hydrateMapSettings = useMapSettingsStore((state) => state.hydrateMapSettings);
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
+  const [pendingNotification, setPendingNotification] = useState<NotificationRoute | null>(null);
+  const [pendingDeepLinkIntent, setPendingDeepLinkIntent] = useState<MainNavigationIntent | null>(null);
+  const handledNotificationIds = useRef(new Set<string>());
+  const lastDeepLinkEvent = useRef<DeepLinkEventReceipt | null>(null);
+  const previousIsLoggedIn = useRef(isLoggedIn);
+  const rootState = resolveProductionRootState(isHydrating, isLoggedIn, onboardingState, hasAuthenticated);
+
+  useAndroidBackHandler(navigationRef);
+  useFcmTokenSync(isLoggedIn && startupPermissions.ready && startupPermissions.notificationsGranted);
+  useForegroundNotifications(isLoggedIn && startupPermissions.ready && startupPermissions.notificationsGranted);
+  useNotificationOpenSync(useCallback((route) => setPendingNotification(route), []));
+
+  useEffect(() => {
+    void bootstrapAuth();
+    void hydrateOnboarding();
+    void hydrateMapSettings();
+  }, [bootstrapAuth, hydrateMapSettings, hydrateOnboarding]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const receiveUrl = (url: string) => {
+      const intent = parseDeepLink(url);
+      if (!intent) return;
+
+      const receipt = claimDeepLinkEvent(url, Date.now(), lastDeepLinkEvent.current);
+      if (!receipt) return;
+
+      lastDeepLinkEvent.current = receipt;
+      setPendingDeepLinkIntent(intent);
+    };
+
+    void Linking.getInitialURL()
+      .then((url) => {
+        if (isActive && url) receiveUrl(url);
+      })
+      .catch((error) => console.warn('Initial deep link hydrate failed:', error));
+
+    const subscription = Linking.addEventListener('url', ({ url }) => receiveUrl(url));
+
+    return () => {
+      isActive = false;
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      !canDeliverProtectedIntent(rootState, isNavigationReady)
+      || !pendingNotification
+      || !navigationRef.isReady()
+    ) {
+      return;
+    }
+
+    if (claimNotificationMessage(pendingNotification, handledNotificationIds.current)) {
+      navigationRef.navigate(
+        ROOT_ROUTES.Main,
+        toMainNavigatorParams(createNotificationNavigationIntent(pendingNotification)),
+      );
+    }
+    setPendingNotification(null);
+  }, [isNavigationReady, pendingNotification, rootState]);
+
+  useEffect(() => {
+    if (
+      !canDeliverProtectedIntent(rootState, isNavigationReady)
+      || !pendingDeepLinkIntent
+      || pendingNotification
+      || !navigationRef.isReady()
+    ) {
+      return;
+    }
+
+    navigationRef.navigate(ROOT_ROUTES.Main, toMainNavigatorParams(pendingDeepLinkIntent));
+    setPendingDeepLinkIntent(null);
+  }, [isNavigationReady, pendingDeepLinkIntent, pendingNotification, rootState]);
+
+  useEffect(() => {
+    if (previousIsLoggedIn.current && !isLoggedIn) {
+      // This provider survives logout. Cancel/remove data before another session can reuse it.
+      queryClient.clear();
+      clearActiveForegroundVisitVerificationSession();
+      setPendingNotification(null);
+      setPendingDeepLinkIntent(null);
+      handledNotificationIds.current.clear();
+    }
+    previousIsLoggedIn.current = isLoggedIn;
+  }, [isLoggedIn, queryClient]);
+
+  if (rootState === 'loading' || !startupPermissions.ready) return <AppLoadingScreen />;
+
+  const rootRouteName = getRootRouteName(rootState === 'main');
+  const completion = onboardingState.kind === 'completed'
+    ? onboardingState.completion
+    : undefined;
+
+  return (
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => setIsNavigationReady(true)}>
+      <Stack.Navigator screenOptions={{ animation: 'none', headerShown: false }}>
+        {rootRouteName === ROOT_ROUTES.Main ? (
+          <Stack.Screen
+            component={MainNavigator}
+            navigationKey="authenticated"
+            name={ROOT_ROUTES.Main}
+          />
+        ) : (
+          <Stack.Screen
+            navigationKey={getUnauthenticatedNavigationKey(completion, hasAuthenticated)}
+            name={ROOT_ROUTES.Auth}
+          >
+            {() => (
+              <AuthNavigator completion={completion} returningUser={hasAuthenticated} onComplete={completeOnboarding} />
+            )}
+          </Stack.Screen>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

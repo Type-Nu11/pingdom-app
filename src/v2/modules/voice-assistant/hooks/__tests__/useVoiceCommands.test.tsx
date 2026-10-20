@@ -1,0 +1,229 @@
+import React from 'react';
+import { act, renderHook } from '@testing-library/react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AppState, type AppStateStatus } from 'react-native';
+import * as hooks from '../useVoiceCommands';
+import { VoiceSessionError } from '../../model/voiceSessionError';
+import { createAiChatSessionApi } from '../../api/aiChatSessionApi';
+import * as commands from '../../model/voiceCommands';
+import { prepareVoiceReservationDraft } from '../../model/reservationDraft';
+import { draftQuote } from '../../model/__tests__/reservationDraft.fixture';
+import type { AppCommandResult, VoiceAvailabilityFacts } from '../../model/voiceAssistantCommand.types';
+
+jest.mock('../../api/aiChatSessionApi', () => ({ createAiChatSessionApi: jest.fn() }));
+const factory = jest.mocked(createAiChatSessionApi);
+const original = AppState.currentState;
+beforeEach(() => { (AppState as { currentState: string }).currentState = 'active'; });
+afterEach(() => { (AppState as { currentState: string }).currentState = original; });
+test.each(['cancel', 'background', 'context', 'input'] as const)('session creation interrupted by %s cannot overwrite the current presentation or submit old text', async action => {
+  const queryClient = new QueryClient();
+  const send = jest.fn(async () => ({ schemaVersion: 1 as const, id: 'new-answer', kind: 'assistant_message' as const, text: '최신 답변' }));
+  factory.mockReturnValue({ recordResult: jest.fn(), create: jest.fn()
+    .mockImplementationOnce(() => new Promise(() => {}))
+    .mockResolvedValue({ sessionId: 'new', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send });
+  const callbacks = new Map<string, (s: AppStateStatus) => void>();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((event, callback) => { callbacks.set(event, callback); return { remove() {} }; });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const initialProps = { accountRevision: 'user', location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true };
+  const view = await renderHook((props: hooks.VoiceCommandContext) => hooks.useVoiceCommands(props), { wrapper, initialProps });
+  let pending!: ReturnType<typeof view.result.current.onFinalInput>;
+  await act(async () => { pending = view.result.current.onFinalInput({ text: 'old private text', source: 'text', signal: new AbortController().signal }); });
+  if (action === 'input') {
+    await act(async () => { await view.result.current.onFinalInput({ text: 'new text', source: 'text', signal: new AbortController().signal }); });
+  } else if (action === 'context') await view.rerender({ ...initialProps, radiusKm: 10 });
+  else if (action === 'background') await act(() => callbacks.get('change')?.('background'));
+  else await act(() => view.result.current.cancel());
+  await act(async () => { await pending; });
+  expect(view.result.current.commandState).toEqual(action === 'input' ? { phase: 'assistant', text: '최신 답변' }
+    : { phase: action === 'context' ? 'idle' : 'canceled' });
+  expect(send.mock.calls).toHaveLength(action === 'input' ? 1 : 0);
+  await view.unmount(); queryClient.clear();
+});
+test('composes input, transport and command consumer; clears state on context/account change and background', async () => {
+  const send = jest.fn(async () => ({ schemaVersion: 1 as const, id: 'input-2', kind: 'command_request' as const,
+    command: 'searchNearbyReservablePlaces' as const, args: { date: '2026-09-20', startTime: '14:00', endTime: '17:00', quantity: 2, useCurrentLocation: true } }));
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send });
+  const queryClient = new QueryClient();
+  const callbacks = new Map<string, (s: AppStateStatus) => void>();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((event, callback) => { callbacks.set(event, callback); return { remove() {} }; });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const initialProps = { accountRevision: 'user' as string | null, location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true };
+  const view = await renderHook((props: hooks.VoiceCommandContext) => hooks.useVoiceCommands(props), { wrapper, initialProps });
+  await act(async () => { await view.result.current.onFinalInput({ text: 'find cafe', source: 'text', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { outcome: { code: 'LOCATION_REQUIRED' } } });
+  expect(send.mock.calls).toHaveLength(1);
+  await view.rerender({ ...initialProps, radiusKm: 10 });
+  expect(view.result.current.commandState).toEqual({ phase: 'idle' });
+  await view.rerender({ ...initialProps, accountRevision: null });
+  await act(async () => { await view.result.current.onFinalInput({ text: 'private input', source: 'text', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toMatchObject({ phase: 'error', code: 'AUTHENTICATION_REQUIRED' });
+  expect(send.mock.calls).toHaveLength(1);
+  await act(() => callbacks.get('change')?.('background'));
+  expect(view.result.current.commandState.phase).toBe('canceled');
+  await view.unmount(); queryClient.clear();
+});
+
+test('explicit transport retry becomes enabled after backoff without another user edit', async () => {
+  jest.useFakeTimers();
+  const queryClient = new QueryClient();
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send: async () => { throw new VoiceSessionError('NETWORK_ERROR'); } });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: 'cafe', source: 'text', signal: new AbortController().signal }); });
+  expect(view.result.current.retryReady).toBe(false);
+  await act(async () => { await jest.advanceTimersByTimeAsync(1000); });
+  expect(view.result.current.retryReady).toBe(true);
+  await view.unmount(); queryClient.clear(); jest.useRealTimers();
+});
+
+test('provider unavailable is a safe error rather than a successful command or generic response error', async () => {
+  const queryClient = new QueryClient();
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'protocol_error', code: 'PROVIDER_UNAVAILABLE' }) });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: 'cafe', source: 'text', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'error', code: 'PROVIDER_UNAVAILABLE' });
+  expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+  expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
+  await view.unmount(); queryClient.clear();
+});
+
+test('unsupported request shows recoverable feedback without retrying the submitted turn', async () => {
+  const queryClient = new QueryClient();
+  const send = jest.fn(async () => ({ schemaVersion: 1 as const, id: 'input-2', kind: 'protocol_error' as const, code: 'UNSUPPORTED_REQUEST' as const }));
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: 'unexpected phrase', source: 'voice', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'unrecognized' });
+  expect(send).toHaveBeenCalledTimes(1);
+  await act(() => view.result.current.dismissFeedback());
+  expect(view.result.current.commandState).toEqual({ phase: 'idle' });
+  expect(send).toHaveBeenCalledTimes(1);
+  await view.unmount(); queryClient.clear();
+});
+
+test.each(['expiry', 'background', 'context', 'cancel'] as const)('a displayed draft is invalidated by %s without any mutation', async reason => {
+  jest.useFakeTimers(); jest.setSystemTime(new Date('2026-09-20T00:00:00Z'));
+  const quote = draftQuote({ expiresAt: '2026-09-20T00:00:03Z' });
+  const c = quote.confirmation!;
+  const draft = prepareVoiceReservationDraft(quote, {
+    place: { id: 1, name: 'Cafe', address: 'Seoul', touristCategories: ['CAFE'], operatingStatus: 'OPERATING' },
+    availability: { id: c.availabilityId, placeId: c.placeId, productId: null, productName: null, productType: 'GENERAL',
+      startsAt: c.startsAt, endsAt: c.endsAt, remainingCapacity: 3, status: 'ACTIVE' } as VoiceAvailabilityFacts,
+    date: '2026-09-20', timezone: 'Asia/Seoul', quantity: 2, availabilityDataUpdatedAt: Date.now(),
+  }, Date.now());
+  const prepared: AppCommandResult = { schemaVersion: 1, source: 'app', kind: 'command_result', id: 'app-result-test',
+    commandId: 'input-2', command: 'prepareReservation', outcome: { status: 'succeeded', data: { draft } } };
+  const realDispatcher = commands.createVoiceCommandDispatcher;
+  // The model integration tests validate the real dispatcher. Here only its publication is controlled to exercise UI lifecycle.
+  jest.spyOn(commands, 'createVoiceCommandDispatcher').mockImplementation(options => ({
+    ...realDispatcher(options), consume: async () => options.publish(prepared),
+  }));
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: '2026-09-20T00:05:00Z' }),
+    refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'command_request',
+      command: 'prepareReservation', args: { placeId: 1, availabilityId: 10, quantity: 2 } }) });
+  const callbacks = new Map<string, (s: AppStateStatus) => void>();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((event, callback) => { callbacks.set(event, callback); return { remove() {} }; });
+  const queryClient = new QueryClient();
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const initialProps = { accountRevision: 'user', location: null, locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true };
+  const view = await renderHook((props: hooks.VoiceCommandContext) => hooks.useVoiceCommands(props), { wrapper, initialProps });
+  await act(async () => { await view.result.current.onFinalInput({ text: 'prepare', source: 'text', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { outcome: { status: 'succeeded' } } });
+  if (reason === 'expiry') {
+    await act(async () => { await jest.advanceTimersByTimeAsync(2999); });
+    expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { outcome: { status: 'succeeded' } } });
+    jest.setSystemTime(new Date('2026-09-19T00:00:00Z')); // Moving the wall clock back cannot prolong a quote.
+    await act(async () => { await jest.advanceTimersByTimeAsync(1); });
+    expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { outcome: { status: 'rejected', code: 'STALE_CONTEXT' } } });
+  } else if (reason === 'background') {
+    await act(() => callbacks.get('change')?.('background'));
+    expect(view.result.current.commandState.phase).toBe('canceled');
+  } else if (reason === 'context') {
+    await view.rerender({ ...initialProps, radiusKm: 10 });
+    expect(view.result.current.commandState.phase).toBe('idle');
+  } else {
+    await act(() => view.result.current.cancel());
+    expect(view.result.current.commandState.phase).toBe('canceled');
+  }
+  expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
+  await view.unmount(); queryClient.clear(); jest.useRealTimers();
+});
+
+
+test('an assistant reply retains actual provider text without running a command or reservation mutation', async () => {
+  const queryClient = new QueryClient();
+  factory.mockReturnValue({ recordResult: jest.fn(), create: async () => ({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(), send: async () => ({ schemaVersion: 1, id: 'input-2', kind: 'assistant_message', text: '안녕하세요! 반가워요.' }) });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: '안녕', source: 'voice', signal: new AbortController().signal }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'assistant', text: '안녕하세요! 반가워요.' });
+  expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+  expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
+  await view.unmount(); queryClient.clear();
+});
+
+test('session creation and AI response waiting stay processing until clarification arrives', async () => {
+  const queryClient = new QueryClient();
+  let resolveCreate!: (value: { sessionId: string; expiresAt: string }) => void;
+  let resolveSend!: (value: { schemaVersion: 1; id: string; kind: 'clarification_request'; field: 'date'; text: string }) => void;
+  const create = new Promise<{ sessionId: string; expiresAt: string }>(resolve => { resolveCreate = resolve; });
+  const response = new Promise<{ schemaVersion: 1; id: string; kind: 'clarification_request'; field: 'date'; text: string }>(resolve => { resolveSend = resolve; });
+  factory.mockReturnValue({ recordResult: jest.fn(), create: () => create, refresh: jest.fn(), close: jest.fn(), send: () => response });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  let pending!: ReturnType<typeof view.result.current.onFinalInput>;
+  await act(async () => {
+    pending = view.result.current.onFinalInput({ text: '근처 카페 찾아줘', source: 'voice', signal: new AbortController().signal });
+  });
+  expect(view.result.current.commandState).toEqual({ phase: 'processing' });
+  await act(async () => { resolveCreate({ sessionId: 's', expiresAt: new Date(Date.now() + 300000).toISOString() }); });
+  expect(view.result.current.commandState).toEqual({ phase: 'processing' });
+  await act(async () => {
+    resolveSend({ schemaVersion: 1, id: 'input-2', kind: 'clarification_request', field: 'date', text: '며칠에 방문하시나요?' });
+    await pending;
+  });
+  expect(view.result.current.commandState).toEqual({ phase: 'clarification', field: 'date' });
+  await act(() => view.result.current.cancel());
+  expect(view.result.current.commandState).toEqual({ phase: 'canceled' });
+  await view.unmount(); queryClient.clear();
+});
+
+
+test.each(['text', 'voice'] as const)('%s navigation runs through the existing session, preserves app result and disposes on exit', async source => {
+  const queryClient = new QueryClient(); const navigateToPage = jest.fn(() => true); const reset = jest.fn();
+  const recordResult = jest.fn();
+  let followed = false;
+  factory.mockReturnValue({ recordResult, reset,
+    create: async () => ({ sessionId: 'nav-session', expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    refresh: jest.fn(), close: jest.fn(),
+    send: async () => { return {
+      schemaVersion: 1, id: 'nav-request', kind: 'command_request', command: 'navigateToPage', args: { page: 'settings' },
+    }; },
+    next: async () => { if (followed) return undefined; followed = true; return {
+      schemaVersion: 1, id: 'unsafe-completion', kind: 'assistant_message', text: '완료했습니다.',
+    }; },
+  });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true, navigateToPage }), { wrapper });
+  await act(async () => { await view.result.current.onFinalInput({ text: '설정으로 가줘', source, signal: new AbortController().signal }); });
+  expect(navigateToPage).toHaveBeenCalledTimes(1); expect(navigateToPage).toHaveBeenCalledWith({ page: 'settings' });
+  expect(recordResult).toHaveBeenCalledWith(expect.objectContaining({ command: 'navigateToPage', outcome: {
+    status: 'succeeded', data: { target: { page: 'settings' }, navigationRequested: true },
+  } }));
+  expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { command: 'navigateToPage' } });
+  expect(view.result.current.commandState).not.toHaveProperty('text');
+  expect(queryClient.getMutationCache().getAll()).toEqual([]); expect(queryClient.getQueryCache().getAll()).toEqual([]);
+  await view.unmount(); expect(reset).toHaveBeenCalled(); queryClient.clear();
+});

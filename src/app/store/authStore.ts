@@ -1,11 +1,13 @@
 import { create } from 'zustand';
-import { hydrateAccessToken, persistTokens, removeTokens } from '../../shared/api/authTokens';
+import { hydrateAuthTokens, persistTokens, removeTokens } from '../../shared/api/authTokens';
 import { normalizeAuthTokens, type AuthTokens } from '../../shared/api/authStorage';
+import { rememberAuthenticatedEntry, restoreAuthenticatedEntry } from './authEntryStorage';
 
 export type AuthState = {
   accessToken: string | null;
   isLoggedIn: boolean;
   isHydrating: boolean;
+  hasAuthenticated: boolean;
 };
 
 type AuthActions = {
@@ -16,19 +18,43 @@ type AuthActions = {
 
 export type AuthStore = AuthState & AuthActions;
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export type BeforeLogoutHandler = () => Promise<void>;
+
+let beforeLogoutHandler: BeforeLogoutHandler = async () => {};
+let isLogoutInProgress = false;
+
+export function configureBeforeLogout(handler: BeforeLogoutHandler): () => void {
+  beforeLogoutHandler = handler;
+
+  return () => {
+    if (beforeLogoutHandler === handler) beforeLogoutHandler = async () => {};
+  };
+}
+
+export const useAuthStore = create<AuthStore>((set, get) => ({
   accessToken: null,
   isLoggedIn: false,
   isHydrating: true,
+  hasAuthenticated: false,
 
   bootstrapAuth: async () => {
     set({ isHydrating: true });
 
     try {
-      const accessToken = await hydrateAccessToken();
+      const returningUser = await restoreAuthenticatedEntry();
+      set({ hasAuthenticated: get().hasAuthenticated || returningUser });
+      const tokens = await hydrateAuthTokens();
+      const hasCompleteSession = Boolean(tokens?.accessToken);
+      if (hasCompleteSession) await rememberAuthenticatedEntry();
+
+      if (tokens && !hasCompleteSession) {
+        await removeTokens();
+      }
+
       set({
-        accessToken,
-        isLoggedIn: Boolean(accessToken),
+        accessToken: hasCompleteSession ? tokens?.accessToken ?? null : null,
+        isLoggedIn: hasCompleteSession,
+        hasAuthenticated: get().hasAuthenticated || hasCompleteSession,
         isHydrating: false,
       });
     } catch {
@@ -43,27 +69,53 @@ export const useAuthStore = create<AuthStore>((set) => ({
   login: async (tokens: AuthTokens) => {
     const normalizedTokens = normalizeAuthTokens(tokens);
 
+    if (!normalizedTokens.accessToken) {
+      throw new Error('로그인 응답에 accessToken이 없습니다.');
+    }
+
     await persistTokens(normalizedTokens);
+    await rememberAuthenticatedEntry();
     set({
       accessToken: normalizedTokens.accessToken,
       isLoggedIn: true,
+      hasAuthenticated: true,
       isHydrating: false,
     });
   },
 
   logout: async () => {
-    await removeTokens();
-    set({
-      accessToken: null,
-      isLoggedIn: false,
-      isHydrating: false,
-    });
+    // A failed refresh can call logout again while the FCM DELETE is in flight.
+    // Returning immediately avoids a circular wait between both operations.
+    if (isLogoutInProgress) return;
+
+    isLogoutInProgress = true;
+    const returningUser = get().hasAuthenticated || get().isLoggedIn || !!get().accessToken;
+    set({ isHydrating: true, isLoggedIn: false, hasAuthenticated: returningUser });
+
+    try {
+      try {
+        await beforeLogoutHandler();
+      } catch (error) {
+        // Device-token cleanup is best effort and must never trap the user in a session.
+        console.warn('Before logout cleanup failed:', error);
+      }
+
+      if (returningUser) await rememberAuthenticatedEntry();
+      await removeTokens();
+      set({
+        accessToken: null,
+        isLoggedIn: false,
+        isHydrating: false,
+      });
+    } finally {
+      isLogoutInProgress = false;
+    }
   },
 }));
 
 export function getAuthState(): AuthState {
-  const { accessToken, isLoggedIn, isHydrating } = useAuthStore.getState();
-  return { accessToken, isLoggedIn, isHydrating };
+  const { accessToken, isLoggedIn, isHydrating, hasAuthenticated } = useAuthStore.getState();
+  return { accessToken, isLoggedIn, isHydrating, hasAuthenticated };
 }
 
 export function subscribeAuth(listener: () => void): () => void {
@@ -80,4 +132,29 @@ export async function loginWithTokens(tokens: AuthTokens): Promise<void> {
 
 export async function logout(): Promise<void> {
   return useAuthStore.getState().logout();
+}
+
+/**
+ * Clears credentials after the server has already rejected the session.
+ *
+ * The normal logout path first unregisters the device FCM token. That request
+ * requires a valid access token, so running it while a failed refresh is still
+ * in flight creates a circular wait. An expired session must therefore be
+ * cleared locally and return the app to the unauthenticated navigator.
+ */
+export async function clearExpiredSession(): Promise<void> {
+  if (isLogoutInProgress) return;
+
+  isLogoutInProgress = true;
+  const previous = useAuthStore.getState();
+  const returningUser = previous.hasAuthenticated || previous.isLoggedIn || !!previous.accessToken;
+  useAuthStore.setState({ accessToken: null, isHydrating: true, isLoggedIn: false, hasAuthenticated: returningUser });
+
+  try {
+    if (returningUser) await rememberAuthenticatedEntry();
+    await removeTokens();
+  } finally {
+    useAuthStore.setState({ accessToken: null, isHydrating: false, isLoggedIn: false });
+    isLogoutInProgress = false;
+  }
 }

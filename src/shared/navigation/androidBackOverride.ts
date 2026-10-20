@@ -1,17 +1,7 @@
-export type AndroidBackOverride = () => boolean;
-
-let focusedBackOverride: AndroidBackOverride | null = null;
-
-export function registerAndroidBackOverride(override: AndroidBackOverride) {
-  focusedBackOverride = override;
-
-  return () => {
-    if (focusedBackOverride === override) {
-      focusedBackOverride = null;
-    }
-  };
-}
-
-export function runAndroidBackOverride() {
-  return focusedBackOverride?.() ?? false;
-}
+// Shared migration boundary: V2 owns the singleton while the remaining V1
+// settings screen keeps its stable import path until that bridge is deleted.
+export {
+  registerAndroidBackOverride,
+  runAndroidBackOverride,
+  type AndroidBackOverride,
+} from '../../v2/shared/navigation/androidBackOverride';

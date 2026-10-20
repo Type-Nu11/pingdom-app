@@ -1,0 +1,595 @@
+import { useAppDialog } from '../../../../../shared/components/AppDialogProvider';
+import { Text as AppText } from '../../../../../shared/components/Typography';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useQueries } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import styled from 'styled-components/native';
+
+import { useInfiniteMyReviews, useProfile } from '../../hooks/useProfile';
+import { useBookmarkedPlaceIds, useToggleBookmark } from '../hooks/useBookmarks';
+import { getInitialCalendarMonth, getTravelScheduleSelectionState, selectTravelDate } from '../../../../travel/calendar';
+import type { TravelDateInput } from '../../../../travel/calendar';
+import { createPlaceDetailQueryOptions } from '../../../../place/detail';
+import { usePlaceExplorationMediaList } from '../../../../place/exploration';
+import { myVerifiedReviews } from '../verified-places/model/myVerifiedReviews';
+import { useCoupons } from '../../../../booking/offers-coupons';
+import { useReservations } from '../../../../booking/reservations';
+import { useCreateTravelSchedule, useTravelSchedules, useUpdateTravelSchedule } from '../../../../travel/schedules';
+import { ApiErrorState, ErrorState, LoadingState, ProfileAvatar } from '../../../../../shared/components';
+import { useHeaderGlassIconColors } from '../../../../../shared/components/headerGlassIcon';
+import { getProfileImageUri } from '../../model/profileImageUri';
+import MyPageStatValue from '../components/MyPageStatValue';
+import TravelCalendar from '../travel/components/TravelCalendar';
+import VerifiedPlaceCard from '../verified-places/components/VerifiedPlaceCard';
+import VerifiedPlaceCardSkeleton from '../verified-places/components/VerifiedPlaceCardSkeleton';
+import { getTodayServerTravelDate, selectFeaturedTravelSchedule, getTravelUpdateErrorKey } from '../travel/model/myPageTravel';
+import {
+  toVerifiedPlaceEntries,
+  toVerifiedPlaceListState,
+} from '../verified-places/model/verifiedPlaceEntries';
+import BackIcon from '../../../../../shared/assets/icons/back.svg';
+import ChevronIcon from '../../../../../shared/assets/icons/chevron-right-24.svg';
+import DividerIcon from '../../../../../shared/assets/icons/divider.svg';
+import SettingsIcon from '../../../../../shared/assets/icons/settings.svg';
+
+const VERIFIED_PLACES_LIMIT = 2;
+const SKELETON_KEYS = ['skeleton-0', 'skeleton-1'] as const;
+
+// Loading, error and empty slots reserve the height of the content they stand in
+// for, so resolving a section does not shift everything below it.
+const PROFILE_ROW_HEIGHT = 56;
+const TRAVEL_CALENDAR_HEIGHT = 320;
+const VERIFIED_PLACE_CARD_HEIGHT = 222;
+
+export type MyPageScreenProps = {
+  authoredPostsContent?: React.ReactNode;
+  onBack: () => void;
+  onOpenCoupons: () => void;
+  onOpenProfileEdit: () => void;
+  onOpenReview: (reviewId: number) => void;
+  onOpenReservations: () => void;
+  onOpenSettings: () => void;
+  onOpenVerifiedPlaces: () => void;
+};
+
+export default function MyPageScreen({
+  authoredPostsContent,
+  onBack,
+  onOpenCoupons,
+  onOpenProfileEdit,
+  onOpenReview,
+  onOpenReservations,
+  onOpenSettings,
+  onOpenVerifiedPlaces,
+}: MyPageScreenProps) {
+  const { t } = useTranslation();
+  const dialog = useAppDialog();
+  const headerIconColors = useHeaderGlassIconColors();
+  const {
+    error: profileError,
+    isFetching: isProfileFetching,
+    isError: isProfileError,
+    isLoading: isProfileLoading,
+    profile,
+    refetch: refetchProfile,
+  } = useProfile();
+  const reservationsQuery = useReservations();
+  const couponsQuery = useCoupons();
+  const authoredReviews = useInfiniteMyReviews();
+  const reviewsQuery = {
+    ...authoredReviews,
+    reviewCount: authoredReviews.data?.pages[0]?.totalElements ?? 0,
+  };
+  const { width: windowWidth } = useWindowDimensions();
+  const [placesWidth, setPlacesWidth] = useState<number | null>(null);
+  const cardWidth = Math.max(1, ((placesWidth ?? windowWidth - 48) - 4) / 2);
+  const verifiedReviews = useMemo(() => myVerifiedReviews(
+    authoredReviews.data?.pages.flatMap((page) => page.reviews) ?? [],
+  ), [authoredReviews.data]);
+  const { fetchNextPage, hasNextPage, isFetching, isError } = authoredReviews;
+  useEffect(() => {
+    if (verifiedReviews.length < VERIFIED_PLACES_LIMIT && hasNextPage && !isFetching && !isError) {
+      void fetchNextPage();
+    }
+  }, [verifiedReviews.length, hasNextPage, isFetching, isError, fetchNextPage]);
+  const travelSchedulesQuery = useTravelSchedules();
+  const createTravelScheduleMutation = useCreateTravelSchedule();
+  const updateTravelScheduleMutation = useUpdateTravelSchedule();
+  const todayTravelDate = useMemo(() => getTodayServerTravelDate(), []);
+
+  const featuredSchedule = useMemo(
+    () => selectFeaturedTravelSchedule(
+      travelSchedulesQuery.data?.schedules ?? [],
+      todayTravelDate,
+    ),
+    [todayTravelDate, travelSchedulesQuery.data],
+  );
+
+  const initialCalendarMonth = useMemo(
+    () => getInitialCalendarMonth({
+      endDateText: featuredSchedule?.endDate ?? '',
+      startDateText: featuredSchedule?.startDate ?? '',
+    }),
+    [featuredSchedule],
+  );
+  const serverTravelDateInput = useMemo<TravelDateInput>(() => ({
+    endDateText: featuredSchedule?.endDate ?? '',
+    startDateText: featuredSchedule?.startDate ?? '',
+  }), [featuredSchedule]);
+  const [draftTravelDateInput, setDraftTravelDateInput] = useState<TravelDateInput>(
+    serverTravelDateInput,
+  );
+  const travelUpdateLocked = useRef(false);
+
+  useEffect(() => {
+    setDraftTravelDateInput(serverTravelDateInput);
+  }, [serverTravelDateInput]);
+
+  const draftTravelSelection = getTravelScheduleSelectionState(draftTravelDateInput);
+  const draftTravelRange = draftTravelSelection.kind === 'complete'
+    ? draftTravelSelection.range
+    : null;
+  const draftTravelStartDate = draftTravelSelection.kind === 'start-only'
+    ? draftTravelSelection.startDate
+    : draftTravelRange?.startDate ?? null;
+  const isTravelScheduleSaving = createTravelScheduleMutation.isPending
+    || updateTravelScheduleMutation.isPending;
+
+  const handleTravelDatePress = (date: Parameters<typeof selectTravelDate>[1]) => {
+    if (
+      travelUpdateLocked.current
+      || isTravelScheduleSaving
+    ) return;
+
+    const nextInput = draftTravelSelection.kind === 'complete'
+      ? { endDateText: '', startDateText: date }
+      : selectTravelDate(draftTravelDateInput, date);
+    setDraftTravelDateInput(nextInput);
+    const nextSelection = getTravelScheduleSelectionState(nextInput);
+    if (nextSelection.kind !== 'complete') return;
+
+    travelUpdateLocked.current = true;
+    const body = {
+      endDate: nextSelection.range.endDate,
+      startDate: nextSelection.range.startDate,
+    };
+    const mutationOptions = {
+      onError: (error: unknown) => {
+        setDraftTravelDateInput(serverTravelDateInput);
+        dialog.show(t(getTravelUpdateErrorKey(error)));
+      },
+      onSettled: () => {
+        travelUpdateLocked.current = false;
+      },
+    };
+
+    if (featuredSchedule) {
+      updateTravelScheduleMutation.mutate({
+        body,
+        scheduleId: featuredSchedule.id,
+      }, mutationOptions);
+      return;
+    }
+
+    createTravelScheduleMutation.mutate(body, mutationOptions);
+  };
+
+  const previewReviews = verifiedReviews.slice(0, VERIFIED_PLACES_LIMIT);
+  const placeIds = previewReviews.map((review) => review.placeId);
+
+  const placeDetailQueries = useQueries({
+    queries: placeIds.map((placeId) => createPlaceDetailQueryOptions(placeId)),
+  });
+  const imageUrlsByPlaceId = usePlaceExplorationMediaList(placeIds);
+
+  const verifiedPlaceListState = toVerifiedPlaceListState(
+    toVerifiedPlaceEntries(placeIds, placeDetailQueries),
+  );
+  const isLoadingReviews = authoredReviews.isLoading;
+
+  const retryVerifiedPlaces = () => {
+    void authoredReviews.refetch();
+    placeDetailQueries.forEach((query) => void query.refetch());
+  };
+
+  const { bookmarkedPlaceIds } = useBookmarkedPlaceIds();
+  const toggleBookmark = useToggleBookmark();
+
+  const toggleFavorite = (placeId: number) => {
+    toggleBookmark.mutate({ nextBookmarked: !bookmarkedPlaceIds.has(placeId), placeId });
+  };
+
+  return (
+    <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-my-page-screen">
+      <Content testID="v2-my-page-scroll" contentContainerStyle={CONTENT_CONTAINER_STYLE}>
+        <TopBar testID="v2-my-page-header">
+          <IconButton accessibilityLabel={t('myPage.back')} accessibilityRole="button" hitSlop={8} onPress={onBack}>
+            <BackIcon {...headerIconColors} testID="v2-my-page-back-icon" height={84} style={BACK_ICON_STYLE} width={80} />
+          </IconButton>
+          <TopBarTitle numberOfLines={1}>{t('myPage.title')}</TopBarTitle>
+          <IconButton
+            accessibilityLabel={t('myPage.settings')}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={onOpenSettings}
+          >
+            <SettingsIcon {...headerIconColors} testID="v2-my-page-settings-icon" height={84} style={SETTINGS_ICON_STYLE} width={80} />
+          </IconButton>
+        </TopBar>
+
+        <Section $borderWidth={8} testID="v2-my-page-profile-section">
+          <SectionContent>
+            {isProfileLoading ? (
+              <Slot $minHeight={PROFILE_ROW_HEIGHT}>
+                <LoadingState variant="profile" description={t('myPage.profileLoading')} />
+              </Slot>
+            ) : isProfileError && !profile ? (
+              <ApiErrorState error={profileError} busy={isProfileFetching} onRetry={() => refetchProfile({ cancelRefetch: false })} />
+            ) : (
+              <>
+                <ProfileRow accessibilityRole="button" onPress={onOpenProfileEdit}>
+                  <ProfileInfo testID="v2-my-page-profile-info">
+                    <AvatarSlot testID="v2-my-page-avatar">
+                      <ProfileAvatar size={56} uri={getProfileImageUri(profile)} />
+                    </AvatarSlot>
+                    <ProfileText testID="v2-my-page-profile-text">
+                      <Username numberOfLines={1}>
+                        {profile?.username ?? t('myPage.profileUnavailable')}
+                      </Username>
+                      {profile?.country ? (
+                        <UserCountry numberOfLines={1} testID="v2-my-page-country">
+                          {t(`countries.${profile.country.toLowerCase()}`, { defaultValue: profile.country })}
+                        </UserCountry>
+                      ) : null}
+                    </ProfileText>
+                  </ProfileInfo>
+                  <ProfileChevron testID="v2-my-page-profile-chevron"><ChevronIcon height={24} width={24} /></ProfileChevron>
+                </ProfileRow>
+                {isProfileError ? (
+                  <ApiErrorState error={profileError} busy={isProfileFetching} onRetry={() => refetchProfile({ cancelRefetch: false })} />
+                ) : null}
+              </>
+            )}
+
+            <StatsCard>
+              <StatButton
+                accessibilityLabel={t('myPage.stats.reservations')}
+                accessibilityRole="button"
+                onPress={onOpenReservations}
+              >
+                <StatLabel>{t('myPage.stats.reservations')}</StatLabel>
+                <MyPageStatValue
+                  isError={reservationsQuery.isError}
+                  isLoading={reservationsQuery.isLoading}
+                  testID="v2-my-page-stat-reservations"
+                  value={reservationsQuery.data?.totalElements ?? 0}
+                />
+              </StatButton>
+              <DividerIcon height={48} width={1} />
+              <StatItem>
+                <StatLabel>{t('myPage.stats.reviews')}</StatLabel>
+                <MyPageStatValue
+                  isError={reviewsQuery.isError}
+                  isLoading={reviewsQuery.isLoading}
+                  testID="v2-my-page-stat-reviews"
+                  value={reviewsQuery.reviewCount}
+                />
+              </StatItem>
+              <DividerIcon height={48} width={1} />
+              <StatButton
+                accessibilityLabel={t('myPage.stats.coupons')}
+                accessibilityRole="button"
+                onPress={onOpenCoupons}
+              >
+                <StatLabel>{t('myPage.stats.coupons')}</StatLabel>
+                <MyPageStatValue
+                  isError={couponsQuery.isError}
+                  isLoading={couponsQuery.isLoading}
+                  testID="v2-my-page-stat-coupons"
+                  value={couponsQuery.data?.totalElements ?? 0}
+                />
+              </StatButton>
+            </StatsCard>
+          </SectionContent>
+        </Section>
+
+        <Section $borderWidth={8}>
+          <TravelSectionContent>
+            <TravelTitleRow>
+              <TravelSectionTitle>{t('myPage.travel.title')}</TravelSectionTitle>
+              {isTravelScheduleSaving ? (
+                <TravelSavingText accessibilityLiveRegion="polite">
+                  {t('myPage.travel.saving')}
+                </TravelSavingText>
+              ) : null}
+            </TravelTitleRow>
+            {travelSchedulesQuery.isLoading ? (
+              <Slot $minHeight={TRAVEL_CALENDAR_HEIGHT}>
+                <LoadingState variant="reservation" description={t('myPage.travel.loading')} />
+              </Slot>
+            ) : travelSchedulesQuery.isError ? (
+              <Slot $minHeight={TRAVEL_CALENDAR_HEIGHT}>
+                <ErrorState
+                  actionLabel={t('myPage.retry')}
+                  description={t('myPage.travel.error')}
+                  onAction={() => void travelSchedulesQuery.refetch()}
+                />
+              </Slot>
+            ) : (
+              <TravelCalendar
+                highlightedRange={draftTravelRange}
+                initialMonth={initialCalendarMonth}
+                isUpdating={isTravelScheduleSaving}
+                minimumDate={todayTravelDate}
+                onDatePress={handleTravelDatePress}
+                selectedStartDate={draftTravelStartDate}
+              />
+            )}
+          </TravelSectionContent>
+        </Section>
+
+        <Section $borderWidth={8}>
+          <PlacesSectionContent onLayout={({ nativeEvent }) => setPlacesWidth(nativeEvent.layout.width - 48)}>
+            <SectionHeaderRow accessibilityRole="button" onPress={onOpenVerifiedPlaces}>
+              <SectionTitle>{t('myPage.verifiedPlaces.title')}</SectionTitle>
+              <ChevronIcon height={24} width={24} />
+            </SectionHeaderRow>
+            {isLoadingReviews ? (
+              <PlacesRow testID="v2-my-page-verified-row">
+                {SKELETON_KEYS.map((key) => <VerifiedPlaceCardSkeleton key={key} width={cardWidth} />)}
+              </PlacesRow>
+            ) : authoredReviews.isError || verifiedPlaceListState.kind === 'error' ? (
+              <Slot $minHeight={VERIFIED_PLACE_CARD_HEIGHT}>
+                <ErrorState
+                  actionLabel={t('myPage.retry')}
+                  description={t('myPage.verifiedPlaces.error')}
+                  onAction={retryVerifiedPlaces}
+                />
+              </Slot>
+            ) : verifiedPlaceListState.kind === 'ready' ? (
+              <PlacesRow testID="v2-my-page-verified-row">
+                {verifiedPlaceListState.entries.map((entry) => (
+                  entry.place ? (
+                    <VerifiedPlaceCard
+                      width={cardWidth}
+                      address={entry.place.address}
+                      favorited={bookmarkedPlaceIds.has(entry.placeId)}
+                      imageUrl={imageUrlsByPlaceId[String(entry.placeId)]?.[0] ?? null}
+                      key={entry.placeId}
+                      name={entry.place.name}
+                      onPress={() => {
+                        const review = previewReviews.find((item) => item.placeId === entry.placeId);
+                        if (review) onOpenReview(review.reviewId);
+                      }}
+                      onToggleFavorite={() => toggleFavorite(entry.placeId)}
+                    />
+                  ) : (
+                    <VerifiedPlaceCardSkeleton key={entry.placeId} width={cardWidth} />
+                  )
+                ))}
+              </PlacesRow>
+            ) : (
+              <Slot $minHeight={VERIFIED_PLACE_CARD_HEIGHT}>
+                <EmptyPlacesText>{t('myPage.verifiedPlaces.empty')}</EmptyPlacesText>
+              </Slot>
+            )}
+          </PlacesSectionContent>
+        </Section>
+        <Section $borderWidth={0} testID="v2-my-page-authored-posts">
+          {authoredPostsContent ?? <SectionContent>
+            <SectionHeaderRow accessibilityRole="button" accessibilityState={{ disabled: true }} disabled>
+              <SectionTitle>{t('myPageActivity.postsTitle')}</SectionTitle>
+              <ChevronIcon height={24} width={24} />
+            </SectionHeaderRow>
+            <EmptyPlacesText>{t('myPageActivity.postsUnavailable')}</EmptyPlacesText>
+          </SectionContent>}
+        </Section>
+      </Content>
+    </Screen>
+  );
+}
+
+const CONTENT_CONTAINER_STYLE = { flexGrow: 1 } as const;
+// SVG viewBoxes include shadow padding; align the 44px circle with its touch target.
+const BACK_ICON_STYLE = { left: -16, top: -16, position: 'absolute' } as const;
+const SETTINGS_ICON_STYLE = { left: -20, top: -16, position: 'absolute' } as const;
+
+const Screen = styled(SafeAreaView)`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const Content = styled.ScrollView`
+  flex: 1;
+`;
+
+const TopBar = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
+`;
+
+const IconButton = styled.Pressable`
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: visible;
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const TopBarTitle = styled(AppText)`
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: ${({ theme }) => theme.typography.navigationTitle.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.navigationTitle.fontWeight};
+  line-height: ${({ theme }) => theme.typography.navigationTitle.lineHeight}px;
+`;
+
+const Section = styled.View<{ $borderWidth: number }>`
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.md}px 0 ${({ theme }) => theme.spacing.md}px;
+  border-bottom-width: ${({ $borderWidth }) => $borderWidth}px;
+  border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
+`;
+
+const SectionContent = styled.View`
+  gap: ${({ theme }) => theme.spacing.md}px;
+  padding: 0 ${({ theme }) => theme.spacing.lg}px;
+`;
+
+const SectionTitle = styled(AppText)`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: 18px;
+  line-height: 23.4px;
+  font-weight: 700;
+`;
+
+const TravelSectionTitle = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: 18px;
+  font-weight: 700;
+`;
+
+const TravelTitleRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const TravelSavingText = styled(AppText).attrs({ maxFontSizeMultiplier: 1 })`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+`;
+
+const TravelSectionContent = styled.View`
+  gap: 12px;
+  padding: 0 ${({ theme }) => theme.spacing.lg}px;
+`;
+
+const SectionHeaderRow = styled.Pressable.attrs({ hitSlop: 10 })`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const Slot = styled.View<{ $minHeight: number }>`
+  width: 100%;
+  min-height: ${({ $minHeight }) => $minHeight}px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const InlineRetryText = styled(AppText)`
+  flex: 1;
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+`;
+
+const InlineRetryLabel = styled(AppText)`
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+  font-weight: 700;
+  text-decoration-line: underline;
+`;
+
+const ProfileRow = styled.Pressable`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const ProfileInfo = styled.View`
+  flex: 1;
+  min-width: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+const ProfileText = styled.View`
+  flex: 1;
+  min-width: 0;
+`;
+
+const AvatarSlot = styled.View`
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+`;
+
+const ProfileChevron = styled.View`
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin-left: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+const Username = styled(AppText)`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
+  font-weight: 500;
+`;
+
+const UserCountry = styled(AppText)`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
+`;
+
+const StatsCard = styled.View`
+  flex-direction: row;
+  align-items: center;
+  column-gap: 8px;
+  justify-content: space-evenly;
+  min-height: 85px;
+  padding: 0 8px;
+  border-radius: ${({ theme }) => theme.radius.lg}px;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+`;
+
+const StatItem = styled.View`
+  align-items: center;
+  flex-shrink: 1;
+  gap: 6px;
+`;
+
+const StatButton = styled.Pressable`
+  align-items: center;
+  flex-shrink: 1;
+  gap: 6px;
+`;
+
+// Longer labels (e.g. Japanese) shrink to one line instead of colliding at large text sizes.
+const StatLabel = styled(AppText).attrs({ adjustsFontSizeToFit: true, minimumFontScale: 0.5, numberOfLines: 1 })`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+  font-weight: 500;
+`;
+
+const StatValue = styled(AppText)`
+  color: ${({ theme }) => theme.colors.textStrong};
+  font-size: 20px;
+  font-weight: 700;
+`;
+
+// Figma 4951:6708: 12px between the section title and the cards.
+const PlacesSectionContent = styled(SectionContent)`
+  gap: 12px;
+`;
+
+const PlacesRow = styled.View`
+  flex-direction: row;
+  gap: 4px;
+`;
+
+const EmptyPlacesText = styled(AppText)`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: ${({ theme }) => theme.typography.body.fontSize}px;
+`;

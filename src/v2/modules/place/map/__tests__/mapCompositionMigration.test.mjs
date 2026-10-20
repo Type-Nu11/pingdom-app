@@ -1,0 +1,233 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+
+const read = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), 'utf8');
+
+test('production Map route renders the V2-owned composition directly', () => {
+  const navigator = read('../../../../../application/navigation/MainNavigator.tsx');
+  const screen = read('../screens/MapScreen.tsx');
+  const bridge = read('../../../../../app/navigation/MainNavigator.tsx');
+  assert.match(bridge, /createProductionMainNavigator/);
+  assert.doesNotMatch(bridge, /v2\/features|features\/place\/screens\/MapScreen/);
+
+  assert.match(navigator, /import \{ MapScreen \} from '..\/..\/v2\/modules\/place\/map'/);
+  assert.doesNotMatch(navigator, /features\/place\/screens\/MapScreen/);
+  assert.match(screen, /usePlaceDetailPresentation/);
+  assert.match(screen, /canQueryBookmarks/);
+  assert.doesNotMatch(screen, /src\/features|features\/place|app\/store|FALLBACK_COORD/);
+});
+
+test('map home composes independent local and national feeds without reusing marker places', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+
+  assert.match(screen, /useLocalHotPlaces\(\s*localHotRequest/);
+  assert.match(screen, /useNationalTrends\(isFocused && canQueryRankedFeeds, \{/);
+  assert.match(screen, /period: 'WEEK'/);
+  assert.match(screen, /localFeed=\{localFeed\}/);
+  assert.match(screen, /nationalFeed=\{nationalFeed\}/);
+  assert.match(screen, /markers: apiMarkers,[\s\S]*places: apiPlaces,[\s\S]*usePlaces\(\{\}, isFocused && env\.featureFlags\.placeList, markerViewport\)/);
+  assert.match(bottomSheet, /const selectedFeed = feed === 'local' \? localFeed : nationalFeed/);
+  assert.doesNotMatch(bottomSheet, /\[\.\.\.places\]\.reverse\(\)|shownPlaces/);
+});
+
+test('ranking card selection opens detail by placeId and obtains coordinates only from place detail', () => {
+  const screen = read('../screens/MapScreen.tsx');
+
+  assert.match(screen, /handleRankedPlacePress[\s\S]*placeId: place\.placeId/);
+  assert.match(screen, /usePlaceDetailPresentation\(selectedPlaceId/);
+  assert.match(screen, /latitude: selectedPlaceDetail\.latitude/);
+  assert.match(screen, /longitude: selectedPlaceDetail\.longitude/);
+  assert.doesNotMatch(screen, /handleRankedPlacePress[\s\S]{0,250}(latitude|longitude|userLat|userLng)/);
+});
+
+test('the V2 production map preserves route callbacks and duplicate reservation navigation guard', () => {
+  const screen = read('../screens/MapScreen.tsx');
+
+  assert.match(screen, /onClearOpenedBookmarkedPlace/);
+  assert.match(screen, /onOpenReservation/);
+  assert.match(screen, /onOpenVisitVerification/);
+  assert.match(screen, /reservationNavigationLock\.current/);
+  assert.match(screen, /registerAndroidBackOverride/);
+  assert.match(screen, /pointerEvents=\{snapPoint === 'expanded' \? 'none' : 'auto'\}/);
+});
+
+test('navigation omits touch highlighting while place buttons retain pressed feedback', () => {
+  const sheet = read('../sheet/components/MapBottomSheet.tsx');
+  const navigation = read('../sheet/components/MapSheetBottomNavigation.tsx');
+
+  assert.doesNotMatch(navigation, /setPressedTab|navigation\.pressedTint/);
+  assert.match(navigation, /getMapSheetTabSurfaceColor\(active && !isDragging, liquidGlass\)/);
+  assert.match(navigation, /testID="map-navigation-drag-indicator"/);
+  assert.match(sheet, /style=\{\(\{ pressed \}\) => \[styles\.previewBookmarkButton, pressed && styles\.pressed\]\}/);
+  assert.match(sheet, /onPress=\{onPress\}/);
+});
+
+test('bookmark state changes do not recreate native marker payloads', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const adapter = read('../native/components/NaverMapAdapter.tsx');
+  const canvas = read('../native/components/MapCanvas.tsx');
+
+  assert.doesNotMatch(screen, /applyBookmarkStateToMarkers/);
+  assert.match(adapter, /markers=\{markers\}/);
+  assert.doesNotMatch(adapter, /markers\.map/);
+  assert.doesNotMatch(canvas, /markers\.map/);
+});
+
+test('the production place detail composes one V2 menu section with the selected numeric place id', () => {
+  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+  const occurrences = bottomSheet.match(/<PlaceMenuSection\b[^>]*placeId=\{place\.id\}[^>]*\/>/g) ?? [];
+
+  assert.match(bottomSheet, /from ['"]\.\.\/\.\.\/\.\.\/menus['"]/);
+  assert.equal(occurrences.length, 1);
+});
+
+test('opening reservations retains the selected place after its availability was confirmed', () => {
+  const screen = read('../screens/MapScreen.tsx');
+
+  assert.match(screen, /reservationEntryPlace \?\? selectedPlace/);
+  assert.match(screen, /selectedPlacePresentation\?\.reservation\.kind === 'available'[\s\S]*?selectedPlace/);
+  assert.match(screen, /setReservationEntryPlace/);
+  assert.match(screen, /mapSection === 'reservations'[\s\S]*?useNearbyReservablePlaceIds/);
+  assert.match(screen, /NEARBY_RESERVATION_CANDIDATE_LIMIT/);
+});
+
+test('map section changes do not fade the whole sheet or preserve expanded place content', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+
+  assert.doesNotMatch(screen, /<FadeSlideTransition/);
+  assert.match(screen, /const openMapSection = useCallback/);
+  assert.match(screen, /setContent\(\{ type: 'home' \}\)/);
+  assert.match(screen, /jumpTo\('medium'\)/);
+  assert.match(bottomSheet, /<MapSheetSurface[^>]*opaque=\{isExpandedPlaceDetail\}/);
+  const surface = read('../sheet/components/MapSheetSurface.tsx');
+  assert.doesNotMatch(surface, /!opaque && <Styles\.SheetChromeShadow/);
+  assert.match(surface, /opacity: opaque \? 0 : 1/);
+});
+
+test('dismissing an expanded place resets the home sheet without an intermediate stretched frame', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const dismissPlace = screen.match(/const dismissPlaceAt = useCallback\([\s\S]*?\}, \[[^\]]*\]\);/)?.[0] ?? '';
+
+  assert.match(dismissPlace, /setContent\(\{ type: 'home' \}\)/);
+  assert.match(dismissPlace, /jumpTo\('medium'\)/);
+  assert.doesNotMatch(dismissPlace, /snapTo\('medium'\)/);
+});
+
+test('expanded sheet stops below the search header and temporarily hides map categories', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const expandedTop = screen.match(/const expandedSheetTop =[\s\S]*?;/)?.[0] ?? '';
+
+  assert.match(expandedTop, /MAP_TOP_OVERLAY_METRICS\.headerHeight/);
+  assert.match(expandedTop, /insets\.top \+ MAP_TOP_OVERLAY_SAFE_TOP_PADDING/);
+  assert.doesNotMatch(expandedTop, /Platform\.OS/);
+  assert.match(expandedTop, /SHEET_RESTING_GAP/);
+  assert.match(screen, /Math\.round\(viewportHeight\)/);
+  assert.doesNotMatch(screen, /\.measureInWindow\(/);
+  assert.doesNotMatch(expandedTop, /categoryHeight/);
+  assert.match(screen, /const expandedTranslateY = isPlacePreview \? 0 : externalPlace \? mediumTranslateY : expandedSheetTop;/);
+
+  assert.match(screen, /showCategories=\{snapPoint !== 'expanded'\}/);
+});
+
+test('resting map content disables vertical scrolling while preserving nested horizontal lists', () => {
+  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+
+  assert.match(bottomSheet, /testID="expanded-home-scroll"/);
+  assert.match(bottomSheet, /scrollEnabled=\{expandedInteractionsEnabled \|\| restingScrollEnabled\}/);
+  assert.match(bottomSheet, /scrollRef\.current\?\.scrollTo\(\{ animated: false, y: 0 \}\)/);
+  assert.match(bottomSheet, /<ScrollView[\s\S]*?horizontal[\s\S]*?nestedScrollEnabled/);
+});
+
+test('the small visible handle keeps resting sheet content available as a drag surface', () => {
+  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+
+  assert.match(bottomSheet, /handleArea: \{[^}]*height: 20/);
+  assert.match(bottomSheet, /handle: \{[^}]*height: 5[^}]*width: 56/);
+  assert.match(bottomSheet, /\{\.\.\.panHandlers\}[\s\S]*?testID="map-sheet-handle-target"/);
+  assert.match(bottomSheet, /\{\.\.\.\(snapPoint === 'expanded' \|\| restingScrollEnabled \? \{\} : panHandlers\)\}/);
+  assert.doesNotMatch(bottomSheet, /hitSlop=\{content\.type === 'place-preview'/);
+  assert.doesNotMatch(bottomSheet, /handleGestureTarget/);
+  assert.match(bottomSheet, /testID="map-sheet-handle-target"/);
+});
+
+test('place preview keeps header actions tappable and aligns category beside the title', () => {
+  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+
+  assert.match(bottomSheet, /<View \{\.\.\.sheetPanHandlers\} style=\{styles\.previewHeader\}/);
+  assert.match(bottomSheet, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
+  // Figma Component 18: 16px star inside a 32px circle.
+  assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{16\}/);
+  assert.match(bottomSheet, /t\('map\.detail\.reviewCount'/);
+  assert.match(bottomSheet, /t\('map\.detail\.verifiedCount', \{ count: fallbackContent\.reviewParticipantCount \}/);
+});
+
+test('place actions retain selection across sheet expansion and expanded detail removes every radius', () => {
+  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+
+  assert.match(bottomSheet, /activePreviewAction/);
+  // Figma PingSelected chips (5191:39647): selected Glass/Selected + Glass/SelectedStroke.
+  assert.match(bottomSheet, /previewActionChipActive: \{ backgroundColor: glass\.category\.activeTint, borderColor: glass\.category\.activeBorder/);
+  assert.match(bottomSheet, /activeAction=\{activePreviewAction\}/);
+  assert.match(bottomSheet, /<MapSheetSurface[^>]*opaque=\{isExpandedPlaceDetail\}/);
+  const surface = read('../sheet/components/MapSheetSurface.tsx');
+  assert.match(surface, /borderBottomLeftRadius: opaque \? 0 : radius/);
+  assert.match(surface, /borderBottomRightRadius: opaque \? 0 : radius/);
+  assert.match(surface, /borderTopLeftRadius: opaque \? 0/);
+  assert.match(surface, /borderTopRightRadius: opaque \? 0/);
+
+});
+
+test('the production map detail uses the compact Offer list before menus', () => {
+  const screen = read('../screens/MapScreen.tsx');
+
+  assert.match(screen, /<PlaceCouponCta[\s\S]*variant="compact"/);
+});
+
+test('expanded place detail keeps the design photo ratio, short tab accent, and section bands', () => {
+  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+  const coupon = read('../../../booking/offers-coupons/components/PlaceCouponCta.tsx');
+  const menu = read('../../menus/components/PlaceMenuSection.tsx');
+
+  assert.match(bottomSheet, /detailPhoto: \{[^}]*height: 182[^}]*width: 242/);
+  assert.match(bottomSheet, /detailPhotoPrimary: \{[^}]*width: 242/);
+  assert.match(bottomSheet, /detailTabIndicator: \{[^}]*height: 2[^}]*width: 40/);
+  assert.doesNotMatch(bottomSheet, /detailInfoBlock: \{[^}]*borderBottom/);
+  assert.match(coupon, /const CompactSection = styled\.View`[^`]*border-top-width: 8px/);
+  assert.doesNotMatch(coupon, /const CompactSection = styled\.View`[^`]*border-bottom-width/);
+  assert.match(menu, /const Section = styled\.View(?:<[^`]+>)?`[^`]*border-top-width: 8px/);
+  assert.doesNotMatch(menu, /const Section = styled\.View(?:<[^`]+>)?`[^`]*border-bottom-width/);
+});
+
+test('production V2 map opens empty directions while retaining the wake-word assistant modal', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const overlay = read('../presentation/components/MapTopOverlay.tsx');
+  const settings = read('../../../user/settings/screens/SettingsScreen.tsx');
+  assert.match(screen, /useMapAssistantEntry\(env\.featureFlags\.voiceAssistant, isFocused,\s*canQueryBookmarks && profile\?\.id \? String\(profile\.id\) : null, !isSearchOpen && !emptyRouteOpen\)/);
+  assert.match(screen, /onDirectionsPress=\{!isSearchOpen \? \(\) => setEmptyRouteOpen\(true\) : undefined\}/);
+  assert.match(screen, /directionsSheetTop=\{sheetTranslateY\}/);
+  assert.match(screen, /<CarRoutePreview destination=\{null\}/);
+  assert.match(screen, /<MapAssistantModal visible=\{assistant\.isOpen\} onClose=\{assistant\.close\}/);
+  assert.match(screen, /onLocatePress=\{handleLocatePress\}/);
+  assert.ok(overlay.indexOf('testID="map-locate-button"') < overlay.indexOf('testID="map-directions-button"'));
+  assert.doesNotMatch(settings, /VoiceAssistantScreen|voiceAssistant\.title|setPage\('assistant'\)/);
+});
+
+
+test('marker details open without a settling animation before their buttons can be pressed', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  const markerPress = screen.slice(screen.indexOf('const handleMarkerPress ='), screen.indexOf('const handlePlacePress ='));
+  assert.match(markerPress, /jumpTo\('medium'\)/);
+  assert.doesNotMatch(markerPress, /snapTo\('medium'\)/);
+});
+
+
+test('sheet and floating actions move under one parent instead of separate transforms', () => {
+  const screen = read('../screens/MapScreen.tsx');
+  assert.match(screen, /style=\{\[styles\.sectionTransition, \{ transform: \[\{ translateY: sheetTranslateY \}\] \}\]\}/);
+  assert.equal((screen.match(/parentOwnsMotion/g) ?? []).length, 4);
+  const actions = screen.slice(screen.indexOf('{assistant.enabled && !isSearchOpen'), screen.indexOf('{isSearchOpen ? ('));
+  assert.doesNotMatch(actions, /transform: \[\{ translateY: sheetTranslateY/);
+});

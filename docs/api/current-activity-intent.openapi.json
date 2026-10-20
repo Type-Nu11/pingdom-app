@@ -1,0 +1,161 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "PingDom current activity intent contract snapshot",
+    "description": "Extracted without DTO changes from http://54.116.166.107:8080/v3/api-docs on 2026-08-11.",
+    "version": "v0"
+  },
+  "paths": {
+    "/users/me/current-activity-intent": {
+      "get": {
+        "tags": ["App"],
+        "summary": "현재 행동 의도 조회",
+        "description": "만료되지 않은 현재 행동 의도를 조회합니다.",
+        "operationId": "getCurrentActivityIntent",
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentActivityIntentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않은 요청",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["App"],
+        "summary": "현재 행동 의도 변경",
+        "description": "행동 의도를 2시간 동안 유지하도록 설정하거나 갱신합니다.",
+        "operationId": "replaceCurrentActivityIntent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurrentActivityIntentUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "변경 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentActivityIntentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 검증 실패",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증되지 않은 요청",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["App"],
+        "summary": "현재 행동 의도 해제",
+        "description": "현재 행동 의도를 즉시 삭제합니다.",
+        "operationId": "clearCurrentActivityIntent",
+        "responses": {
+          "401": {
+            "description": "인증되지 않은 요청",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "해제 성공"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "에러 메시지",
+            "example": "유효하지 않은 토큰입니다."
+          },
+          "code": {
+            "type": "string",
+            "description": "에러 코드",
+            "example": "INVALID_TOKEN"
+          }
+        },
+        "description": "에러 응답"
+      },
+      "CurrentActivityIntentUpdateRequest": {
+        "required": ["intent"],
+        "type": "object",
+        "properties": {
+          "intent": {
+            "type": "string",
+            "description": "현재 탐색하려는 행동",
+            "example": "CAFE",
+            "enum": ["EXPLORE", "EAT", "CAFE", "SHOP", "ATTEND_EVENT", "NIGHTLIFE"]
+          }
+        },
+        "description": "현재 행동 의도 변경 요청"
+      },
+      "CurrentActivityIntentResponse": {
+        "type": "object",
+        "properties": {
+          "intent": {
+            "type": "string",
+            "description": "현재 행동 의도. 설정되지 않았거나 만료됐으면 null",
+            "nullable": true,
+            "example": "CAFE",
+            "enum": ["EXPLORE", "EAT", "CAFE", "SHOP", "ATTEND_EVENT", "NIGHTLIFE"]
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "행동 의도 만료 시각. 의도가 없으면 null",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "description": "현재 행동 의도 응답"
+      }
+    }
+  }
+}

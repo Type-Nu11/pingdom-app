@@ -1,0 +1,283 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+
+import { createPlaceDetailApi } from '../api/placeDetailApi.ts';
+import { createPlaceAvailabilityApi } from '../../../booking/reservations/__tests__/index.ts';
+import {
+  buildPlaceDetailPresentation,
+} from '../model/placeDetailPresentation.ts';
+
+const ready = (data) => ({ data, error: null, isError: false, isPending: false });
+const empty = ready(undefined);
+const pending = { data: undefined, error: null, isError: false, isPending: true };
+const failed = (status = 500) => ({
+  data: undefined,
+  error: { status },
+  isError: true,
+  isPending: false,
+});
+
+const detail = {
+  id: 70069,
+  name: '대구소프트웨어마이스터고등학교',
+  englishName: null,
+  address: '대구광역시 달성군',
+  roadAddress: null,
+  jibunAddress: null,
+  postalCode: null,
+  geocodingSource: 'KAKAO',
+  operatingStatus: 'OPERATING',
+  operatingStatusCheckedAt: null,
+  currentlyOperating: true,
+  currentlyOperatingCheckedAt: '2026-08-31T00:00:00Z',
+  regularHours: [{ dayOfWeek: 'MONDAY', opensAt: '09:00:00', closesAt: '18:00:00' }],
+  operatingExceptions: [],
+  activeOperatingNotices: [],
+  description: null,
+  touristSummary: null,
+  touristCategories: ['OTHER'],
+  primaryInformationSource: 'ADMIN',
+  informationVerificationStatus: 'ADMIN_VERIFIED',
+  informationVerifiedAt: null,
+  informationEvidenceUpdatedAt: null,
+  verifiedEvidenceCount: 0,
+  lastVerifiedAt: null,
+  lastVerifiedSourceType: null,
+  latitude: 35.0,
+  longitude: 128.0,
+  registrant: 'public-name',
+  merchantOwner: null,
+};
+
+const baseResources = {
+  availabilities: ready([]),
+  card: ready({ ...detail, category: 'OTHER', imageUrl: null }),
+  detail: ready(detail),
+  media: ready({ placeId: 70069, media: [] }),
+  notices: ready({ placeId: 70069, currentlyOperating: true, checkedAt: '', notices: [] }),
+  reviews: ready({ content: [], totalElements: 0 }),
+  visitDecision: ready({
+    place: detail,
+    merchantInformation: null,
+    ongoingEvents: [],
+    reservableAvailabilities: [],
+    availableOffers: { offers: [] },
+    checkedAt: '',
+  }),
+};
+
+test('scoped live contract preserves place detail fields, nullable card image, pagination, and errors', async () => {
+  const document = JSON.parse(await readFile(
+    new URL('../../../../../../docs/api/place-exploration.openapi.json', import.meta.url),
+    'utf8',
+  ));
+  const schemas = document.components.schemas;
+  const detailSchema = schemas.PlaceDetailResponse;
+  assert.ok(detailSchema.required.includes('regularHours'));
+  assert.ok(detailSchema.required.includes('merchantOwner'));
+  assert.equal(detailSchema.properties.englishName.nullable, true);
+  assert.equal(detailSchema.properties.roadAddress.nullable, true);
+  assert.equal(detailSchema.properties.thumbnailUrl, undefined);
+  assert.equal(detailSchema.properties.touristSupport, undefined);
+  assert.equal(schemas.TouristPlaceCardResponse.properties.imageUrl.nullable, true);
+  assert.ok(schemas.PagePlaceReviewResponse.properties.content.items.$ref.endsWith('/PlaceReviewResponse'));
+
+  const expectedStatuses = new Map([
+    ['/places/{id}', ['200', '401', '403', '404']],
+    ['/places/{placeId}/card', ['200', '401', '403', '404']],
+    ['/places/{id}/media/exploration', ['200', '401', '403']],
+    ['/places/{placeId}/visit-decision', ['200', '401', '403', '404']],
+    ['/places/{placeId}/operating-notices', ['200', '401', '403', '404']],
+    ['/places/{placeId}/reviews', ['200', '401', '403']],
+    ['/places/{placeId}/availabilities', ['200', '401', '403']],
+  ]);
+  for (const [path, statuses] of expectedStatuses) {
+    assert.deepEqual(Object.keys(document.paths[path].get.responses), statuses);
+  }
+});
+
+test('place detail API uses live paths and forwards AbortSignal', async () => {
+  const calls = [];
+  const signal = new AbortController().signal;
+  const client = {
+    get: async (path, options) => { calls.push({ options, path }); return []; },
+  };
+  const api = createPlaceDetailApi(client);
+  await api.getPlaceDetail(70069, signal);
+  await createPlaceAvailabilityApi(client).getPlaceAvailabilities(70069, signal);
+  assert.deepEqual(calls.map((call) => call.path), [
+    '/places/70069',
+    '/places/70069/availabilities',
+  ]);
+  assert.ok(calls.every((call) => call.options.signal === signal));
+});
+
+
+test('70069-shaped empty availability can open the reservation page without inventing slots', () => {
+  const result = buildPlaceDetailPresentation(
+    70069,
+    baseResources,
+    new Date('2026-08-31T02:34:00.000Z'),
+  );
+  assert.equal(result.name, '대구소프트웨어마이스터고등학교');
+  assert.deepEqual(result.imageUrls, []);
+  assert.equal(result.imageState, 'empty');
+  assert.deepEqual(result.reservation, {
+    kind: 'empty', disabled: false,
+  });
+  assert.equal(result.reviewState, 'empty');
+  assert.equal(result.verifiedEvidenceCount, 0);
+  assert.equal('businessHours' in result, false);
+  assert.deepEqual(result.operatingSummary, {
+    kind: 'open', transitionDay: 'today', transitionTime: '18:00',
+  });
+});
+
+test('presentation preserves the server verified evidence count for the detail heading', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    detail: ready({ ...detail, verifiedEvidenceCount: 23 }),
+  });
+
+  assert.equal(result.verifiedEvidenceCount, 23);
+});
+
+test('presentation uses the latest server operating boolean and keeps notice text separate', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    notices: ready({
+      placeId: 70069,
+      currentlyOperating: false,
+      checkedAt: '2026-08-31T02:34:00Z',
+      notices: [
+        { noticeType: 'GENERAL', status: 'ACTIVE', visibleNow: true, message: '일반 공지' },
+        { noticeType: 'HOURS_CHANGE', status: 'ACTIVE', visibleNow: true, message: '변경 영업시간' },
+        { noticeType: 'TEMPORARY_CLOSURE', status: 'EXPIRED', visibleNow: true, message: '만료 공지' },
+      ],
+    }),
+  }, new Date('2026-08-31T02:34:00.000Z'));
+
+  assert.equal(result.operatingSummary.kind, 'closed');
+  assert.equal(result.notice, '변경 영업시간');
+  assert.notEqual(result.notice, result.operatingSummary.kind);
+});
+
+test('gallery images are stable, clean, de-duplicated and exclude the separate card thumbnail', () => {
+  const resources = {
+    ...baseResources,
+    card: ready({ ...baseResources.card.data, imageUrl: 'https://cdn/card.jpg' }),
+    media: ready({ placeId: 70069, media: [
+      { id: 5, displayOrder: 2, imageUrl: 'https://cdn/b.jpg' },
+      { id: 3, displayOrder: 1, imageUrl: ' https://cdn/a.jpg ' },
+      { id: 4, displayOrder: 1, imageUrl: 'https://cdn/a.jpg' },
+      { id: 6, displayOrder: 3, imageUrl: '' },
+    ] }),
+  };
+  const result = buildPlaceDetailPresentation(70069, resources);
+  assert.deepEqual(result.imageUrls, [
+    'https://cdn/a.jpg', 'https://cdn/b.jpg',
+  ]);
+  assert.equal(result.imageState, 'ready');
+});
+
+test('one gallery photo stays one photo; card thumbnail is used only without gallery photos', () => {
+  const resources = {
+    ...baseResources,
+    card: ready({ ...baseResources.card.data, imageUrl: 'https://cdn/stale-thumbnail.jpg' }),
+    media: ready({ placeId: 70069, media: [{ id: 1, displayOrder: 0, imageUrl: 'https://cdn/actual.jpg' }] }),
+  };
+  assert.deepEqual(buildPlaceDetailPresentation(70069, resources).imageUrls, ['https://cdn/actual.jpg']);
+  assert.deepEqual(buildPlaceDetailPresentation(70069, { ...resources, media: ready({ placeId: 70069, media: [] }) }).imageUrls,
+    ['https://cdn/stale-thumbnail.jpg']);
+  assert.deepEqual(buildPlaceDetailPresentation(70069, { ...resources, media: failed() }).imageUrls,
+    ['https://cdn/stale-thumbnail.jpg']);
+});
+
+
+test('partial failures remain section-specific and stale place resources are ignored', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    card: failed(),
+    media: failed(),
+    reviews: failed(),
+    visitDecision: ready({ ...baseResources.visitDecision.data, place: { ...detail, id: 1 } }),
+  });
+  assert.equal(result.name, detail.name);
+  assert.equal(result.imageState, 'error');
+  assert.equal(result.reviewState, 'error');
+  assert.deepEqual(result.coupons, []);
+});
+
+test('card-only partial success preserves a status-only operating summary', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    card: ready({
+      ...baseResources.card.data,
+      activeOperatingNotices: undefined,
+      operatingExceptions: undefined,
+      regularHours: undefined,
+    }),
+    detail: failed(),
+    notices: failed(),
+    visitDecision: failed(),
+  }, new Date('2026-08-31T02:34:00.000Z'));
+
+  assert.deepEqual(result.operatingSummary, {
+    kind: 'open', transitionDay: null, transitionTime: null,
+  });
+});
+
+test('place-scoped reviews retain omitted placeId and derive a missing total from visible items', () => {
+  const result = buildPlaceDetailPresentation(70069, {
+    ...baseResources,
+    reviews: ready({
+      content: [
+        { id: 1, content: '경로로 식별된 리뷰', imageUrls: [] },
+        { id: 2, placeId: 70069, content: '일치 리뷰', imageUrls: [] },
+        { id: 3, placeId: 1, content: '다른 장소 리뷰', imageUrls: [] },
+      ],
+    }),
+  });
+
+  assert.deepEqual(result.reviews.map((review) => review.text), [
+    '경로로 식별된 리뷰', '일치 리뷰',
+  ]);
+  assert.equal(result.reviewTotal, 2);
+});
+
+test('standard review media and ordered reason codes override legacy fields', () => {
+  const result = buildPlaceDetailPresentation(17, {
+    ...baseResources,
+    reviews: ready({content:[{reviewId:91, content:'Review', imageUrls:['legacy.jpg'], recommendReason:'legacy', recommendReasons:['CLEAN','FRIENDLY'],reviewMedia:[{reviewMediaId:1,imageUrl:'https://cdn.test/1.jpg'},{reviewMediaId:2,imageUrl:'https://cdn.test/2.jpg'}]}]}),
+  });
+  assert.deepEqual(result.reviews[0].imageUrls,['https://cdn.test/1.jpg','https://cdn.test/2.jpg']);
+  assert.deepEqual(result.reviews[0].reasons,['clean','kind']);
+});
+
+test('review authors retain server user IDs and never invent an identity for missing IDs', () => {
+  const result = buildPlaceDetailPresentation(17, {
+    ...baseResources,
+    reviews: ready({ content: [
+      { reviewId: 91, userId: 42, content: 'My review' },
+      { reviewId: 92, userId: 43, content: 'Another author' },
+      { reviewId: 93, content: 'Missing author' },
+      { reviewId: 94, userId: 0, content: 'Invalid author' },
+    ] }),
+  });
+  assert.deepEqual(result.reviews.map(review => review.userId), [42, 43, null, null]);
+});
+
+
+test('장소 전체 추천 태그 집계를 페이지보다 우선하고 참여 인원과 리뷰 수를 구분한다', () => {
+  const result = buildPlaceDetailPresentation(17, {
+    ...baseResources,
+    reviews: ready({ content: [], totalElements: 1 }),
+    reviewSummary: ready({ placeId: 17, totalReviewCount: 7, participantCount: 1,
+      reasonCounts: [{ reason: 'CLEAN', count: 1 }, { reason: 'PARKING', count: 0 }] }),
+  });
+  assert.equal(result.reviewTotal, 7);
+  assert.equal(result.reviewParticipantCount, 1);
+  assert.equal(result.reviewHighlightsComplete, true);
+  assert.deepEqual(result.reviewHighlights, [{ reason: 'clean', count: 1 }]);
+});

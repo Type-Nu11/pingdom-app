@@ -1,0 +1,290 @@
+import React, { type ReactElement, type PropsWithChildren } from 'react';
+import { render, screen, userEvent } from '@testing-library/react-native';
+import { Animated, type GestureResponderHandlers } from 'react-native';
+import { I18nextProvider } from 'react-i18next';
+import { ThemeProvider } from 'styled-components/native';
+
+import { useReservations } from '../..';
+import { registerReservationResources } from '../../i18n/reservationResources';
+import { createTestI18n } from '../../../../../app/testing/testProviders';
+import { theme } from '../../../../../shared/theme';
+import ReservationBottomSheet from '../ReservationBottomSheet';
+
+jest.mock('../..', () => ({ useReservations: jest.fn() }));
+jest.mock('../../../../place/exploration', () => ({
+  usePlaceExplorationMediaList: jest.fn(() => ({
+    '101': ['https://example.test/first.jpg', 'https://example.test/second.jpg'],
+  })),
+}));
+
+const navigation = {
+  onOpenCommunity: jest.fn(),
+  onOpenFavorites: jest.fn(),
+  onOpenMap: jest.fn(),
+  onOpenRecommendations: jest.fn(),
+  onOpenReservation: jest.fn(),
+  onPlacePress: jest.fn(),
+  onToggleBookmark: jest.fn().mockResolvedValue(undefined),
+};
+const nearbyPlace = {
+  address: '대구광역시 달성군', category: 'CAFE', distance: '123m', distanceMeters: 123,
+  id: 101, latitude: 35.65, longitude: 128.41, name: '서버 카페', tags: ['Bookable'],
+  verifiedAgo: 'recently', wait: '예약 가능',
+};
+const bottomSheet = {
+  bookmarkedPlaceIds: { '101': true },
+  bookmarkPendingPlaceIds: {},
+  collapsedTranslateY: 600,
+  height: 700,
+  isBookmarkStateLoading: false,
+  mediumTranslateY: 300,
+  nearbyPlaces: [nearbyPlace],
+  reservationPlaceByAvailabilityId: { '801': nearbyPlace },
+  onHandlePress: jest.fn(),
+  panHandlers: {} as GestureResponderHandlers,
+  sheetChromeBottom: new Animated.Value(0),
+  sheetTranslateY: new Animated.Value(300),
+  snapPoint: 'medium' as const,
+};
+const expandedBottomSheet = {
+  ...bottomSheet,
+  sheetTranslateY: new Animated.Value(0),
+  snapPoint: 'expanded' as const,
+};
+const reservation = {
+  availabilityId: 801, canceledAt: null, completedAt: null, confirmedAt: null,
+  createdAt: '2026-07-23T05:30:00Z', id: 901, productId: 601,
+  productType: 'SERVICE' as const, quantity: 2, status: 'PENDING' as const,
+  touristUserId: 201, updatedAt: '2026-07-23T05:30:00Z',
+};
+
+function queryResult(overrides: Record<string, unknown> = {}) {
+  return ({ data: undefined, isError: false, isLoading: false, refetch: jest.fn(), ...overrides } as unknown as ReturnType<typeof useReservations>);
+}
+
+async function renderReservations(ui: ReactElement, language: 'ko' | 'en' = 'ko') {
+  const i18n = await createTestI18n(language);
+  registerReservationResources(i18n);
+  return render(ui, {
+    wrapper: ({ children }: PropsWithChildren) => (
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider theme={theme}>{children}</ThemeProvider>
+      </I18nextProvider>
+    ),
+  });
+}
+
+describe('ReservationBottomSheet', () => {
+  test('목록을 배경과 동일한 하단 경계와 모서리 안에 가둔다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult());
+    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} sheetChromeBottom={new Animated.Value(300)} />);
+    expect(screen.getByTestId('reservations-sheet-content-viewport')).toHaveStyle({
+      position: 'absolute', overflow: 'hidden', top: 0, bottom: 308, left: 8, right: 8,
+      borderBottomLeftRadius: 48, borderBottomRightRadius: 48,
+    });
+  });
+
+  test('loading, empty, error 상태를 구분한다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({ isLoading: true }));
+    const view = await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
+    expect(screen.getByTestId('reservations-loading')).toBeVisible();
+
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+    await view.rerender(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
+    expect(screen.getByTestId('reservations-empty')).toBeVisible();
+
+    jest.mocked(useReservations).mockReturnValue(queryResult({ isError: true }));
+    await view.rerender(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
+    expect(screen.getByTestId('reservations-error')).toBeVisible();
+  });
+
+  test('서버 예약 식별자로 상세 진입한다', async () => {
+    const onOpenReservation = jest.fn();
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [reservation], totalCount: 1, totalPages: 1 },
+    }));
+    await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} onOpenReservation={onOpenReservation} />);
+    await userEvent.setup().press(screen.getByTestId('reservation-place-card-901'));
+    expect(onOpenReservation).toHaveBeenCalledWith(901);
+    expect(screen.getAllByText('서버 카페')).toHaveLength(2);
+    const address = screen.getByText('여기서 0.1km · 대구광역시 달성군');
+    expect(address).toBeVisible();
+    expect(address).toHaveProp('ellipsizeMode', 'tail');
+    expect(address).toHaveProp('numberOfLines', 1);
+    expect(address).toHaveStyle({ flexShrink: 1, minWidth: 0 });
+  });
+
+  test('예약함은 예약 회차가 속한 장소를 Figma 장소 카드로 표시한다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: {
+        hasNext: false, limit: 20, page: 1, totalCount: 2, totalPages: 1,
+        reservations: [{ ...reservation, id: 901 }],
+      },
+    }));
+    await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
+
+    expect(screen.getByTestId('reservation-place-card-901')).toBeVisible();
+    expect(screen.queryByText('예약 번호 901')).toBeNull();
+    expect(screen.queryByText('! 대기')).toBeNull();
+  });
+
+  test('장소를 확인할 수 없는 availabilityId를 임의 장소에 연결하지 않는다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [{ ...reservation, availabilityId: 999 }], totalCount: 1, totalPages: 1 },
+    }));
+    await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
+    expect(screen.queryByTestId('reservation-place-card-901')).toBeNull();
+    expect(screen.queryByTestId('reservations-empty')).toBeNull();
+    expect(screen.getByTestId('reservation-card-901')).toBeVisible();
+  });
+
+  test('예약 탭 선택 상태와 다른 탭 이동을 제공한다', async () => {
+    const onOpenMap = jest.fn();
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+    await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} onOpenMap={onOpenMap} />);
+    expect(screen.getByRole('tab', { name: '예약', selected: true })).toBeVisible();
+    await userEvent.setup().press(screen.getByRole('tab', { name: '지도' }));
+    expect(onOpenMap).toHaveBeenCalledTimes(1);
+  });
+
+  test('예약함은 패널을 확장했을 때만 표시한다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+    const view = await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} />);
+    expect(screen.queryByText('예약함')).toBeNull();
+
+    await view.rerender(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} />);
+    expect(screen.getByText('예약함')).toBeVisible();
+  });
+
+  test('실제 주변 예약 가능 장소를 열고 북마크를 해제한다', async () => {
+    const onPlacePress = jest.fn();
+    const onToggleBookmark = jest.fn().mockResolvedValue(undefined);
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+    await renderReservations(
+      <ReservationBottomSheet
+        {...bottomSheet}
+        {...navigation}
+        onPlacePress={onPlacePress}
+        onToggleBookmark={onToggleBookmark}
+      />,
+    );
+
+    expect(screen.getAllByTestId('recommendation-featured-image').length).toBeGreaterThan(0);
+    await userEvent.setup().press(screen.getByRole('button', { name: '즐겨찾기 해제' }));
+    expect(onToggleBookmark).toHaveBeenCalledWith(nearbyPlace, false);
+
+    await userEvent.setup().press(screen.getByRole('button', { name: '서버 카페, 0.1km' }));
+    expect(onPlacePress).toHaveBeenCalledWith(nearbyPlace);
+  });
+
+  test('주변 예약 가능 서버 장소가 없으면 더미 카드 대신 빈 상태를 표시한다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+    await renderReservations(
+      <ReservationBottomSheet {...bottomSheet} {...navigation} nearbyPlaces={[]} />,
+    );
+
+    expect(screen.getByTestId('nearby-reservations-empty')).toBeVisible();
+    expect(screen.queryByText('오아시스 팝업 스토어')).toBeNull();
+  });
+
+  test('주변 예약 가능 여부를 확인하는 동안 빈 상태를 먼저 노출하지 않는다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+    await renderReservations(
+      <ReservationBottomSheet
+        {...bottomSheet}
+        {...navigation}
+        isNearbyLoading
+        nearbyPlaces={[]}
+      />,
+    );
+
+    expect(screen.getByTestId('nearby-reservations-loading')).toBeVisible();
+    expect(screen.queryByTestId('nearby-reservations-empty')).toBeNull();
+  });
+
+  test('영어에서는 예약 탭과 목록 제목을 영어로 표시한다', async () => {
+    jest.mocked(useReservations).mockReturnValue(queryResult({
+      data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 },
+    }));
+
+    await renderReservations(
+      <ReservationBottomSheet {...bottomSheet} {...navigation} />,
+      'en',
+    );
+
+    expect(screen.getByText('Reservations near your current location')).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Reservations', selected: true })).toBeVisible();
+  });
+});
+
+test('a reservation whose place cannot be loaded is still visible and opens its detail', async () => {
+  const onOpenReservation = jest.fn();
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [reservation] } }));
+  await renderReservations(<ReservationBottomSheet {...expandedBottomSheet} {...navigation} reservationPlaceByAvailabilityId={{}} onOpenReservation={onOpenReservation} />);
+  expect(screen.queryByTestId('reservations-empty')).toBeNull();
+  await userEvent.setup().press(screen.getByTestId('reservation-card-901'));
+  expect(onOpenReservation).toHaveBeenCalledWith(901);
+});
+
+test('nearby lookup failure is not rendered as a successful empty list', async () => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [] } }));
+  const retry = jest.fn().mockResolvedValue([]);
+  await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} nearbyPlaces={[]} nearbyError={new Error('secret')} onRetryNearby={retry} />);
+  expect(screen.queryByTestId('nearby-reservations-empty')).toBeNull();
+  await userEvent.setup().press(screen.getByText('다시 시도'));
+  expect(retry).toHaveBeenCalledTimes(1);
+});
+
+test('예약 시트 제목은 다른 페이지 시트와 같이 핸들 아래 13dp에서 Headline1/Bold로 시작한다', async () => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
+  const onMoveShouldSetResponderCapture = jest.fn();
+  await renderReservations(
+    <ReservationBottomSheet
+      {...bottomSheet}
+      {...navigation}
+      panHandlers={{ onMoveShouldSetResponderCapture } as GestureResponderHandlers}
+    />,
+  );
+  expect(screen.getByLabelText('예약 패널 크기 조절')).toHaveStyle({ height: 19, paddingTop: 6 });
+  expect(screen.getByRole('header')).toHaveStyle({ color: '#000000', fontSize: 20, lineHeight: 26 });
+  expect(screen.getByText('현재 예약 가능 장소를 찾아드려요!')).toHaveStyle({ fontSize: 14, lineHeight: 18, marginTop: 4 });
+  expect(screen.getByTestId('reservation-sheet-header').props.onMoveShouldSetResponderCapture).toBe(onMoveShouldSetResponderCapture);
+});
+
+test.each([
+  ['medium', 8],
+  ['expanded', 0],
+] as const)('%s 예약 시트는 펼치면 시트와 함께 전폭이 되어 내용이 가장자리에서 16dp에 놓인다', async (snapPoint, inset) => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
+  await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />);
+  expect(screen.getByTestId('reservation-sheet-inner')).toHaveStyle({ paddingLeft: inset });
+});
+
+test.each([
+  ['expanded', 130, 1],
+  ['medium', 300, 0],
+] as const)('%s 예약 시트는 Figma -Up 프레임처럼 펼친 상태에서만 불투명 Secondary/Assistive 면을 깐다', async (snapPoint, chromeBottom, opacity) => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
+  await renderReservations(
+    <ReservationBottomSheet
+      {...bottomSheet}
+      {...navigation}
+      expandedTranslateY={130}
+      sheetChromeBottom={new Animated.Value(chromeBottom)}
+      snapPoint={snapPoint}
+    />,
+  );
+  expect(screen.getByTestId('sheet-expanded-fill')).toHaveStyle({ backgroundColor: theme.colors.backgroundAssistive, opacity });
+});

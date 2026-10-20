@@ -3,22 +3,30 @@
     "name": "PingDom",
     "slug": "pingdom-app",
     "scheme": "pingdom",
-    "version": "1.0.0",
-    "icon": "./src/assets/icons/pingdomlogo-ios.png",
+    "icon": "./src/assets/v2/icons/pingdomlogo-ios.png",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./src/assets/icons/pingdomlogo-ios.png",
+      "icon": "./src/assets/v2/icons/pingdomlogo-ios.png",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "내 사진을 장소 게시글에 올리기 위해 사진 보관함 접근 권한이 필요합니다."
+        "CFBundleLocalizations": ["en", "ko", "ja", "zh-Hans", "zh-Hant", "vi", "es", "pt-BR", "th"],
+        "NSPhotoLibraryUsageDescription": "Photo library access is required to add photos to place reviews.",
+        "NSMicrophoneUsageDescription": "Microphone access lets you ask Pingdy with your voice.",
+        "NSSpeechRecognitionUsageDescription": "Speech recognition converts your voice to text. Audio may be processed by the device speech service outside this device."
       },
       "supportsTablet": true,
       "bundleIdentifier": "com.rmdka.pingdomapp"
     },
     "android": {
-      "icon": "./src/assets/icons/pingdomlogo.png",
+      "icon": "./src/assets/v2/icons/pingdomlogo.png",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/icons/pingdomlogo-adaptive.png",
+        "foregroundImage": "./src/assets/v2/icons/pingdomlogo-adaptive.png",
         "backgroundColor": "#FF1452"
       },
       "intentFilters": [
@@ -40,7 +48,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "내 사진을 장소 게시글에 올리기 위해 사진 보관함 접근 권한이 필요합니다."
+          "photosPermission": "Photo library access is required to add photos to place reviews and set your profile image.",
+          "cameraPermission": "Camera access is required to take a photo for your profile image."
         }
       ]
     ]

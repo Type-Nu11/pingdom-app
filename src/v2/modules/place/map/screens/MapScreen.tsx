@@ -1,0 +1,1497 @@
+import { useAppDialog } from '../../../../shared/components/AppDialogProvider';
+import { MapSheetBottomNavigation, MapSheetNavigationHiddenProvider, getMapSheetCollapsedVisibleHeight } from '../sheet';
+import CarRoutePreview from '../routes/components/CarRoutePreview';
+import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
+import { createViewport } from '../selection/model/mapDiscovery';
+import { env } from '../../../../shared/config';
+import type { VoiceNavigationTarget } from '../../../voice-assistant';
+import { useMapAssistantEntry } from '../assistant/hooks/useMapAssistantEntry';
+import MapAssistantModal from '../assistant/components/MapAssistantModal';
+import MapAssistantIntro from '../assistant/components/MapAssistantIntro';
+import MapAssistantButton from '../assistant/components/MapAssistantButton';
+import { MapTutorialProvider } from '../tutorial/MapTutorialProvider';
+import { MapTutorialTarget } from '../tutorial/context';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Keyboard,
+  StatusBar,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { registerAndroidBackOverride } from '../../../../shared/navigation/androidBackOverride';
+import { getBookmarkErrorMessage } from '../../exploration';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components/native';
+import { syncProfileLanguage } from '../../../../shared/i18n';
+import { useMapSettingsStore } from '../settings/store/mapSettingsStore';
+import { useRecentSearchStore } from '../../search/store/recentSearchStore';
+import MapBottomSheet, {
+  getMapHomeSheetVisibleHeight,
+  type BottomSheetContent,
+  type DecisionPlace,
+  type MapPreviewFallbackContent,
+  type VisitFilter,
+} from '../sheet/components/MapBottomSheet';
+import FavoritePlacesBottomSheet from '../sheet/components/FavoritePlacesBottomSheet';
+import { useMapCommunitySheet } from '../sheet/mapCommunitySheet';
+import { useMapReservationSheet } from '../sheet/mapReservationSheet';
+import {
+  NEARBY_RESERVATION_CANDIDATE_LIMIT,
+  useNearbyReservablePlaceIds,
+} from '../../../booking/reservations';
+import MapCanvas from '../native/components/MapCanvas';
+import MapGlassBackdrop from '../presentation/components/MapGlassBackdrop';
+import { useMapGlassActivity } from '../presentation/hooks/useMapGlassActivity';
+import MapSearchOverlay from '../../search/components/MapSearchOverlay';
+import MapTopOverlay, { type MapCategoryId } from '../presentation/components/MapTopOverlay';
+import { MAP_TOP_OVERLAY_METRICS, MAP_TOP_OVERLAY_SAFE_TOP_PADDING } from '../presentation/styles/MapTopOverlay.styles';
+import { useBottomSheet } from '../sheet/hooks/useBottomSheet';
+import { getPageEntrySnapPoint, useMapSheetStore } from '../sheet/store/mapSheetStore';
+import {
+  useBookmarkedPlaceMembership,
+  useBookmarkedPlaces,
+} from '../../exploration';
+import { usePlaceBookmark } from '../../exploration';
+import { useCurrentLocation } from '../location/hooks/useCurrentLocation';
+import { useNearbyQueryCoordinate } from '../location/hooks/useNearbyQueryCoordinate';
+import {
+  usePlaceActions,
+  type PlaceActionFeedback,
+} from '../actions/hooks/usePlaceActions';
+import { usePlaces } from '../../search/hooks/usePlaces';
+import { usePlaceRecommendations } from '../../exploration';
+import { useRecordPlaceRecommendationClick } from '../../exploration';
+import { useConfirmedRecentSearchOwner } from '../../search/hooks/useConfirmedRecentSearchOwner';
+import {
+  usePlaceExplorationMediaList,
+  useRecommendationExplanation,
+} from '../../exploration';
+import { formatPlaceOperatingSummary, usePlaceDetailPresentation } from '../../detail';
+import {
+  markersForSelectedPlace,
+} from '../selection/model/mapSelection';
+import { usePlacePreviewImages } from '../../detail';
+import { useProfile } from '../../../user/profile';
+import type { Place } from '../../core';
+import type { MapMarker } from '../markers/model/placeMarker';
+import { normalizePlaceCategory } from '../../core/placeCategory';
+import { getMapBackAction } from '../navigation/utils/mapBack';
+import {
+  createRecommendationPresentation,
+  getRecommendationState,
+  selectRecommendationExplanationsByPlaceId,
+  selectRecommendationReason,
+} from '../../exploration';
+import { toFavoritePlaceImageUrls } from '../../exploration';
+import {
+  findMapPreviewPlace,
+  includeSelectedNearbyReservablePlace,
+  mergeMapPreviewPlaces,
+  shouldPresentMapSelection,
+} from '../selection/utils/mapPreviewSelection';
+import { createFocusedPlaceMarker } from '../markers/utils/recommendationMarkers';
+import { selectRecommendationClickPayload } from '../../exploration';
+import { selectMapExplorationPlaceIds } from '../selection/utils/mapExplorationPlaceIds';
+import {
+  createExternalPlaceMarker,
+  getExternalPlaceKey,
+  resolveMapSearchSelection,
+  toExternalRouteDestination,
+  type ExternalMapPlace,
+} from '../selection/model/externalPlace';
+import { VisitVerificationMapCta } from '../../visit-verification';
+import { PlaceCouponCta } from '../../../booking/offers-coupons';
+import { LocationStatusOverlay } from '../presentation/components/MapStatusOverlays';
+import {
+  getLocalHotFeedStatus,
+  getNationalTrendsFeedStatus,
+  selectLocalHotParams,
+  toRankedPlaceViewModels,
+  useLocalHotPlaces,
+  useNationalTrends,
+  type RankedPlaceFeed,
+  type RankedPlaceViewModel,
+} from '../../home-feeds';
+
+// Matches SHEET_RESTING_GAP in MapBottomSheet.
+const SHEET_RESTING_GAP = 8;
+// The external place card has no gallery or detail page, so its sheet hugs the measured card:
+// the 20 dp handle above it and the card's own height, estimated until the first layout.
+const EXTERNAL_PLACE_SHEET_HANDLE_HEIGHT = 20;
+const EXTERNAL_PLACE_CARD_ESTIMATED_HEIGHT = 218;
+
+const PLACE_ACTION_FEEDBACK_KEYS: Record<PlaceActionFeedback, string> = {
+  'directions-failed': 'map.placeActions.directionsFailed',
+  'directions-unavailable': 'map.placeActions.directionsUnavailable',
+  'place-location-missing': 'map.placeActions.locationMissing',
+  'share-failed': 'map.placeActions.shareFailed',
+  'share-unavailable': 'map.placeActions.shareUnavailable',
+};
+
+const toDecisionPlace = (place: Place): DecisionPlace => ({
+  ...place,
+  address: place.address || '',
+  category: (place.category || 'PLACE').toUpperCase(),
+  distance: place.distanceMeters ? `${Math.round(place.distanceMeters)} m` : '',
+  distanceMeters: place.distanceMeters,
+  id: place.id,
+  latitude: place.latitude,
+  longitude: place.longitude,
+  name: place.name,
+  tags: ['Visitor verified'],
+  verifiedAgo: 'recently',
+  verifiedMinutes: 0,
+  wait: '10–20 min',
+  waitMinutes: [10, 20],
+});
+
+type MapScreenProps = {
+  onEditReview?: (reviewId: number) => void;
+  canQueryBookmarks?: boolean;
+  canQueryRankedFeeds?: boolean;
+  initialSection?: 'community' | 'favorites' | 'map' | 'reservations';
+  onClearOpenedBookmarkedPlace?: () => void;
+  onCreateReservation?: (place: {
+    category: string;
+    id: number;
+    imageUrl?: string;
+    name: string;
+  }) => void;
+  onOpenCommunityPost?: (postId: number) => void;
+  onOpenCommunityWrite?: (categoryId?: string) => void;
+  onOpenCoupons?: () => void;
+  onNavigateAssistantPage?: (target: VoiceNavigationTarget) => boolean;
+  onOpenProfile?: () => void;
+  onOpenReservation?: (reservationId: number) => void;
+  onStartVisitVerification?: (placeId: number) => void;
+  onSignIn?: () => void;
+  onOpenVisitVerification?: () => void;
+  openedBookmarkedPlaceId?: number | null;
+};
+
+// Figma PingSelected Sheet (5142:37371): the place preview card is 393px tall, 8px above the screen edge.
+const PLACE_PREVIEW_SHEET_HEIGHT = 393;
+
+export default function MapScreen({
+  onEditReview,
+  canQueryBookmarks = true,
+  canQueryRankedFeeds = canQueryBookmarks,
+  initialSection = 'map',
+  onClearOpenedBookmarkedPlace,
+  onCreateReservation,
+  onOpenCommunityPost,
+  onOpenCommunityWrite,
+  onOpenCoupons,
+  onOpenProfile,
+  onNavigateAssistantPage,
+  onOpenReservation,
+  onStartVisitVerification,
+  onSignIn,
+  onOpenVisitVerification,
+  openedBookmarkedPlaceId,
+}: MapScreenProps) {
+  const ReservationBottomSheet = useMapReservationSheet();
+  const CommunityBottomSheet = useMapCommunitySheet();
+  const theme = useTheme();
+  const isFocused = useIsFocused();
+  const mapGlassActive = useMapGlassActivity(isFocused);
+  const feedbackActive = useRef(isFocused);
+  useEffect(() => {
+    feedbackActive.current = isFocused;
+    return () => { feedbackActive.current = false; };
+  }, [isFocused]);
+  const { i18n, t } = useTranslation();
+  const dialog = useAppDialog();
+  const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const [viewportHeight, setViewportHeight] = useState(height);
+  const reservationNavigationLock = useRef(false);
+  const mapRefreshLock = useRef(false);
+  const locateFollowFrame = useRef<number | null>(null);
+  const location = useCurrentLocation(isFocused);
+  const [routeEndpointRole, setRouteEndpointRole] = useState<'origin' | 'destination'>('destination');
+  const [emptyRouteOpen, setEmptyRouteOpen] = useState(false);
+  const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
+  const [externalRouteRole, setExternalRouteRole] = useState<'origin' | 'destination' | null>(null);
+  const [externalCardHeight, setExternalCardHeight] = useState(EXTERNAL_PLACE_CARD_ESTIMATED_HEIGHT);
+  const center = location.coordinate;
+  const userLat = center?.lat;
+  const userLng = center?.lng;
+  const feedCoordinate = useNearbyQueryCoordinate(center);
+  const localHotRequest = {
+    latitude: feedCoordinate?.lat,
+    longitude: feedCoordinate?.lng,
+    page: 1,
+    limit: 20,
+  } as const;
+  const hasValidLocalHotLocation = selectLocalHotParams(localHotRequest) !== null;
+  const localHotQuery = useLocalHotPlaces(
+    localHotRequest,
+    isFocused && canQueryRankedFeeds && location.status === 'granted',
+  );
+  const nationalTrendsQuery = useNationalTrends(isFocused && canQueryRankedFeeds, {
+    period: 'WEEK',
+    page: 1,
+    limit: 20,
+  });
+  const localRankedPlaces = useMemo(
+    () => toRankedPlaceViewModels(localHotQuery.data?.places),
+    [localHotQuery.data?.places],
+  );
+  const nationalRankedPlaces = useMemo(
+    () => toRankedPlaceViewModels(nationalTrendsQuery.data?.places),
+    [nationalTrendsQuery.data?.places],
+  );
+  const localFeed = useMemo<RankedPlaceFeed>(() => ({
+    hasNext: localHotQuery.data?.hasNext ?? false,
+    places: localRankedPlaces,
+    retry: () => { void localHotQuery.refetch(); },
+    status: getLocalHotFeedStatus({
+      enabled: canQueryRankedFeeds,
+      error: localHotQuery.error,
+      hasValidLocation: hasValidLocalHotLocation,
+      isLoading: localHotQuery.isLoading,
+      locationStatus: location.status,
+      placeCount: localRankedPlaces.length,
+    }),
+    title: localHotQuery.data?.region?.regionName?.trim() || undefined,
+  }), [
+    canQueryRankedFeeds,
+    hasValidLocalHotLocation,
+    localHotQuery.data?.hasNext,
+    localHotQuery.data?.region?.regionName,
+    localHotQuery.error,
+    localHotQuery.isLoading,
+    localHotQuery.refetch,
+    localRankedPlaces,
+    location.status,
+  ]);
+  useEffect(() => {
+    if (!__DEV__ || !canQueryRankedFeeds || location.status === 'loading') return;
+    if (location.status !== 'granted' || !hasValidLocalHotLocation) {
+      console.warn('[V2 map feed blocked]', JSON.stringify({
+        feed: 'local-hot', locationStatus: location.status,
+        hasValidLocation: hasValidLocalHotLocation, requestSent: false,
+      }));
+    }
+  }, [canQueryRankedFeeds, hasValidLocalHotLocation, location.status]);
+  const nationalFeed = useMemo<RankedPlaceFeed>(() => ({
+    hasNext: nationalTrendsQuery.data?.hasNext ?? false,
+    places: nationalRankedPlaces,
+    retry: () => { void nationalTrendsQuery.refetch(); },
+    status: getNationalTrendsFeedStatus({
+      enabled: canQueryRankedFeeds,
+      error: nationalTrendsQuery.error,
+      isLoading: nationalTrendsQuery.isLoading,
+      placeCount: nationalRankedPlaces.length,
+    }),
+  }), [
+    canQueryRankedFeeds,
+    nationalRankedPlaces,
+    nationalTrendsQuery.data?.hasNext,
+    nationalTrendsQuery.error,
+    nationalTrendsQuery.isLoading,
+    nationalTrendsQuery.refetch,
+  ]);
+  const [viewportCenter, setViewportCenter] = useState(DEFAULT_MAP_CENTER);
+  const [mapZoomLevel, setMapZoomLevel] = useState(MAP_PREVIEW_ZOOM_LEVEL);
+  const recommendationRadiusKm = useMapSettingsStore((state) => state.recommendationRadiusKm);
+  const markerViewport = useMemo(() => createViewport(viewportCenter, recommendationRadiusKm, mapZoomLevel), [viewportCenter, recommendationRadiusKm, mapZoomLevel]);
+  const {
+    error: placesError,
+    isLoading: placesLoading,
+    isFetching: placesFetching,
+    markers: apiMarkers,
+    places: apiPlaces,
+    refetch: refetchPlaces,
+  } = usePlaces({}, isFocused && env.featureFlags.placeList, markerViewport);
+  const {
+    appliedActivityIntent,
+    appliedTravelPurposes,
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    limitReasons,
+    places: recommendedPlaces,
+    recommendationRequestId,
+    recommendationVersion,
+    refetch: refetchRecommendations,
+  } = usePlaceRecommendations({
+    latitude: feedCoordinate?.lat ?? Number.NaN,
+    limit: 8,
+    longitude: feedCoordinate?.lng ?? Number.NaN,
+    radiusKm: recommendationRadiusKm,
+  }, isFocused);
+  const { recordRecommendationClick } = useRecordPlaceRecommendationClick();
+  const recommendationExplanation = useRecommendationExplanation(
+    recommendationRequestId ?? '',
+    { enabled: Boolean(recommendationRequestId) },
+  );
+  const { profile, refetch: refetchProfile } = useProfile();
+  const recentSearchOwner = useConfirmedRecentSearchOwner(refetchProfile);
+  const [activeFilters, setActiveFilters] = useState<VisitFilter[]>([]);
+  const [content, setContent] = useState<BottomSheetContent>({ type: 'home' });
+  const [isFollowingUser, setIsFollowingUser] = useState(true);
+  const [manualCameraCenter, setManualCameraCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused,
+    canQueryBookmarks && profile?.id ? String(profile.id) : null, !isSearchOpen && !emptyRouteOpen);
+  const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
+  const [mapSection, setMapSection] = useState<'community' | 'map' | 'favorites' | 'reservations'>(initialSection);
+  const [reservationEntryPlace, setReservationEntryPlace] = useState<DecisionPlace | null>(null);
+  const [dismissedMarkerCenter, setDismissedMarkerCenter] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const reservationDiscoveryEnabled = mapSection === 'reservations'
+    && Number.isFinite(userLat)
+    && Number.isFinite(userLng);
+  const {
+    error: nearbyCandidatesError,
+    isFetching: nearbyCandidatesFetching,
+    refetch: refetchNearbyCandidates,
+    isLoading: isNearbyReservationCandidatesLoading,
+    places: nearbyReservationCandidates,
+  } = usePlaces({
+    latitude: userLat,
+    limit: NEARBY_RESERVATION_CANDIDATE_LIMIT,
+    longitude: userLng,
+    radiusKm: recommendationRadiusKm,
+    sort: 'NEAREST',
+  }, reservationDiscoveryEnabled);
+  const nearbyReservationCandidateIds = useMemo(
+    () => [
+      ...(reservationEntryPlace ? [reservationEntryPlace.id] : []),
+      ...nearbyReservationCandidates.map((place) => place.id),
+    ],
+    [nearbyReservationCandidates, reservationEntryPlace],
+  );
+  const {
+    error: nearbyAvailabilityError,
+    isFetching: nearbyAvailabilityFetching,
+    refetch: refetchNearbyAvailability,
+    isLoading: isNearbyReservationsLoading,
+    placeIdByAvailabilityId,
+    reservablePlaceIds: discoveredReservablePlaceIds,
+  } = useNearbyReservablePlaceIds(nearbyReservationCandidateIds, {
+    enabled: reservationDiscoveryEnabled,
+  });
+
+  useEffect(() => {
+    setMapSection(initialSection);
+  }, [initialSection]);
+  useEffect(() => () => {
+    if (locateFollowFrame.current !== null) {
+      cancelAnimationFrame(locateFollowFrame.current);
+    }
+    useRecentSearchStore.getState().deactivateOwner();
+  }, []);
+  const {
+    fetchNextPage: fetchNextFavoritePage,
+    hasNextPage: hasNextFavoritePage,
+    error: favoritesError,
+    isFetching: isFavoritesFetching,
+    isError: isFavoritesError,
+    isFetchNextPageError: isFetchNextFavoritePageError,
+    isFetchingNextPage: isFetchingNextFavoritePage,
+    isLoading: isFavoritesLoading,
+    isUnauthorized: isFavoritesUnauthorized,
+    places: bookmarkedPlaces,
+    refetch: refetchFavorites,
+  } = useBookmarkedPlaces(canQueryBookmarks && mapSection === 'favorites');
+  const {
+    bookmarkedPlaceIds,
+    isLoading: isBookmarkMembershipLoading,
+  } = useBookmarkedPlaceMembership(canQueryBookmarks);
+  const {
+    pendingPlaceIds: bookmarkPendingPlaceIds,
+    togglePlaceBookmark,
+    toggleRankedPlaceBookmark,
+  } = usePlaceBookmark();
+
+  // Both overlays share this edge-to-edge root. Avoid measureInWindow during
+  // SafeAreaView updates: Android can report the previous frame's status-bar offset.
+  const expandedSheetTop = insets.top + MAP_TOP_OVERLAY_SAFE_TOP_PADDING
+    + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP;
+  const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
+  const externalPlace = mapSection === 'map' && content.type === 'external-place' ? content.place : null;
+  const externalPlaceKey = externalPlace ? getExternalPlaceKey(externalPlace) : null;
+  // All bottom-navigation tabs share the map home resting height.
+  // Place previews and search retain their separate detail layout.
+  const fullSheetHeight = Math.round(viewportHeight);
+  const designScale = Math.min(Math.max(width / 425, 0.9), 1.05);
+  const isBottomNavigationSheet = mapSection !== 'map'
+    || content.type === 'home' || content.type === 'recommendations';
+  const mediumVisibleHeight = isBottomNavigationSheet
+    ? getMapHomeSheetVisibleHeight(fullSheetHeight, expandedSheetTop)
+    : Math.min(
+      (externalPlace
+        ? EXTERNAL_PLACE_SHEET_HANDLE_HEIGHT + Math.ceil(externalCardHeight) + insets.bottom
+        // Keep room for review tags and translation attribution added to the design card.
+        : Math.max(PLACE_PREVIEW_SHEET_HEIGHT, Math.round(442 * designScale))) + SHEET_RESTING_GAP,
+      Math.round(height * 0.56),
+    );
+  const collapsedVisibleHeight = Math.min(
+    Math.max(
+      Math.round(101 * designScale) + SHEET_RESTING_GAP,
+      getMapSheetCollapsedVisibleHeight(insets.bottom),
+    ),
+    Math.max(0, mediumVisibleHeight - 1),
+  );
+  const collapsedTranslateY = fullSheetHeight - collapsedVisibleHeight;
+  const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
+  // The external place card has nothing more to reveal, so its sheet never rises above medium.
+  const expandedTranslateY = isPlacePreview ? 0 : externalPlace ? mediumTranslateY : expandedSheetTop;
+  const { jumpTo, panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
+    collapsedTranslateY,
+    expandedTranslateY,
+    initialSnapPoint: getPageEntrySnapPoint(useMapSheetStore.getState().snapPoint),
+    mediumTranslateY,
+  });
+  useEffect(() => {
+    // Place details keep their own height; only the shared page sheet is remembered.
+    if (isBottomNavigationSheet) useMapSheetStore.getState().setSnapPoint(snapPoint);
+  }, [isBottomNavigationSheet, snapPoint]);
+  const verificationCtaOpacity = sheetTranslateY.interpolate({
+    inputRange: [
+      expandedTranslateY,
+      Math.max(mediumTranslateY, expandedTranslateY + 1),
+    ],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+  useEffect(() => {
+    if (externalPlaceKey !== null && snapPoint === 'expanded') snapTo('medium');
+  // snapTo is recreated on every render; only the selection and snap point matter here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalPlaceKey, snapPoint]);
+  useEffect(() => {
+    setExternalRouteRole(null);
+  }, [externalPlaceKey, isFocused]);
+  useEffect(() => {
+    void syncProfileLanguage(profile?.language);
+  }, [profile?.language]);
+
+  const recommendationPlaces = useMemo(() => {
+    const explanationByPlaceId = selectRecommendationExplanationsByPlaceId(
+      recommendationRequestId ?? '',
+      recommendationExplanation.data,
+    );
+
+    return recommendedPlaces.map((place) => {
+      const explanation = explanationByPlaceId.get(place.id);
+      const reason = selectRecommendationReason({
+        explanation,
+        placeId: place.id,
+        reason: place.reason,
+        reasonCode: place.reasonCode,
+      }, t);
+
+      return {
+        ...toDecisionPlace(place),
+        recommendationRank: explanation?.ranking,
+        recommendationReason: reason.text ?? undefined,
+        recommendationSource: explanation?.source,
+      };
+    });
+  }, [recommendationExplanation.data, recommendationRequestId, recommendedPlaces, t]);
+  const allPlaces = useMemo(() => {
+    const serverPlaces = mergeMapPreviewPlaces(
+      recommendationPlaces,
+      apiPlaces.map(toDecisionPlace),
+    );
+
+    return serverPlaces;
+  }, [apiPlaces, recommendationPlaces]);
+  const mapExplorationPlaceIds = useMemo(() => selectMapExplorationPlaceIds({
+    expanded: snapPoint === 'expanded',
+    places: allPlaces,
+    recommendationPlaces,
+    recommendationsActive: content.type === 'recommendations',
+    selectedPlaceId: content.type === 'place-preview' ? content.placeId : undefined,
+  }), [allPlaces, content, recommendationPlaces, snapPoint]);
+  const mapExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList(
+    mapExplorationPlaceIds,
+    { enabled: mapSection === 'map' },
+  );
+  const mapExplorationPreviewImageUrlsByPlaceId = useMemo(
+    () => Object.entries(mapExplorationImageUrlsByPlaceId)
+      .reduce<Record<string, string>>((result, [placeId, imageUrls]) => {
+        if (imageUrls[0]) result[placeId] = imageUrls[0];
+        return result;
+      }, {}),
+    [mapExplorationImageUrlsByPlaceId],
+  );
+  const recommendationPresentation = useMemo(() => createRecommendationPresentation({
+    appliedActivityIntent,
+    appliedTravelPurposes,
+    limitReasons,
+  }, (key) => t(key)), [
+    appliedActivityIntent,
+    appliedTravelPurposes,
+    limitReasons,
+    t,
+  ]);
+  const recommendationsState = getRecommendationState({
+    isError: isRecommendationsError,
+    isLoading: isRecommendationsLoading,
+    places: recommendationPlaces,
+  });
+  const favoritePlaces = useMemo(
+    () => bookmarkedPlaces.map(toDecisionPlace),
+    [bookmarkedPlaces],
+  );
+  const favoriteExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList(
+    bookmarkedPlaces.map((place) => place.id),
+    { enabled: canQueryBookmarks && mapSection === 'favorites' },
+  );
+  const { imageUrlsByPlaceId: favoritePreviewImages } = usePlacePreviewImages(
+    bookmarkedPlaces,
+    canQueryBookmarks && mapSection === 'favorites',
+  );
+  const favoriteImageUrlsByPlaceId = useMemo(
+    () => ({
+      ...favoriteExplorationImageUrlsByPlaceId,
+      ...toFavoritePlaceImageUrls(favoritePreviewImages),
+    }),
+    [favoriteExplorationImageUrlsByPlaceId, favoritePreviewImages],
+  );
+  const selectedPlaceFromCurrentData = useMemo(() => {
+    if (content.type !== 'place-preview') return null;
+    return [...allPlaces, ...favoritePlaces]
+      .find((place) => place.id === content.placeId);
+  }, [allPlaces, content, favoritePlaces]);
+  const selectedPlaceId = content.type === 'place-preview' ? content.placeId : 0;
+  const hasSelectedPlace = selectedPlaceId > 0;
+  const {
+    detail: selectedPlaceDetail,
+    detailError: selectedPlaceDetailError,
+    isDetailFetching: selectedPlaceDetailFetching,
+    refetchDetail,
+    isDetailPending: isSelectedPlaceDetailPending,
+    presentation: selectedPlacePresentation,
+    refetchAvailability,
+    refetchMedia,
+    refetchReviews,
+  } = usePlaceDetailPresentation(selectedPlaceId, { enabled: hasSelectedPlace });
+  const selectedPlaceBase = useMemo(() => {
+    if (selectedPlaceFromCurrentData) return selectedPlaceFromCurrentData;
+    if (!selectedPlaceDetail || selectedPlaceDetail.id !== selectedPlaceId) return null;
+
+    return toDecisionPlace({
+      address: selectedPlaceDetail.address,
+      category: selectedPlaceDetail.touristCategories?.[0],
+      id: selectedPlaceDetail.id,
+      latitude: selectedPlaceDetail.latitude,
+      longitude: selectedPlaceDetail.longitude,
+      name: selectedPlaceDetail.name,
+    });
+  }, [selectedPlaceDetail, selectedPlaceFromCurrentData, selectedPlaceId]);
+  const selectedPlace = useMemo<DecisionPlace | null>(() => {
+    if (!selectedPlaceBase) return null;
+    if (!selectedPlacePresentation) return selectedPlaceBase;
+
+    return {
+      ...selectedPlaceBase,
+      address: selectedPlacePresentation.address || selectedPlaceBase.address,
+      category: selectedPlacePresentation.category || selectedPlaceBase.category,
+      name: selectedPlacePresentation.name || selectedPlaceBase.name,
+    };
+  }, [selectedPlaceBase, selectedPlacePresentation]);
+  const selectedPlaceActionTarget = useMemo(() => selectedPlace ? ({
+    address: selectedPlace.address,
+    category: normalizePlaceCategory(selectedPlace.category),
+    latitude: selectedPlace.latitude,
+    longitude: selectedPlace.longitude,
+    name: selectedPlace.name,
+    placeId: selectedPlace.id,
+    userLocation: center ? { latitude: center.lat, longitude: center.lng } : null,
+  }) : null, [center, selectedPlace]);
+  useEffect(() => { if (!isFocused) setEmptyRouteOpen(false); }, [isFocused]);
+  useEffect(() => {
+    setRoutePreviewPlaceId(null);
+  }, [selectedPlaceActionTarget?.placeId, isFocused]);
+  const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
+    dialog.show(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
+  }, [dialog, t]);
+  const {
+    busyAction: placeActionBusy,
+    share: shareSelectedPlace,
+  } = usePlaceActions(selectedPlaceActionTarget, { onFeedback: handlePlaceActionFeedback });
+  const handleDirectionsPress = useCallback((place: DecisionPlace) => {
+    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
+    setRouteEndpointRole('destination');
+    setRoutePreviewPlaceId(place.id);
+  }, [selectedPlaceActionTarget]);
+  const handleDeparturePress = useCallback((place: DecisionPlace) => {
+    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
+    setRouteEndpointRole('origin');
+    setRoutePreviewPlaceId(place.id);
+  }, [selectedPlaceActionTarget]);
+  const handleSharePlace = useCallback((place: DecisionPlace) => {
+    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
+    void shareSelectedPlace(selectedPlaceActionTarget);
+  }, [selectedPlaceActionTarget, shareSelectedPlace]);
+  useEffect(() => {
+    if (!selectedPlace) return;
+    setReservationEntryPlace((current) => {
+      if (selectedPlacePresentation?.reservation.kind !== 'available') {
+        return current === null ? current : null;
+      }
+      return current?.id === selectedPlace.id ? current : selectedPlace;
+    });
+  }, [selectedPlace, selectedPlacePresentation?.reservation.kind]);
+  const nearbyReservationPlaces = useMemo(
+    () => includeSelectedNearbyReservablePlace(
+      mergeMapPreviewPlaces(
+        nearbyReservationCandidates
+          .filter((place) => discoveredReservablePlaceIds.has(place.id))
+          .map(toDecisionPlace),
+        recommendedPlaces.filter((place) => place.reservable).map(toDecisionPlace),
+      ),
+      reservationEntryPlace ?? selectedPlace,
+      {
+        radiusKm: recommendationRadiusKm,
+        reservable: Boolean(reservationEntryPlace)
+          || selectedPlacePresentation?.reservation.kind === 'available',
+      },
+    ),
+    [
+      recommendedPlaces,
+      nearbyReservationCandidates,
+      discoveredReservablePlaceIds,
+      recommendationRadiusKm,
+      reservationEntryPlace,
+      selectedPlace,
+      selectedPlacePresentation?.reservation.kind,
+    ],
+  );
+  const reservationPlaceByAvailabilityId = useMemo(() => {
+    const placeById = new Map(
+      [
+        ...nearbyReservationCandidates.map((place) => toDecisionPlace(place)),
+        ...(reservationEntryPlace ? [reservationEntryPlace] : []),
+      ].map((place) => [place.id, place]),
+    );
+
+    return Object.entries(placeIdByAvailabilityId).reduce<Record<string, DecisionPlace>>(
+      (result, [availabilityId, placeId]) => {
+        const place = placeById.get(placeId);
+        if (place) result[availabilityId] = place;
+        return result;
+      },
+      {},
+    );
+  }, [nearbyReservationCandidates, placeIdByAvailabilityId, reservationEntryPlace]);
+  const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
+  const mapExternalPlace = shouldPresentMapSelection(snapPoint) ? externalPlace : null;
+  const externalRouteDestination = useMemo(
+    () => toExternalRouteDestination(externalPlace),
+    [externalPlace],
+  );
+  const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
+    if (!selectedPlace || !selectedPlacePresentation) return undefined;
+    const operatingSummary = selectedPlacePresentation.operatingSummary
+      ? formatPlaceOperatingSummary(
+        selectedPlacePresentation.operatingSummary,
+        (key, options) => t(key, options),
+      )
+      : undefined;
+
+    return {
+      [String(selectedPlace.id)]: {
+        amenities: [],
+        topReviewReasons: selectedPlacePresentation.reviewHighlights.slice(0, 2).map(item => item.reason),
+        coupons: selectedPlacePresentation.coupons,
+        englishName: selectedPlacePresentation.englishName ?? undefined,
+        events: selectedPlacePresentation.events,
+        imageState: selectedPlacePresentation.imageState,
+        imageUrls: selectedPlacePresentation.imageUrls,
+        jibunAddress: selectedPlacePresentation.jibunAddress ?? undefined,
+        notice: selectedPlacePresentation.notice ?? undefined,
+        operatingSummary,
+        phone: selectedPlacePresentation.merchant?.contactPhone ?? undefined,
+        reservation: selectedPlacePresentation.reservation,
+        reviewCount: selectedPlacePresentation.reviewTotal ?? undefined,
+        reviewHighlights: selectedPlacePresentation.reviewHighlights.map(item => ({
+          ...item, label: t(`visitVerification.reasons.${item.reason}`),
+        })),
+        reviewParticipantCount: selectedPlacePresentation.reviewParticipantCount ?? undefined,
+        reviewSampleSize: selectedPlacePresentation.reviewSampleSize,
+        reviewHighlightsComplete: selectedPlacePresentation.reviewHighlightsComplete,
+        reviewState: selectedPlacePresentation.reviewState,
+        roadAddress: selectedPlacePresentation.roadAddress ?? undefined,
+        reviews: selectedPlacePresentation.reviews.map((review) => ({
+          author: review.userId !== null && review.userId === profile?.id
+            ? profile.username?.trim() || t(review.authorKey)
+            : t(review.authorKey),
+          placeId: selectedPlace.id,
+          reviewId: review.reviewId ?? undefined,
+          isOwnReview: review.reviewId !== null && review.userId !== null && review.userId === profile?.id,
+          onEdit: review.reviewId !== null && review.userId === profile?.id && onEditReview
+            ? () => { if (review.reviewId !== null) onEditReview(review.reviewId); } : undefined,
+          createdAt: review.createdAt,
+          imageUrls: review.imageUrls,
+          reasons: review.reasons,
+          text: review.text,
+        })),
+        summary: selectedPlacePresentation.touristSummary
+          ?? selectedPlacePresentation.description
+          ?? undefined,
+        statusDescription: selectedPlacePresentation.verificationLabelKey
+          ? t(selectedPlacePresentation.verificationLabelKey)
+          : '',
+        statusEmphasis: operatingSummary?.statusText ?? '',
+        verifiedEvidenceCount: selectedPlacePresentation.verifiedEvidenceCount ?? undefined,
+      },
+    };
+  }, [selectedPlace, selectedPlacePresentation, profile?.id, profile?.username, t, onEditReview]);
+  useEffect(() => {
+    if (
+      content.type !== 'place-preview'
+      || selectedPlace
+      // A place opened by ID alone has no list entry to fall back on, so a failed detail
+      // request stays on the sheet's retry state instead of silently returning home.
+      || (hasSelectedPlace && (isSelectedPlaceDetailPending || Boolean(selectedPlaceDetailError)))
+    ) return;
+
+    setContent({ type: 'home' });
+    setManualCameraCenter(null);
+    setIsFollowingUser(true);
+    snapTo('medium');
+  }, [content, hasSelectedPlace, isSelectedPlaceDetailPending, selectedPlace, selectedPlaceDetailError, snapTo]);
+  const query = content.type === 'search' || content.type === 'results' ? content.query : '';
+  const visiblePlaces = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return allPlaces.filter((place) => {
+      const matchesQuery = !normalizedQuery || [place.name, place.category, place.address]
+        .some((value) => value.toLowerCase().includes(normalizedQuery));
+      const matchesFilters = activeFilters.every((filter) => {
+        if (filter === 'Open now') return true;
+        if (filter === 'Short wait') return place.wait.startsWith('5') || place.wait.startsWith('10');
+        return place.tags.includes(filter);
+      });
+
+      return matchesQuery && matchesFilters;
+    });
+  }, [activeFilters, allPlaces, query]);
+  const sheetPlaces = useMemo(() => {
+    if (
+      content.type === 'place-preview'
+      && selectedPlace
+      && !visiblePlaces.some((place) => place.id === selectedPlace.id)
+    ) {
+      return [selectedPlace, ...visiblePlaces];
+    }
+
+    return visiblePlaces;
+  }, [content.type, selectedPlace, visiblePlaces]);
+  const mapMarkers = useMemo<MapMarker[]>(() => {
+    const liveMarkerIds = new Set(apiMarkers.map((marker) => marker.id));
+    const focusedPlaceMarker = createFocusedPlaceMarker(
+      content.type === 'place-preview' ? mapSelectedPlace : null,
+      liveMarkerIds,
+    );
+    const markers = [
+      ...apiMarkers.map((marker) => ({
+        ...marker,
+        category: normalizePlaceCategory(marker.category),
+      })),
+      ...(focusedPlaceMarker ? [focusedPlaceMarker] : []),
+    ];
+
+    if (activeCategory === 'all') return markers;
+    const markerCategory: MapMarker['category'] = activeCategory;
+
+    return markers.filter((marker) => marker.category === markerCategory);
+  }, [
+    activeCategory,
+    apiMarkers,
+    content.type,
+    mapSelectedPlace,
+  ]);
+  const visibleMapMarkers = useMemo(() => {
+    const externalPlaceMarker = createExternalPlaceMarker(mapExternalPlace);
+    if (externalPlaceMarker) return [externalPlaceMarker];
+
+    return markersForSelectedPlace(
+      mapMarkers,
+      content.type === 'place-preview' ? mapSelectedPlace?.id ?? null : null,
+    );
+  }, [content.type, mapExternalPlace, mapMarkers, mapSelectedPlace?.id]);
+  useEffect(() => {
+    if (openedBookmarkedPlaceId === null || openedBookmarkedPlaceId === undefined) return;
+
+    setMapSection('map');
+    setContent({ type: 'place-preview', placeId: openedBookmarkedPlaceId });
+    setManualCameraCenter(null);
+    setIsFollowingUser(false);
+    snapTo('medium');
+    onClearOpenedBookmarkedPlace?.();
+  // Only react when a bookmarked place is explicitly opened.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openedBookmarkedPlaceId]);
+
+  const dismissPlaceAt = useCallback((place: { latitude: number; longitude: number }) => {
+    setContent({ type: 'home' });
+    setDismissedMarkerCenter({ lat: place.latitude, lng: place.longitude });
+    setManualCameraCenter(null);
+    setIsFollowingUser(false);
+    setMapZoomLevel(MAP_DISMISSED_ZOOM_LEVEL);
+    jumpTo('medium');
+  }, [jumpTo]);
+
+  const handleMarkerPress = (markerId: string) => {
+    const place = findMapPreviewPlace(markerId, [
+      ...allPlaces,
+      ...favoritePlaces,
+    ]);
+    if (!place) return;
+
+    setMapSection('map');
+
+    if (content.type === 'place-preview' && content.placeId === place.id) {
+      dismissPlaceAt(place);
+      return;
+    }
+
+    setContent({ type: 'place-preview', placeId: place.id });
+    setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
+    setIsFollowingUser(false);
+    setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
+    // Keep the close/bookmark targets stationary from the first detail frame.
+    jumpTo('medium');
+  };
+  const handlePlacePress = (place: Pick<DecisionPlace, 'id'>) => {
+    const clickPayload = selectRecommendationClickPayload({
+      placeId: place.id,
+      recommendationPlaceIds: recommendedPlaces.map((item) => item.id),
+      recommendationRequestId,
+      recommendationVersion,
+    });
+    if (clickPayload) {
+      void recordRecommendationClick(clickPayload).catch(() => {
+        if (__DEV__) console.warn('[recommendation-click] failed.');
+      });
+    }
+    setMapSection('map');
+    setContent({ type: 'place-preview', placeId: place.id });
+    setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
+    setIsFollowingUser(false);
+    setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
+    snapTo('medium');
+  };
+  const openExternalPlace = (place: ExternalMapPlace) => {
+    setMapSection('map');
+    setContent({ type: 'external-place', place });
+    setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
+    // Without a usable coordinate the camera has nowhere to go, so it stays where it is.
+    if (place.coordinate) {
+      setIsFollowingUser(false);
+      setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
+    }
+    snapTo('medium');
+  };
+  const handleRankedPlacePress = (place: RankedPlaceViewModel) => {
+    setMapSection('map');
+    setContent({ type: 'place-preview', placeId: place.placeId });
+    setDismissedMarkerCenter(null);
+    snapTo('medium');
+  };
+  const handleQueryChange = (nextQuery: string) => {
+    setContent({ type: 'search', query: nextQuery });
+    snapTo('expanded');
+  };
+  const handleSearchFocus = useCallback(() => {
+    setIsSearchOpen(true);
+  }, []);
+  const openMapSection = useCallback((nextSection: 'community' | 'favorites' | 'map' | 'reservations') => {
+    setContent({ type: 'home' });
+    setMapSection(nextSection);
+    // A raised sheet stays raised on the next page instead of dropping back to medium.
+    jumpTo(getPageEntrySnapPoint(snapPoint));
+  }, [jumpTo, snapPoint]);
+  const assistantNavigationLock = useRef<string | null>(null);
+  useEffect(() => { if (!assistant.isOpen) assistantNavigationLock.current = null; }, [assistant.isOpen]);
+  const navigateAssistantPage = useCallback((target: VoiceNavigationTarget) => {
+    const key = JSON.stringify(target);
+    if (assistantNavigationLock.current === key) return true;
+    Keyboard.dismiss();
+    if (target.page === 'search') {
+      // Reuse the touch entry; opening search does not require a GPS fix.
+      handleSearchFocus();
+      assistant.close();
+    } else if (target.page === 'recommendations') {
+      setContent({ type: 'recommendations' });
+      snapTo('expanded');
+      assistant.close();
+    } else if (target.page === 'map' || target.page === 'favorites' || target.page === 'community') openMapSection(target.page);
+    else if (!onNavigateAssistantPage?.(target)) return false;
+    assistantNavigationLock.current = key;
+    return true;
+  }, [assistant.close, handleSearchFocus, openMapSection, onNavigateAssistantPage, snapTo]);
+  const handleMapRefresh = useCallback(async () => {
+    if (mapRefreshLock.current) return;
+
+    mapRefreshLock.current = true;
+    setMapSection('map');
+    setContent({ type: 'home' });
+    setDismissedMarkerCenter(null);
+    setManualCameraCenter(null);
+    setIsFollowingUser(true);
+
+    try {
+      await Promise.allSettled([
+        refetchPlaces(),
+        refetchRecommendations(),
+      ]);
+    } finally {
+      mapRefreshLock.current = false;
+    }
+  }, [refetchPlaces, refetchRecommendations]);
+  const handleFilterPress = (filter: VisitFilter) => {
+    setActiveFilters((current) => (
+      current.includes(filter)
+        ? current.filter((item) => item !== filter)
+        : [...current, filter]
+    ));
+  };
+  const handleBackHome = useCallback(() => {
+    if (selectedPlace) {
+      dismissPlaceAt(selectedPlace);
+      return;
+    }
+    if (externalPlace?.coordinate) {
+      dismissPlaceAt(externalPlace.coordinate);
+      return;
+    }
+
+    setContent({ type: 'home' });
+    setManualCameraCenter(null);
+    setIsFollowingUser(true);
+    setDismissedMarkerCenter(null);
+    setMapZoomLevel(MAP_PREVIEW_ZOOM_LEVEL);
+    snapTo('medium');
+  }, [dismissPlaceAt, externalPlace, selectedPlace, snapTo]);
+
+  const handleLocatePress = useCallback(() => {
+    setContent({ type: 'home' });
+    setDismissedMarkerCenter(null);
+    setMapZoomLevel(MAP_LOCATE_ZOOM_LEVEL);
+
+    // Native map props only react when followUser changes. Pulse the value so an
+    // unchanged current coordinate can still be re-centered on every button press.
+    setManualCameraCenter(null);
+    setIsFollowingUser(false);
+    if (locateFollowFrame.current !== null) {
+      cancelAnimationFrame(locateFollowFrame.current);
+    }
+    locateFollowFrame.current = requestAnimationFrame(() => {
+      locateFollowFrame.current = null;
+      setManualCameraCenter(null);
+      setIsFollowingUser(true);
+    });
+
+    snapTo('medium');
+  }, [snapTo]);
+
+  useFocusEffect(useCallback(() => {
+    reservationNavigationLock.current = false;
+    return registerAndroidBackOverride(() => {
+      if (isSearchOpen) {
+        setIsSearchOpen(false);
+        return true;
+      }
+
+      if (mapSection === 'favorites' || mapSection === 'community') {
+        setMapSection('map');
+        snapTo('medium');
+        return true;
+      }
+
+      const action = getMapBackAction(content, snapPoint);
+
+      if (action === 'show-home') {
+        handleBackHome();
+        return true;
+      }
+
+      if (action === 'collapse-sheet') {
+        snapTo('collapsed');
+        return true;
+      }
+
+      return false;
+    });
+  }, [content, handleBackHome, isSearchOpen, mapSection, snapPoint, snapTo]));
+  const handleGoNow = (place: DecisionPlace) => {
+    dialog.show(
+      t('map.decision.goNow'),
+      t('map.decision.goNowMessage', { placeName: place.name }),
+      [{ text: t('map.search.confirm') }],
+    );
+  };
+  const handleToggleBookmark = async (place: DecisionPlace, nextBookmarked: boolean) => {
+    try {
+      await togglePlaceBookmark(place, nextBookmarked);
+    } catch (error) {
+      const messageKey = getBookmarkErrorMessage(error);
+      if (!feedbackActive.current || !messageKey) return;
+      dialog.show(
+        t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
+        t(messageKey),
+      );
+    }
+  };
+  const handleToggleRankedBookmark = async (
+    place: RankedPlaceViewModel,
+    nextBookmarked: boolean,
+  ) => {
+    try {
+      await toggleRankedPlaceBookmark(place, nextBookmarked);
+    } catch (error) {
+      const messageKey = getBookmarkErrorMessage(error);
+      if (!feedbackActive.current || !messageKey) return;
+      dialog.show(
+        t(nextBookmarked ? 'map.sheet.bookmarkSaveError' : 'map.sheet.bookmarkRemoveError'),
+        t(messageKey),
+      );
+    }
+  };
+
+  const navigationOffset = useRef(new Animated.Value(0)).current;
+  const focusedPlace = mapSelectedPlace ?? mapExternalPlace?.coordinate ?? null;
+  const { lat: mapCenterLat, lng: mapCenterLng } = manualCameraCenter ?? selectMapCameraCenter({
+    isFollowingUser, focusedPlace, designScale, dismissedMarkerCenter, center,
+  });
+  const isExpandedPlaceDetail = mapSection === 'map'
+    && content.type === 'place-preview'
+    && snapPoint === 'expanded';
+  return (
+    <MapTutorialProvider
+      onFinish={() => { void location.refresh(false); }}
+      enabled={isFocused && mapSection === 'map' && content.type === 'home' && !isSearchOpen
+        && !assistant.isBusy && snapPoint === 'medium' && !openedBookmarkedPlaceId}
+      username={profile?.username}
+    >
+    <View onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <MapGlassBackdrop active={mapGlassActive}>
+      {isFocused && <StatusBar
+        hidden={false}
+        backgroundColor={isExpandedPlaceDetail ? theme.colors.background : 'transparent'}
+        barStyle={theme.colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        translucent
+      />}
+      <View style={styles.mapBackground}>
+        <MapCanvas
+          centerLat={mapCenterLat}
+          centerLng={mapCenterLng}
+          followUser={isFollowingUser}
+          onCameraGesture={() => {
+            if (locateFollowFrame.current !== null) {
+              cancelAnimationFrame(locateFollowFrame.current);
+              locateFollowFrame.current = null;
+            }
+            setIsFollowingUser(false);
+            setManualCameraCenter({ lat: mapCenterLat, lng: mapCenterLng });
+          }}
+          markers={visibleMapMarkers}
+          onCameraIdle={(coordinate) => {
+            if (!Number.isFinite(coordinate.lat) || !Number.isFinite(coordinate.lng)) return;
+            setViewportCenter((previous) => Math.abs(previous.lat - coordinate.lat) < 0.0001 && Math.abs(previous.lng - coordinate.lng) < 0.0001
+              ? previous : { lat: coordinate.lat, lng: coordinate.lng });
+          }}
+          onMarkerPress={handleMarkerPress}
+          userLat={userLat}
+          userLng={userLng}
+          zoomLevel={mapZoomLevel}
+        />
+      </View>
+      {isFocused && emptyRouteOpen && (
+        <CarRoutePreview destination={null} location={location} recentSearchOwner={recentSearchOwner}
+          onClose={() => setEmptyRouteOpen(false)} onRefreshLocation={() => { void location.refresh(); }} />
+      )}
+      {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
+        <CarRoutePreview key={`${routeEndpointRole}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
+          initialEndpointRole={routeEndpointRole} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
+          onClose={() => setRoutePreviewPlaceId(null)} onRefreshLocation={() => { void location.refresh(); }} />
+      )}
+      {isFocused && externalRouteRole !== null && externalRouteDestination && (
+        <CarRoutePreview key={`${externalRouteRole}:${externalPlaceKey}`}
+          initialEndpointRole={externalRouteRole} destination={externalRouteDestination} location={location} recentSearchOwner={recentSearchOwner}
+          onClose={() => setExternalRouteRole(null)} onRefreshLocation={() => { void location.refresh(); }} />
+      )}
+      <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
+        <MapTopOverlay
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          onLocatePress={handleLocatePress}
+          onDirectionsPress={!isSearchOpen ? () => setEmptyRouteOpen(true) : undefined}
+          directionsDisabled={assistant.isBusy}
+          directionsSheetTop={sheetTranslateY}
+          directionsRestingTop={snapPoint === 'collapsed' ? collapsedTranslateY : snapPoint === 'expanded' ? expandedTranslateY : mediumTranslateY}
+          onProfilePress={onOpenProfile}
+          onQueryChange={handleQueryChange}
+          onRefreshMap={handleMapRefresh}
+          onSearchFocus={handleSearchFocus}
+          onSubmitSearch={() => {
+            setContent({ type: 'results', query });
+            snapTo('expanded');
+          }}
+          profileImageUrl={profile?.profileImageUrl}
+          query={query}
+          showCategories={snapPoint !== 'expanded'}
+        />
+        <MapSheetNavigationHiddenProvider value={true}>
+        <Animated.View
+          pointerEvents="box-none"
+          style={[styles.sectionTransition, { transform: [{ translateY: sheetTranslateY }] }]}
+          testID={`map-section-transition-${mapSection}`}
+        >
+        {mapSection === 'community' ? (
+          <CommunityBottomSheet
+            collapsedTranslateY={collapsedTranslateY}
+            expandedTranslateY={expandedTranslateY}
+            height={fullSheetHeight}
+            parentOwnsMotion
+            mediumTranslateY={mediumTranslateY}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenMap={() => {
+              openMapSection('map');
+            }}
+            onOpenPost={(postId) => onOpenCommunityPost?.(postId)}
+            onOpenFavorites={() => openMapSection('favorites')}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenReservations={() => {
+              openMapSection('reservations');
+            }}
+            onOpenWrite={(categoryId) => onOpenCommunityWrite?.(categoryId)}
+            panHandlers={panHandlers}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : mapSection === 'favorites' ? (
+          <FavoritePlacesBottomSheet
+            collapsedTranslateY={collapsedTranslateY}
+            expandedTranslateY={expandedTranslateY}
+            hasNextPage={Boolean(hasNextFavoritePage)}
+            height={fullSheetHeight}
+            parentOwnsMotion
+            imageUrlsByPlaceId={favoriteImageUrlsByPlaceId}
+            error={favoritesError}
+            isFetching={isFavoritesFetching}
+            isError={isFavoritesError}
+            isFetchNextPageError={isFetchNextFavoritePageError}
+            isFetchingNextPage={isFetchingNextFavoritePage}
+            isLoading={isFavoritesLoading}
+            isUnauthorized={!canQueryBookmarks || isFavoritesUnauthorized}
+            mediumTranslateY={mediumTranslateY}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenCommunity={() => {
+              openMapSection('community');
+            }}
+            onOpenMap={() => {
+              openMapSection('map');
+            }}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenReservations={() => {
+              openMapSection('reservations');
+            }}
+            onLoadMore={() => void fetchNextFavoritePage()}
+            onRetry={() => refetchFavorites({ cancelRefetch: false })}
+            onRemovePlace={(place) => void handleToggleBookmark(place, false)}
+            onPlacePress={(place) => {
+              setMapSection('map');
+              handlePlacePress(place);
+            }}
+            panHandlers={panHandlers}
+            places={favoritePlaces}
+            pendingPlaceIds={bookmarkPendingPlaceIds}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : mapSection === 'reservations' ? (
+          <ReservationBottomSheet
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
+            bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+            collapsedTranslateY={collapsedTranslateY}
+            expandedTranslateY={expandedTranslateY}
+            height={fullSheetHeight}
+            parentOwnsMotion
+            isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
+            isNearbyLoading={reservationDiscoveryEnabled && (
+              isNearbyReservationCandidatesLoading || isNearbyReservationsLoading
+            )}
+            mediumTranslateY={mediumTranslateY}
+            nearbyError={nearbyCandidatesError ?? nearbyAvailabilityError}
+            nearbyBusy={nearbyCandidatesFetching || nearbyAvailabilityFetching}
+            onRetryNearby={() => Promise.all([refetchNearbyCandidates({ cancelRefetch: false }), refetchNearbyAvailability()])}
+            nearbyPlaces={nearbyReservationPlaces}
+            reservationPlaceByAvailabilityId={reservationPlaceByAvailabilityId}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenCommunity={() => {
+              openMapSection('community');
+            }}
+            onOpenFavorites={() => {
+              openMapSection('favorites');
+            }}
+            onOpenMap={() => {
+              openMapSection('map');
+            }}
+            onOpenRecommendations={() => {
+              setMapSection('map');
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenReservation={(reservationId) => onOpenReservation?.(reservationId)}
+            onPlacePress={handlePlacePress}
+            onToggleBookmark={handleToggleBookmark}
+            panHandlers={panHandlers}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+          />
+        ) : (
+          <MapBottomSheet
+            activeFilters={activeFilters}
+            bookmarkedPlaceIds={bookmarkedPlaceIds}
+            bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+            isBookmarkStateLoading={!canQueryBookmarks || isBookmarkMembershipLoading}
+            collapsedTranslateY={collapsedTranslateY}
+            expandedTranslateY={expandedTranslateY}
+            content={content}
+            couponContent={selectedPlace ? (
+              <PlaceCouponCta
+                onRequestSignIn={onSignIn}
+                onViewMyCoupons={onOpenCoupons}
+                placeId={selectedPlace.id}
+                variant="compact"
+              />
+            ) : undefined}
+            explorationImageUrlsByPlaceId={mapExplorationPreviewImageUrlsByPlaceId}
+            height={fullSheetHeight}
+            parentOwnsMotion
+            localFeed={localFeed}
+            mediumTranslateY={mediumTranslateY}
+            nationalFeed={nationalFeed}
+            onBackHome={handleBackHome}
+            onCreateReservation={(place, imageUrl) => {
+              if (!onCreateReservation || reservationNavigationLock.current) return;
+              reservationNavigationLock.current = true;
+              onCreateReservation({
+                category: place.category,
+                id: place.id,
+                imageUrl,
+                name: place.name,
+              });
+            }}
+            onDetailPress={() => snapTo('expanded')}
+            onDeparturePress={handleDeparturePress}
+            onDirectionsPress={handleDirectionsPress}
+            onExternalDeparturePress={() => setExternalRouteRole('origin')}
+            onExternalDirectionsPress={() => setExternalRouteRole('destination')}
+            onExternalPlaceLayout={setExternalCardHeight}
+            onFilterPress={handleFilterPress}
+            onGoNowPress={handleGoNow}
+            onHandlePress={() => {
+              if (snapPoint === 'collapsed') snapTo('medium');
+              else if (snapPoint === 'medium') snapTo('expanded');
+              else snapTo('medium');
+            }}
+            onOpenCommunity={() => {
+              openMapSection('community');
+            }}
+            onOpenLikedPlaces={() => {
+              openMapSection('favorites');
+            }}
+            onOpenRecommendations={() => {
+              setContent({ type: 'recommendations' });
+              snapTo('expanded');
+            }}
+            onOpenSavedPlaces={() => {
+              openMapSection('reservations');
+            }}
+            onStartVisitVerification={onStartVisitVerification
+              ? (place) => onStartVisitVerification(place.id)
+              : undefined}
+            onPlacePress={handlePlacePress}
+            onRankedPlacePress={handleRankedPlacePress}
+            onRetryRecommendations={() => void refetchRecommendations()}
+            onRetryAvailability={() => void refetchAvailability()}
+            onRetryMedia={() => void refetchMedia()}
+            onRetryReviews={() => void refetchReviews()}
+            onProfilePress={onOpenProfile}
+            onQueryChange={handleQueryChange}
+            onSearchFocus={handleSearchFocus}
+            onSharePlace={handleSharePlace}
+            onSubmitSearch={() => {
+              setContent({ type: 'results', query });
+              snapTo('expanded');
+            }}
+            onToggleBookmark={handleToggleBookmark}
+            onToggleRankedBookmark={handleToggleRankedBookmark}
+            panHandlers={panHandlers}
+            placeActionBusy={placeActionBusy}
+            places={sheetPlaces}
+            previewFallbackContentByPlaceId={previewFallbackContentByPlaceId}
+            recommendationContext={recommendationPresentation.contextText}
+            recommendationLimitMessage={recommendationPresentation.limitText}
+            recommendationPlaces={recommendationPlaces}
+            recommendationsState={recommendationsState}
+            selectedPlace={selectedPlace}
+            detailError={selectedPlaceDetailError}
+            detailBusy={selectedPlaceDetailFetching}
+            onRetryDetail={() => refetchDetail({ cancelRefetch: false })}
+            resultsError={placesError}
+            resultsLoading={placesLoading}
+            resultsBusy={placesFetching}
+            onRetryResults={() => refetchPlaces({ cancelRefetch: false })}
+            sheetChromeBottom={sheetChromeBottom}
+            sheetTranslateY={sheetTranslateY}
+            snapPoint={snapPoint}
+            userName={profile?.username}
+          />
+        )}
+      {assistant.enabled && !isSearchOpen && !emptyRouteOpen && (
+        <Animated.View
+          pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
+          accessibilityElementsHidden={snapPoint === 'expanded'}
+          importantForAccessibility={snapPoint === 'expanded' ? 'no-hide-descendants' : 'auto'}
+          style={{
+            bottom: fullSheetHeight + 8,
+            left: 12,
+            opacity: verificationCtaOpacity,
+            position: 'absolute',
+            zIndex: 60,
+          }}
+          testID="map-assistant-sheet-button-motion"
+        >
+          <MapAssistantButton disabled={assistant.isBusy || snapPoint === 'expanded'} onPress={assistant.open} />
+        </Animated.View>
+      )}
+      {/* Map actions stay available above every resting sheet, including place previews. */}
+      {!isSearchOpen && !emptyRouteOpen && onOpenVisitVerification ? (
+        <Animated.View
+          pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
+          style={{
+            bottom: fullSheetHeight + 8,
+            opacity: verificationCtaOpacity,
+            position: 'absolute',
+            right: 12,
+            zIndex: 60,
+          }}
+          accessibilityElementsHidden={snapPoint === 'expanded'}
+          importantForAccessibility={snapPoint === 'expanded' ? 'no-hide-descendants' : 'auto'}
+          testID="visit-verification-map-cta-motion"
+        >
+          <MapTutorialTarget id="verification">
+          <VisitVerificationMapCta
+            label={t('visitVerification.title')}
+            onPress={onOpenVisitVerification}
+          />
+          </MapTutorialTarget>
+        </Animated.View>
+      ) : null}
+        </Animated.View>
+        </MapSheetNavigationHiddenProvider>
+        {(mapSection !== 'map' || (content.type !== 'place-preview' && content.type !== 'external-place')) && (
+          <View pointerEvents="box-none" style={styles.navigationOverlay}>
+            <MapSheetBottomNavigation
+              activeTab={mapSection === 'map' && content.type === 'recommendations' ? 'recommendations' : mapSection}
+              onOpenMap={() => openMapSection('map')}
+              onOpenFavorites={() => openMapSection('favorites')}
+              onOpenCommunity={() => openMapSection('community')}
+              onOpenReservations={() => openMapSection('reservations')}
+              onOpenRecommendations={() => {
+                setMapSection('map'); setContent({ type: 'recommendations' }); snapTo('expanded');
+              }}
+              sheetTranslateY={navigationOffset}
+            />
+          </View>
+        )}
+      {isSearchOpen ? (
+        <MapSearchOverlay
+          centerLat={center?.lat}
+          centerLng={center?.lng}
+          isRecommendationsError={isRecommendationsError}
+          isRecommendationsLoading={isRecommendationsLoading}
+          onClose={() => setIsSearchOpen(false)}
+          onRefreshRecommendations={refetchRecommendations}
+          onSelectRecommendedPlace={(place) => {
+            setIsSearchOpen(false);
+            handlePlacePress(toDecisionPlace(place));
+          }}
+          onSelectPlace={(place) => {
+            setIsSearchOpen(false);
+            const target = resolveMapSearchSelection(place);
+            if (target.kind === 'registered') {
+              // The server owns the canonical ID; the preview loads it even when it is off the map list.
+              handlePlacePress({ id: target.placeId });
+              return;
+            }
+            if (target.kind === 'external') {
+              openExternalPlace(target.place);
+              return;
+            }
+            setContent({ type: 'results', query: place.name });
+            snapTo('expanded');
+          }}
+          recentSearchOwner={recentSearchOwner}
+          recommendedPlaces={recommendedPlaces}
+        />
+      ) : null}
+      <MapAssistantModal visible={assistant.isOpen} onClose={assistant.close} context={{
+        accountRevision: canQueryBookmarks && profile?.id ? String(profile.id) : null,
+        location: center ? { latitude: center.lat, longitude: center.lng } : null,
+        locationPermission: location.status, radiusKm: recommendationRadiusKm,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        placeListEnabled: env.featureFlags.placeList,
+        navigateToPage: navigateAssistantPage,
+        selectedPlaceId: hasSelectedPlace ? selectedPlaceId : undefined,
+      }} />
+      </MapGlassBackdrop>
+      <MapAssistantIntro visible={assistant.isNoticeOpen} onClose={assistant.close}
+        onContinue={assistant.continueToAssistant} />
+
+    </View>
+    </MapTutorialProvider>
+  );
+}
+
+const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
+const styles: Record<string, object> = {
+  container: { flex: 1 },
+  mapBackground: absoluteFill,
+  // Include the floating actions above the sheet in the moving parent hit area.
+  sectionTransition: { ...absoluteFill, top: -64, zIndex: 50 },
+  navigationOverlay: { ...absoluteFill, zIndex: 60 },
+};

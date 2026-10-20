@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import BackIcon from '../../../assets/v2/icons/header/back.svg';
+
 type SettingsNavBarProps = {
   onBack: () => void;
   title: string;
@@ -14,7 +16,7 @@ const SettingsNavBar = ({ onBack, title }: SettingsNavBarProps) => (
       style={styles.backButton}
       onPress={onBack}
     >
-      <Text style={styles.backIcon}>‹</Text>
+      <BackIcon width={44} height={44} />
     </Pressable>
     <Text style={styles.title}>{title}</Text>
   </View>
@@ -23,14 +25,9 @@ const SettingsNavBar = ({ onBack, title }: SettingsNavBarProps) => (
 const styles = StyleSheet.create({
   backButton: {
     alignItems: 'center',
-    height: 40,
+    height: 44,
     justifyContent: 'center',
-    width: 40,
-  },
-  backIcon: {
-    color: '#000000',
-    fontSize: 30,
-    fontWeight: '300',
+    width: 44,
   },
   bar: {
     alignItems: 'center',

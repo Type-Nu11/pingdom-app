@@ -10,23 +10,22 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { SvgXml } from 'react-native-svg';
-import OpenEyeIcon from '../../../../assets/icons/openEye.svg';
-import CloseEyeIcon from '../../../../assets/icons/closeEye.svg';
+import BackIcon from '../../../../assets/v2/icons/header/back.svg';
+import OpenEyeIcon from '../../../../assets/v2/icons/openEye.svg';
+import CloseEyeIcon from '../../../../assets/v2/icons/closeEye.svg';
 import { colors } from '../../../../styles/colors';
 import useLogin from '../../hooks/useLogin';
 
 const PINK = colors.primaryNormal;
 const BG = colors.bgAssistive;
 
-const BACK_SVG = `<svg width="9" height="18" viewBox="0 0 9 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1L1 9L8 17" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
 type Props = {
   onBack: () => void;
+  onFindPassword?: () => void;
   onSignup?: () => void;
 };
 
-export default function LoginFormScreen({ onBack, onSignup }: Props) {
+export default function LoginFormScreen({ onBack, onFindPassword, onSignup }: Props) {
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -58,7 +57,7 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
     >
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12}>
-          <SvgXml xml={BACK_SVG} width={9} height={18} />
+          <BackIcon width={44} height={44} />
         </Pressable>
       </View>
 
@@ -132,7 +131,9 @@ export default function LoginFormScreen({ onBack, onSignup }: Props) {
         <View style={styles.linkRow}>
           <Pressable><Text style={styles.linkText}>{t('auth.login.findUsername')}</Text></Pressable>
           <View style={styles.linkSeparator} />
-          <Pressable><Text style={styles.linkText}>{t('auth.login.findPassword')}</Text></Pressable>
+          <Pressable onPress={onFindPassword}>
+            <Text style={styles.linkText}>{t('auth.login.findPassword')}</Text>
+          </Pressable>
           <View style={styles.linkSeparator} />
           <Pressable onPress={onSignup}><Text style={styles.linkText}>{t('auth.login.signup')}</Text></Pressable>
         </View>
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
   hidden: { color: 'transparent' },
   submitButton: {
     height: 64,
-    borderRadius: 16,
+    borderRadius: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },

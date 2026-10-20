@@ -1,7 +1,9 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
-node_modules/
+node_modules
+native/wake-word/vendor/
+__pycache__/
 
 # Expo
 .expo/
@@ -38,6 +40,9 @@ yarn-error.*
 .claude
 .agents
 
+# Local task drafts
+/work/
+
 # typescript
 *.tsbuildinfo
 
@@ -55,9 +60,12 @@ android/build/
 # ios
 ios/build/
 ios/Pods/
-ios/Naviapp.xcworkspace/
+ios/*.xcworkspace/xcuserdata/
 
 # native secrets
 ios/Config/Secrets.xcconfig
 
 android/app/google-services.json
+
+# Generated public map SDK build configuration
+ios/Config/NaverMap.generated.xcconfig

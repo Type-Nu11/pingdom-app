@@ -1,0 +1,29 @@
+{
+  "version": "1.13.8",
+  "variant": "kws-no-tts",
+  "source": {
+    "filename": "sherpa-onnx-v1.13.8-source.tar.gz",
+    "url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/tarball/v1.13.8",
+    "sha256": "7ee4f2d117bf72a0651146535b9158d62f11a86520e68142270ca9a35a9032b7"
+  },
+  "androidWrapper": {
+    "filename": "sherpa-onnx-static-link-onnxruntime-1.13.8.aar",
+    "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-static-link-onnxruntime-1.13.8.aar",
+    "sha256": "b22c3fc1b6a45666d28892bb2f7694beeb77a8362d7ebd77c1a5431ec9435471"
+  },
+  "onnxAndroid": {
+    "filename": "onnxruntime-android-1.28.2.zip",
+    "url": "https://github.com/csukuangfj/onnxruntime-libs/releases/download/v1.28.2/onnxruntime-android-1.28.2.zip",
+    "sha256": "01518867f78241138b6aa25925802e843a4fa9085af8d303d49e35bbb52aff4d"
+  },
+  "onnxIOS": {
+    "filename": "onnxruntime-ios-static-xcframework-1.28.2.xcframework.zip",
+    "url": "https://github.com/csukuangfj/onnxruntime-libs/releases/download/v1.28.2/onnxruntime-ios-static-xcframework-1.28.2.xcframework.zip",
+    "sha256": "2c2299acbb461d26d4bac4bc85985d40e7c7177ed6072703ae0846d88b0b4599"
+  },
+  "model": {
+    "filename": "sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20.tar.bz2",
+    "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20.tar.bz2",
+    "sha256": "68447f4fbc67e70eee3a93961f36e81e98f47aef73ce7e7ca00885c6cd3616a6"
+  }
+}

@@ -5,6 +5,8 @@ import type {
   EmailVerifyRequest,
   LoginRequest,
   LoginResponse,
+  PasswordResetConfirmRequest,
+  PasswordResetRequest,
   SignupRequest,
   SignupResponse,
 } from '../model/auth.types';
@@ -14,21 +16,18 @@ type RawLoginResponse =
   | {
       data?: LoginResponse;
       accessToken?: string;
-      refreshToken?: string;
     };
 
-function toLoginResponse(response: RawLoginResponse): LoginResponse {
+export function toLoginResponse(response: RawLoginResponse): LoginResponse {
   if ('data' in response && response.data?.accessToken) {
     return {
       accessToken: response.data.accessToken,
-      refreshToken: response.data.refreshToken ?? '',
     };
   }
 
   if ('accessToken' in response && response.accessToken) {
     return {
       accessToken: response.accessToken,
-      refreshToken: response.refreshToken ?? '',
     };
   }
 
@@ -43,9 +42,15 @@ export const authApi = {
   changeUsername: async (payload: ChangeUsernameRequest): Promise<void> => {
     await api.post('/users/change-id', payload);
   },
+  confirmPasswordReset: async (payload: PasswordResetConfirmRequest): Promise<void> => {
+    await api.post('/auth/password-reset/confirm', payload);
+  },
   login: async (payload: LoginRequest): Promise<LoginResponse> => {
     const { data } = await api.post<RawLoginResponse>('/auth/login', payload);
     return toLoginResponse(data);
+  },
+  requestPasswordReset: async (payload: PasswordResetRequest): Promise<void> => {
+    await api.post('/auth/password-reset/request', payload);
   },
   signup: async (payload: SignupRequest): Promise<SignupResponse> => {
     const { data } = await api.post<SignupResponse>('/auth/signup', payload);

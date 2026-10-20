@@ -1,0 +1,377 @@
+export const mapTutorialResources = {
+  ko: {
+    name: 'Pingdy', title: 'Pingdy 사용 안내', guest: '여행자',
+    close: '튜토리얼 닫기', previous: '이전 안내', next: '다음 안내',
+    finish: '튜토리얼 완료', progress: '{{current}} / {{total}} 단계',
+    welcome: {
+      greeting: '안녕하세요, {{username}}님',
+      introduction: '{{username}}님의 여행을 더 쉽게 만들어드리는',
+      agent: 'AI 에이전트, <accent>Pingdy</accent>예요.',
+      help: '원하는 장소를 찾고, 예약을 준비하는 과정까지\n대화 한번으로 도와드릴게요.',
+      start: '지금부터 간단히 사용법을 알려드릴게요!',
+    },
+    map: {
+      prompt: '<accent>지도 버튼</accent>을 눌러보세요.',
+      body: '내 주변의 핑들을 확인할 수 있어요.\n또한 우리 지역과 전국 트렌드 장소도 볼 수 있어요.',
+    },
+    favorites: {
+      prompt: '<accent>즐겨찾기 버튼</accent>을 눌러보세요.',
+      body: '관심 있는 장소를 즐겨찾기에 저장하고,\n언제든 다시 찾아볼 수 있어요.',
+    },
+    community: {
+      prompt: '<accent>커뮤니티 버튼</accent>을 눌러보세요.',
+      body: '다른 여행자들의 생생한 장소 경험을 확인하고,\n장소를 태그해 나만의 이야기도 공유할 수 있어요.',
+    },
+    reservations: {
+      prompt: '<accent>예약 버튼</accent>을 눌러보세요.',
+      body: '원하는 장소의 예약 가능 여부를 확인하고,\n날짜와 시간에 맞춰 간편하게 예약할 수 있어요.',
+    },
+    recommendations: {
+      prompt: '<accent>장소 추천 버튼</accent>을 눌러보세요.',
+      body: '{{username}}님의 관심사와 이용 상황을 바탕으로\n개인화된 장소 추천을 받을 수 있어요.',
+    },
+    verification: {
+      promptAbove: '위의 <accent>검증하기 버튼</accent>에서 시작할 수 있어요.',
+      promptBelow: '아래의 <accent>검증하기 버튼</accent>에서 시작할 수 있어요.',
+      prompt: '<accent>검증하기 버튼</accent>을 눌러보세요.',
+      body: '직접 방문한 장소의 경험을 리뷰로 남기고,\n다른 여행자들이 믿고 방문할 수 있도록\n장소를 검증해주세요.',
+    },
+    categories: {
+      prompt: '<accent>카테고리</accent>를 눌러보세요.',
+      body: '음식점, 음악 등 원하는 카테고리를 선택하면\n해당하는 핑들만 골라서 확인할 수 있어요.',
+    },
+    profile: {
+      prompt: '<accent>마이페이지</accent>를 눌러보세요.',
+      body: '내 프로필과 여행 기간을 관리하고,\n내가 직접 검증한 장소들을 모아 볼 수 있어요.',
+    },
+  },
+  en: {
+    name: 'Pingdy', title: 'Meet Pingdy', guest: 'traveler',
+    close: 'Close tutorial', previous: 'Previous tip', next: 'Next tip',
+    finish: 'Finish tutorial', progress: 'Step {{current}} of {{total}}',
+    welcome: {
+      greeting: 'Hello, {{username}}!',
+      introduction: 'Here to make your travels easier,',
+      agent: 'I’m <accent>Pingdy</accent>, your AI agent.',
+      help: 'From finding places to preparing reservations,\nI can help with a conversation.',
+      start: 'Let me give you a quick tour!',
+    },
+    map: {
+      prompt: 'Tap the <accent>Map button</accent>.',
+      body: 'Discover pins around you, plus popular places\nin your area and across the country.',
+    },
+    favorites: {
+      prompt: 'Tap the <accent>Favorites button</accent>.',
+      body: 'Save places you’re interested in\nand find them again whenever you like.',
+    },
+    community: {
+      prompt: 'Tap the <accent>Community button</accent>.',
+      body: 'Explore other travelers’ experiences,\nand tag places to share your own stories.',
+    },
+    reservations: {
+      prompt: 'Tap the <accent>Reservations button</accent>.',
+      body: 'Check availability at the places you love\nand book a date and time that works for you.',
+    },
+    recommendations: {
+      prompt: 'Tap the <accent>Recommendations button</accent>.',
+      body: '{{username}}, discover personalized places\nbased on your interests and activity.',
+    },
+    verification: {
+      promptAbove: 'Start with the <accent>Verify button</accent> above.',
+      promptBelow: 'Start with the <accent>Verify button</accent> below.',
+      prompt: 'Tap the <accent>Verify button</accent>.',
+      body: 'Review the places you’ve visited\nand verify your experience to help\nother travelers visit with confidence.',
+    },
+    categories: {
+      prompt: 'Tap a <accent>category</accent>.',
+      body: 'Choose food, music, or another category\nto see only the pins that match.',
+    },
+    profile: {
+      prompt: 'Tap <accent>My Page</accent>.',
+      body: 'Manage your profile and travel dates,\nand browse the places you’ve verified.',
+    },
+  },
+  ja: {
+    name: 'Pingdy', title: 'Pingdyの使い方', guest: '旅行者',
+    close: 'チュートリアルを閉じる', previous: '前の案内', next: '次の案内',
+    finish: 'チュートリアルを完了', progress: '{{current}} / {{total}} ステップ',
+    welcome: {
+      greeting: 'こんにちは、{{username}}さん',
+      introduction: '{{username}}さんの旅をもっと気軽にする',
+      agent: 'AIエージェントの<accent>Pingdy</accent>です。',
+      help: '行きたい場所探しから予約の準備まで、\n会話ひとつでお手伝いします。',
+      start: 'それでは、簡単に使い方をご紹介します！',
+    },
+    map: {
+      prompt: '<accent>地図ボタン</accent>をタップしてください。',
+      body: '周辺のピンを確認できます。\n地域や全国の人気スポットも見られます。',
+    },
+    favorites: {
+      prompt: '<accent>お気に入りボタン</accent>をタップしてください。',
+      body: '気になる場所をお気に入りに保存して、\nいつでも見返せます。',
+    },
+    community: {
+      prompt: '<accent>コミュニティボタン</accent>をタップしてください。',
+      body: 'ほかの旅行者の体験をのぞいたり、\n場所をタグ付けして自分の体験を共有できます。',
+    },
+    reservations: {
+      prompt: '<accent>予約ボタン</accent>をタップしてください。',
+      body: 'お気に入りの場所の空き状況を確認し、\n都合のよい日時で予約できます。',
+    },
+    recommendations: {
+      prompt: '<accent>おすすめボタン</accent>をタップしてください。',
+      body: '{{username}}さんの興味や行動に合わせた\nおすすめスポットを見つけられます。',
+    },
+    verification: {
+      promptAbove: '上の<accent>認証ボタン</accent>から始められます。',
+      promptBelow: '下の<accent>認証ボタン</accent>から始められます。',
+      prompt: '<accent>認証ボタン</accent>をタップしてください。',
+      body: '訪れた場所を振り返って体験を認証し、\nほかの旅行者が安心して\n訪れられるようにしましょう。',
+    },
+    categories: {
+      prompt: '<accent>カテゴリー</accent>をタップしてください。',
+      body: 'グルメや音楽などのカテゴリーを選ぶと、\n該当するピンだけを表示できます。',
+    },
+    profile: {
+      prompt: '<accent>マイページ</accent>をタップしてください。',
+      body: 'プロフィールや旅行日程を管理し、\n認証した場所を確認できます。',
+    },
+  },
+  'zh-CN': {
+    name: 'Pingdy',
+    title: 'Pingdy 使用指南',
+    guest: '旅行者',
+    close: '关闭教程',
+    previous: '上一条提示',
+    next: '下一条提示',
+    finish: '完成教程',
+    progress: '第 {{current}} 步，共 {{total}} 步',
+    welcome: {
+      greeting: '你好，{{username}}！',
+      introduction: '让你的旅行更轻松，',
+      agent: '我是 AI 助手 <accent>Pingdy</accent>。',
+      help: '从寻找想去的地方到准备预约，\n只需一次对话我就能帮你。',
+      start: '现在带你快速了解一下用法！',
+    },
+    map: { prompt: '请点按<accent>地图按钮</accent>。', body: '可以查看你周边的标记点，\n还能看到本地和全国的热门地点。' },
+    favorites: { prompt: '请点按<accent>收藏按钮</accent>。', body: '把感兴趣的地点加入收藏，\n随时都能再次查看。' },
+    community: { prompt: '请点按<accent>社区按钮</accent>。', body: '看看其他旅行者的真实体验，\n也可以标记地点分享你的故事。' },
+    reservations: { prompt: '请点按<accent>预约按钮</accent>。', body: '确认想去的地点是否可预约，\n并按合适的日期和时间轻松预约。' },
+    recommendations: { prompt: '请点按<accent>地点推荐按钮</accent>。', body: '{{username}}，根据你的兴趣和使用情况，\n为你推荐个性化的地点。' },
+    verification: {
+      promptAbove: '可以从上方的<accent>验证按钮</accent>开始。',
+      promptBelow: '可以从下方的<accent>验证按钮</accent>开始。',
+      prompt: '请点按<accent>验证按钮</accent>。', body: '为你去过的地点写下评价，\n验证你的体验，\n让其他旅行者放心前往。' },
+    categories: { prompt: '请点按一个<accent>分类</accent>。', body: '选择美食、音乐等分类，\n即可只查看对应的标记点。' },
+    profile: { prompt: '请点按<accent>我的页面</accent>。', body: '管理你的个人资料和旅行日期，\n并集中查看你验证过的地点。' },
+  },
+  'zh-TW': {
+    name: 'Pingdy',
+    title: 'Pingdy 使用說明',
+    guest: '旅人',
+    close: '關閉教學',
+    previous: '上一則提示',
+    next: '下一則提示',
+    finish: '完成教學',
+    progress: '第 {{current}} 步，共 {{total}} 步',
+    welcome: {
+      greeting: '{{username}}，你好！',
+      introduction: '讓你的旅程更輕鬆，',
+      agent: '我是 AI 助理 <accent>Pingdy</accent>。',
+      help: '從尋找想去的地點到準備預約，\n只要一段對話就能幫你完成。',
+      start: '現在就帶你快速認識使用方式！',
+    },
+    map: { prompt: '請點一下<accent>地圖按鈕</accent>。', body: '可以查看你附近的標記點，\n也能看到在地與全國的熱門地點。' },
+    favorites: { prompt: '請點一下<accent>收藏按鈕</accent>。', body: '把感興趣的地點加入收藏，\n隨時都能再找出來。' },
+    community: { prompt: '請點一下<accent>社群按鈕</accent>。', body: '看看其他旅人的真實體驗，\n也可以標記地點分享自己的故事。' },
+    reservations: { prompt: '請點一下<accent>預約按鈕</accent>。', body: '確認想去的地點是否可預約，\n並依合適的日期與時間輕鬆預約。' },
+    recommendations: { prompt: '請點一下<accent>地點推薦按鈕</accent>。', body: '{{username}}，依據你的興趣與使用情況，\n為你推薦個人化的地點。' },
+    verification: {
+      promptAbove: '可以從上方的<accent>驗證按鈕</accent>開始。',
+      promptBelow: '可以從下方的<accent>驗證按鈕</accent>開始。',
+      prompt: '請點一下<accent>驗證按鈕</accent>。', body: '為你去過的地點留下評論，\n驗證你的體驗，\n讓其他旅人安心前往。' },
+    categories: { prompt: '請點一下任一<accent>類別</accent>。', body: '選擇美食、音樂等類別，\n就能只查看符合的標記點。' },
+    profile: { prompt: '請點一下<accent>我的頁面</accent>。', body: '管理你的個人檔案與旅行日期，\n並一次瀏覽你驗證過的地點。' },
+  },
+  vi: {
+    name: 'Pingdy',
+    title: 'Làm quen với Pingdy',
+    guest: 'bạn',
+    close: 'Đóng hướng dẫn',
+    previous: 'Mẹo trước',
+    next: 'Mẹo tiếp theo',
+    finish: 'Hoàn tất hướng dẫn',
+    progress: 'Bước {{current}}/{{total}}',
+    welcome: {
+      greeting: 'Xin chào, {{username}}!',
+      introduction: 'Giúp chuyến đi của bạn dễ dàng hơn,',
+      agent: 'mình là <accent>Pingdy</accent>, trợ lý AI của bạn.',
+      help: 'Từ tìm địa điểm đến chuẩn bị đặt chỗ,\nmình giúp bạn chỉ qua một cuộc trò chuyện.',
+      start: 'Cùng xem nhanh cách sử dụng nhé!',
+    },
+    map: {
+      prompt: 'Hãy chạm vào <accent>nút Bản đồ</accent>.',
+      body: 'Khám phá các ghim quanh bạn cùng địa điểm\nnổi bật trong khu vực và trên cả nước.',
+    },
+    favorites: { prompt: 'Hãy chạm vào <accent>nút Yêu thích</accent>.', body: 'Lưu những địa điểm bạn quan tâm\nvà xem lại bất cứ lúc nào.' },
+    community: {
+      prompt: 'Hãy chạm vào <accent>nút Cộng đồng</accent>.',
+      body: 'Xem trải nghiệm của du khách khác, gắn thẻ\nđịa điểm để chia sẻ câu chuyện của bạn.',
+    },
+    reservations: { prompt: 'Hãy chạm vào <accent>nút Đặt chỗ</accent>.', body: 'Kiểm tra tình trạng chỗ tại nơi bạn thích\nvà đặt ngày giờ phù hợp với bạn.' },
+    recommendations: {
+      prompt: 'Hãy chạm vào <accent>nút Gợi ý</accent>.',
+      body: '{{username}}, khám phá địa điểm dành riêng\ncho bạn dựa trên sở thích và hoạt động.',
+    },
+    verification: {
+      promptAbove: 'Bạn có thể bắt đầu bằng <accent>nút Xác minh</accent> phía trên.',
+      promptBelow: 'Bạn có thể bắt đầu bằng <accent>nút Xác minh</accent> phía dưới.',
+      prompt: 'Hãy chạm vào <accent>nút Xác minh</accent>.',
+      body: 'Đánh giá những nơi bạn đã ghé thăm\nvà xác minh trải nghiệm của bạn\nđể du khách khác yên tâm ghé đến.',
+    },
+    categories: { prompt: 'Hãy chạm vào một <accent>danh mục</accent>.', body: 'Chọn ẩm thực, âm nhạc hoặc danh mục khác\nđể chỉ xem các ghim phù hợp.' },
+    profile: {
+      prompt: 'Hãy chạm vào <accent>Trang của tôi</accent>.',
+      body: 'Quản lý hồ sơ và ngày đi của bạn,\nxem lại các địa điểm bạn đã xác minh.',
+    },
+  },
+  es: {
+    name: 'Pingdy',
+    title: 'Conoce a Pingdy',
+    guest: 'viajero',
+    close: 'Cerrar tutorial',
+    previous: 'Consejo anterior',
+    next: 'Siguiente consejo',
+    finish: 'Finalizar tutorial',
+    progress: 'Paso {{current}} de {{total}}',
+    welcome: {
+      greeting: '¡Hola, {{username}}!',
+      introduction: 'Para que tus viajes sean más fáciles,',
+      agent: 'soy <accent>Pingdy</accent>, tu agente de IA.',
+      help: 'Desde buscar lugares hasta reservar,\nte ayudo con una sola conversación.',
+      start: '¡Te muestro rápidamente cómo funciona!',
+    },
+    map: {
+      prompt: 'Toca el <accent>botón Mapa</accent>.',
+      body: 'Descubre pines cerca de ti y lugares\npopulares de tu zona y de todo el país.',
+    },
+    favorites: { prompt: 'Toca el <accent>botón Favoritos</accent>.', body: 'Guarda los lugares que te interesan\ny vuelve a encontrarlos cuando quieras.' },
+    community: {
+      prompt: 'Toca el <accent>botón Comunidad</accent>.',
+      body: 'Explora experiencias de otros viajeros\ny etiqueta lugares para contar las tuyas.',
+    },
+    reservations: {
+      prompt: 'Toca el <accent>botón Reservas</accent>.',
+      body: 'Consulta la disponibilidad de un lugar\ny reserva la fecha y la hora que quieras.',
+    },
+    recommendations: {
+      prompt: 'Toca el <accent>botón Sugerencias</accent>.',
+      body: '{{username}}, descubre lugares personalizados\nsegún tus intereses y tu actividad.',
+    },
+    verification: {
+      promptAbove: 'Puedes empezar con el <accent>botón Verificar</accent> de arriba.',
+      promptBelow: 'Puedes empezar con el <accent>botón Verificar</accent> de abajo.',
+      prompt: 'Toca el <accent>botón Verificar</accent>.',
+      body: 'Reseña los lugares que visitaste\ny verifica tu experiencia para que\notros viajeros los visiten con confianza.',
+    },
+    categories: { prompt: 'Toca una <accent>categoría</accent>.', body: 'Elige comida, música u otra categoría\npara ver solo los pines que coincidan.' },
+    profile: { prompt: 'Toca <accent>Mi página</accent>.', body: 'Gestiona tu perfil y tus fechas de viaje\ny consulta los lugares que verificaste.' },
+  },
+  'pt-BR': {
+    name: 'Pingdy',
+    title: 'Conheça o Pingdy',
+    guest: 'viajante',
+    close: 'Fechar tutorial',
+    previous: 'Dica anterior',
+    next: 'Próxima dica',
+    finish: 'Concluir tutorial',
+    progress: 'Etapa {{current}} de {{total}}',
+    welcome: {
+      greeting: 'Olá, {{username}}!',
+      introduction: 'Para deixar suas viagens mais fáceis,',
+      agent: 'eu sou o <accent>Pingdy</accent>, seu agente de IA.',
+      help: 'De encontrar lugares a preparar reservas,\neu ajudo você com uma conversa.',
+      start: 'Vou mostrar rapidinho como funciona!',
+    },
+    map: {
+      prompt: 'Toque no <accent>botão Mapa</accent>.',
+      body: 'Descubra pins perto de você e lugares\npopulares na sua região e em todo o país.',
+    },
+    favorites: { prompt: 'Toque no <accent>botão Favoritos</accent>.', body: 'Salve os lugares que interessam a você\ne encontre-os de novo quando quiser.' },
+    community: {
+      prompt: 'Toque no <accent>botão Comunidade</accent>.',
+      body: 'Veja experiências de outros viajantes\ne marque lugares para contar as suas.',
+    },
+    reservations: {
+      prompt: 'Toque no <accent>botão Reservas</accent>.',
+      body: 'Confira a disponibilidade de um lugar\ne reserve a data e o horário que quiser.',
+    },
+    recommendations: {
+      prompt: 'Toque no <accent>botão Sugestões</accent>.',
+      body: '{{username}}, descubra lugares sob medida\ncom base nos seus interesses e atividade.',
+    },
+    verification: {
+      promptAbove: 'Você pode começar pelo <accent>botão Verificar</accent> acima.',
+      promptBelow: 'Você pode começar pelo <accent>botão Verificar</accent> abaixo.',
+      prompt: 'Toque no <accent>botão Verificar</accent>.',
+      body: 'Avalie os lugares que você visitou\ne verifique sua experiência para que\noutros viajantes visitem com confiança.',
+    },
+    categories: {
+      prompt: 'Toque em uma <accent>categoria</accent>.',
+      body: 'Escolha comida, música ou outra categoria\npara ver apenas os pins correspondentes.',
+    },
+    profile: { prompt: 'Toque em <accent>Minha página</accent>.', body: 'Gerencie seu perfil e suas datas de viagem\ne veja os lugares que você verificou.' },
+  },
+
+  th: {
+    "name": "Pingdy",
+    "title": "รู้จัก Pingdy",
+    "guest": "นักเดินทาง",
+    "close": "ปิดบทแนะนำ",
+    "previous": "เคล็ดลับก่อนหน้า",
+    "next": "เคล็ดลับถัดไป",
+    "finish": "จบบทแนะนำ",
+    "progress": "ขั้นตอนที่ {{current}} จาก {{total}}",
+    "welcome": {
+      "greeting": "สวัสดี {{username}}!",
+      "introduction": "พร้อมช่วยให้การเดินทางของคุณง่ายขึ้น",
+      "agent": "ฉันคือ <accent>Pingdy</accent> ผู้ช่วย AI ของคุณ",
+      "help": "ตั้งแต่ค้นหาสถานที่ไปจนถึงเตรียมการจอง\nฉันช่วยคุณได้ผ่านการสนทนา",
+      "start": "มาแนะนำการใช้งานแบบสั้น ๆ กัน!"
+    },
+    "map": {
+      "prompt": "แตะ<accent>ปุ่มแผนที่</accent>",
+      "body": "ค้นพบหมุดรอบตัวคุณและสถานที่ยอดนิยม\nในพื้นที่ของคุณและทั่วประเทศ"
+    },
+    "favorites": {
+      "prompt": "แตะ<accent>ปุ่มรายการโปรด</accent>",
+      "body": "บันทึกสถานที่ที่คุณสนใจ\nแล้วกลับมาดูได้ทุกเมื่อที่ต้องการ"
+    },
+    "community": {
+      "prompt": "แตะ<accent>ปุ่มชุมชน</accent>",
+      "body": "สำรวจประสบการณ์ของนักเดินทางคนอื่น\nและแท็กสถานที่เพื่อแชร์เรื่องราวของคุณ"
+    },
+    "reservations": {
+      "prompt": "แตะ<accent>ปุ่มการจอง</accent>",
+      "body": "ตรวจสอบเวลาว่างของสถานที่ที่คุณชอบ\nแล้วจองวันที่และเวลาที่สะดวก"
+    },
+    "recommendations": {
+      "prompt": "แตะ<accent>ปุ่มแนะนำ</accent>",
+      "body": "{{username}} ค้นพบสถานที่ที่เหมาะกับคุณ\nตามความสนใจและกิจกรรมของคุณ"
+    },
+    "verification": {
+      "promptAbove": "เริ่มได้ที่<accent>ปุ่มยืนยัน</accent>ด้านบน",
+      "promptBelow": "เริ่มได้ที่<accent>ปุ่มยืนยัน</accent>ด้านล่าง",
+      "prompt": "แตะ<accent>ปุ่มยืนยัน</accent>",
+      "body": "รีวิวสถานที่ที่คุณเคยไป\nและยืนยันประสบการณ์เพื่อช่วยให้\nนักเดินทางคนอื่นไปได้อย่างมั่นใจ"
+    },
+    "categories": {
+      "prompt": "แตะ<accent>หมวดหมู่</accent>",
+      "body": "เลือกอาหาร ดนตรี หรือหมวดหมู่อื่น\nเพื่อดูเฉพาะหมุดที่ตรงกัน"
+    },
+    "profile": {
+      "prompt": "แตะ<accent>หน้าของฉัน</accent>",
+      "body": "จัดการโปรไฟล์และวันเดินทาง\nและดูสถานที่ที่คุณยืนยันการเยี่ยมชมแล้ว"
+    }
+  },
+} as const;

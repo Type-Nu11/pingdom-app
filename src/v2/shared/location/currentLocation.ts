@@ -1,0 +1,43 @@
+import { foregroundPermission } from './foregroundPermission';
+import * as Location from 'expo-location';
+
+export type CurrentCoordinate = {
+  accuracyMeters: number;
+  latitude: number;
+  longitude: number;
+  observedAt: string;
+};
+
+export type CurrentLocationOutcome =
+  | { status: 'granted'; coordinate: CurrentCoordinate }
+  | { status: 'denied'; coordinate: null }
+  | { status: 'failed'; coordinate: null };
+
+export async function getCurrentCoordinate(
+  options: { requestPermission?: boolean } = {},
+): Promise<CurrentLocationOutcome> {
+  try {
+    let permission = await foregroundPermission.get();
+    if (options.requestPermission !== false && permission.status !== 'granted' && permission.canAskAgain) {
+      permission = await foregroundPermission.request();
+    }
+    if (permission.status !== 'granted') return { status: 'denied', coordinate: null };
+
+    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+    const accuracyMeters = location.coords.accuracy;
+    if (accuracyMeters === null || !Number.isFinite(accuracyMeters) || accuracyMeters < 0) {
+      return { status: 'failed', coordinate: null };
+    }
+    return {
+      status: 'granted',
+      coordinate: {
+        accuracyMeters,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        observedAt: new Date(location.timestamp).toISOString(),
+      },
+    };
+  } catch {
+    return { status: 'failed', coordinate: null };
+  }
+}

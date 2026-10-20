@@ -1,0 +1,135 @@
+import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
+import React from 'react';
+import { ActivityIndicator, type TextInput } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import styled, { useTheme } from 'styled-components/native';
+
+import CloseMediumIcon from '../../../../assets/v2/icons/community/close-medium.svg';
+import SendIcon from '../../../../assets/v2/icons/community/send.svg';
+import { textStyleCss } from '../../../shared/theme/typography';
+import { COMMENT_CONTENT_MAX_LENGTH, COMMENT_COUNTER_WARNING_THRESHOLD } from '../model/commentForm';
+
+export type CommentInputBarProps = {
+  busy: boolean;
+  disabled: boolean;
+  errorText?: string;
+  inputRef?: React.Ref<TextInput>;
+  onCancelReply?: () => void;
+  onChangeText: (text: string) => void;
+  onSubmit: () => void;
+  /** Author being replied to; the bar posts a top-level comment without it. */
+  replyToAuthorName?: string;
+  value: string;
+};
+
+export default function CommentInputBar({
+  busy,
+  disabled,
+  errorText,
+  inputRef,
+  onCancelReply,
+  onChangeText,
+  onSubmit,
+  replyToAuthorName,
+  value,
+}: CommentInputBarProps) {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const canSubmit = !disabled && value.trim().length > 0;
+  const replying = replyToAuthorName !== undefined;
+
+  return (
+    <Bar testID="v2-community-comment-input-bar">
+      {replying ? (
+        <ReplyBanner testID="v2-community-comment-reply-banner">
+          <ReplyText accessibilityLiveRegion="polite" numberOfLines={1}>
+            {t('community.detail.commentInput.replyingTo', { author: replyToAuthorName })}
+          </ReplyText>
+          <ReplyCancel
+            accessibilityLabel={t('community.detail.commentInput.cancelReply')}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={onCancelReply}
+            testID="v2-community-comment-reply-cancel"
+          >
+            <CloseMediumIcon color={theme.colors.textAlternative} height={19} width={19} />
+          </ReplyCancel>
+        </ReplyBanner>
+      ) : null}
+      {value.length >= COMMENT_COUNTER_WARNING_THRESHOLD ? (
+        <CounterText testID="v2-community-comment-counter">
+          {t('community.detail.commentInput.counter', { count: value.length, max: COMMENT_CONTENT_MAX_LENGTH })}
+        </CounterText>
+      ) : null}
+      {errorText ? (
+        <ErrorText accessibilityLiveRegion="polite" accessibilityRole="alert" testID="v2-community-comment-input-error">
+          {errorText}
+        </ErrorText>
+      ) : null}
+      <Row>
+        <Field
+          accessibilityLabel={t('community.detail.commentInput.label')}
+          maxLength={COMMENT_CONTENT_MAX_LENGTH}
+          multiline
+          onChangeText={onChangeText}
+          placeholder={t(replying ? 'community.detail.commentInput.replyPlaceholder' : 'community.detail.commentInput.placeholder')}
+          ref={inputRef}
+          placeholderTextColor={theme.colors.textMuted}
+          testID="v2-community-comment-input"
+          value={value}
+        />
+        <SendButton
+          accessibilityLabel={t('community.detail.commentInput.send')}
+          accessibilityRole="button"
+          accessibilityState={{ busy, disabled: !canSubmit }}
+          disabled={!canSubmit}
+          onPress={onSubmit}
+          testID="v2-community-comment-send"
+        >
+          {busy ? (
+            <ActivityIndicator
+              accessibilityLabel={t('community.detail.commentInput.sendBusy')}
+              color={theme.colors.onPrimary}
+              size="small"
+            />
+          ) : (
+            <SendIcon height={22} width={22} />
+          )}
+        </SendButton>
+      </Row>
+    </Bar>
+  );
+}
+
+// Figma `CommentInput`: 1px `Line/Alternative` rule, then a 316×44 field and
+// 44px send button 8px apart inside 16px + 1px / 25px bottom insets.
+const Bar = styled.View`
+  gap: 6px;
+  padding: 16px 17px 25px;
+  background-color: ${({ theme }) => theme.colors.background};
+  border-top-width: 1px;
+  border-top-color: ${({ theme }) => theme.colors.lineAlternative};
+`;
+const Row = styled.View`flex-direction: row; align-items: flex-end; gap: 8px;`;
+const Field = styled(AppTextInput)`
+  flex: 1;
+  max-height: 96px;
+  min-height: 44px;
+  padding: 13px 16px;
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  background-color: ${({ theme }) => theme.colors.fillAlternative};
+  color: ${({ theme }) => theme.colors.text};
+  ${({ theme }) => textStyleCss(theme.typography.labelRegular)}
+`;
+// Figma shows the send button at full strength even with an empty field; it
+// stays disabled (and announces so) until there is something to send.
+const SendButton = styled.Pressable`
+  width: 44px; height: 44px; align-items: center; justify-content: center;
+  border-radius: ${({ theme }) => theme.radius.full}px;
+  background-color: ${({ theme }) => theme.colors.primaryAction};
+`;
+const ReplyBanner = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 8px;`;
+const ReplyText = styled(AppText)`flex: 1; color: ${({ theme }) => theme.colors.textAlternative}; ${({ theme }) => textStyleCss(theme.typography.captionMedium)}`;
+const ReplyCancel = styled.Pressable`width: 19px; height: 19px; align-items: center; justify-content: center;`;
+const CounterText = styled(AppText)`align-self: flex-end; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
+const ErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;

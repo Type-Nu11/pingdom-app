@@ -1,0 +1,3336 @@
+import { useContentDeletion } from '../../../../../shared/components/useContentDeletion';
+import { useDeletePlaceReview } from '../../../visit-verification';
+import { ReviewReasonIcon } from '../../../../../shared/components/ReviewReasonIcon';
+import OwnerContentActions from '../../../../../shared/components/OwnerContentActions';
+import TranslationAttribution, { useTranslationAttribution } from '../../../translation/TranslationAttribution';
+import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
+import PlaceNameTranslation from '../../../translation/PlaceNameTranslation';
+import Skeleton, { SkeletonGroup, SkeletonBlock } from '../../../../../shared/components/Skeleton';
+import DetailBackAsset from '../../../../../../assets/v2/icons/place/detail-back.svg';
+import DetailBookmarkAsset from '../../../../../../assets/v2/icons/place/detail-bookmark.svg';
+import DetailShareAsset from '../../../../../../assets/v2/icons/place/detail-share.svg';
+import DetailReservationAsset from '../../../../../../assets/v2/icons/place/detail-reservation.svg';
+import DetailDirectionsAsset from '../../../../../../assets/v2/icons/place/detail-directions.svg';
+import DetailPinAsset from '../../../../../../assets/v2/icons/place/detail-pin.svg';
+import DetailClockAsset from '../../../../../../assets/v2/icons/place/detail-clock.svg';
+import DetailCallAsset from '../../../../../../assets/v2/icons/place/detail-call.svg';
+import DetailGlobeBaseAsset from '../../../../../../assets/v2/icons/place/detail-globe-base.svg';
+import DetailGlobeLinesAsset from '../../../../../../assets/v2/icons/place/detail-globe-lines.svg';
+import DetailParkingAsset from '../../../../../../assets/v2/icons/place/detail-parking.svg';
+import DetailTicketAsset from '../../../../../../assets/v2/icons/place/detail-ticket.svg';
+import DetailDownloadAsset from '../../../../../../assets/v2/icons/place/detail-download.svg';
+import DetailReviewPhotoAsset from '../../../../../../assets/v2/icons/place/detail-review-photo.svg';
+import DetailReviewCleanAsset from '../../../../../../assets/v2/icons/place/detail-review-clean.svg';
+import DetailReviewMultilingualBaseAsset from '../../../../../../assets/v2/icons/place/detail-review-multilingual-base.svg';
+import DetailReviewMultilingualLinesAsset from '../../../../../../assets/v2/icons/place/detail-review-multilingual-lines.svg';
+import DetailReviewKindAsset from '../../../../../../assets/v2/icons/place/detail-review-kind.svg';
+import DetailReviewDeliciousAsset from '../../../../../../assets/v2/icons/place/detail-review-delicious.svg';
+import { REASON_CODES, reviewReasonLabelKey, type ReviewReasonKey } from '../../../../../shared/api/reviewReasons';
+import { ApiErrorState, LoadingState, ReviewFeatureTags, UnavailableStateIcon } from '../../../../../shared/components';
+import { Text as AppText } from '../../../../../shared/components/Typography';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Animated,
+  GestureResponderHandlers,
+  Image,
+  PanResponder,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text as NativeText,
+  type TextProps,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import Svg, {
+  Circle,
+  Defs,
+  LinearGradient,
+  Path,
+  Rect,
+  Stop,
+} from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMapTutorial } from '../../tutorial/context';
+import GroupAsset from '../../../../../../assets/v2/icons/place/Group.svg';
+import ParkAsset from '../../../../../../assets/v2/icons/place/Park.svg';
+import ArtAsset from '../../../../../../assets/v2/icons/place/art_svg.svg';
+import BeautyAsset from '../../../../../../assets/v2/icons/place/beati_svg.svg';
+import CafeAsset from '../../../../../../assets/v2/icons/place/cafe_svg.svg';
+import EtcAsset from '../../../../../../assets/v2/icons/place/etc_svg.svg';
+import FashionAsset from '../../../../../../assets/v2/icons/place/fashion_svg.svg';
+import FoodAsset from '../../../../../../assets/v2/icons/place/food_svg.svg';
+import HeritageAsset from '../../../../../../assets/v2/icons/place/heritage.svg';
+import HotPlaceAsset from '../../../../../../assets/v2/icons/place/hotplace.svg';
+import MapAsset from '../../../../../../assets/v2/icons/place/maping_svg.svg';
+import MapNavigationIcon from './MapNavigationIcon';
+import MusicAsset from '../../../../../../assets/v2/icons/place/music_svg.svg';
+import PopupAsset from '../../../../../../assets/v2/icons/place/popup_svg.svg';
+import RecommendationTitleAsset from '../../../../../../assets/v2/icons/place/Subtract.svg';
+import CloseMediumAsset from '../../../../../../assets/v2/icons/community/close-medium.svg';
+import {
+  FadeSlideTransition,
+  MOTION_DURATION,
+  runTimingMotion,
+  useReducedMotion,
+} from '../../../../../shared/motion';
+import { FavoriteIcon } from '../../../../../shared/components';
+import type { BottomSheetSnapPoint } from '../hooks/useBottomSheet';
+import { usePlacePreviewImages } from '../../../detail';
+import { useMapFeedSwipe } from '../hooks/useMapFeedSwipe';
+import type { PlaceOperatingSummaryText } from '../../../detail';
+import type { ReservationCtaState } from '../../../../booking';
+import GlassSurface from '../../presentation/components/GlassSurface';
+import * as GlassStyles from '../styles/BottomSheetGlass.styles';
+import MapSheetSurface from './MapSheetSurface';
+import { formatDistance as formatLocalizedDistance } from '../../../../../shared/i18n/formatters';
+import { lightColors } from '../../../../../shared/theme/colors';
+import { useTheme } from 'styled-components/native';
+import type { AppTheme } from '../../../../../shared/theme';
+import { normalizePlaceCategory } from '../../../core/placeCategory';
+import { hasValidCoordinates } from '../../actions/services/placeActions';
+import { getExternalPlaceKey, type ExternalMapPlace } from '../../selection/model/externalPlace';
+import {
+  selectMapHomeCategoryResult,
+  type MapHomeCategory,
+  type MapHomeDisplayState,
+} from '../../../search/model/mapHomeCategory';
+import { PlacePhotoViewer } from '../../../detail';
+import { PlaceMenuSection } from '../../../menus';
+import MapSheetBottomNavigation, { getMapSheetNavigationBottom } from './MapSheetBottomNavigation';
+import type {
+  RankedPlaceFeed,
+  RankedPlaceFeedStatus,
+  RankedPlaceViewModel,
+} from '../../../home-feeds';
+
+export type BottomSheetContent =
+  | { type: 'home' }
+  | { type: 'recommendations' }
+  | { type: 'search'; query: string }
+  | { type: 'results'; query: string }
+  | { type: 'place-preview'; placeId: number }
+  | { type: 'external-place'; place: ExternalMapPlace };
+
+export type VisitFilter = 'Open now' | 'Short wait' | 'Coupon' | 'Bookable';
+
+export type MapPreviewFallbackContent = {
+  amenities: Array<'english' | 'parking'>;
+  topReviewReasons?: ReviewReasonKey[];
+  coupons?: Array<{ period: string; title: string }>;
+  englishName?: string;
+  events?: Array<{ period: string; title: string }>;
+  imageState?: 'empty' | 'error' | 'loading' | 'ready';
+  imageUrls: string[];
+  phone?: string;
+  jibunAddress?: string;
+  notice?: string;
+  operatingSummary?: PlaceOperatingSummaryText;
+  roadAddress?: string;
+  summary?: string;
+  reviewCount?: number;
+  reservation?: ReservationCtaState;
+  reviewState?: 'empty' | 'error' | 'loading' | 'ready';
+  reviewHighlights?: Array<{ count: number; label: string; reason?: ReviewReasonKey }>;
+  reviewSampleSize?: number;
+  reviewHighlightsComplete?: boolean;
+  reviewParticipantCount?: number;
+  reviews?: Array<{
+    author: string;
+    placeId?: number;
+    isOwnReview?: boolean;
+    onEdit?: () => void;
+    reviewId?: number;
+    avatarUrl?: string;
+    createdAt: string;
+    imageUrls?: string[];
+    reasons: ReviewReasonKey[];
+    text: string;
+  }>;
+  statusDescription: string;
+  statusEmphasis: string;
+  verifiedEvidenceCount?: number;
+};
+
+export type DecisionPlace = {
+  address: string;
+  category: string;
+  distance: string;
+  distanceMeters?: number;
+  id: number;
+  latitude: number;
+  longitude: number;
+  name: string;
+  recommendationRank?: number;
+  recommendationReason?: string;
+  recommendationSource?: string;
+  tags: string[];
+  verifiedAgo: string;
+  verifiedMinutes?: number;
+  wait: string;
+  waitMinutes?: [number, number];
+};
+
+export function selectPlaceDetailAddress(
+  placeAddress: string,
+  fallbackContent?: Pick<MapPreviewFallbackContent, 'jibunAddress' | 'roadAddress'>,
+): string {
+  const candidates = [
+    fallbackContent?.roadAddress,
+    placeAddress,
+    fallbackContent?.jibunAddress,
+  ];
+
+  return candidates.find((candidate) => candidate?.trim())?.trim() ?? '';
+}
+
+type MapBottomSheetProps = {
+  activeFilters: VisitFilter[];
+  bookmarkedPlaceIds: Record<string, boolean>;
+  bookmarkPendingPlaceIds?: Record<string, boolean>;
+  isBookmarkStateLoading?: boolean;
+  collapsedTranslateY: number;
+  /** Snap offset of the raised sheet; the chrome reaches full width there (Figma *-Up frames). */
+  expandedTranslateY?: number;
+  content: BottomSheetContent;
+  couponContent?: React.ReactNode;
+  height: number;
+  mediumTranslateY: number;
+  onBackHome: () => void;
+  onCreateReservation?: (place: DecisionPlace, imageUrl?: string) => void;
+  onOpenRecommendations?: () => void;
+  onDetailPress: (place: DecisionPlace) => void;
+  onDeparturePress?: (place: DecisionPlace) => void;
+  onDirectionsPress?: (place: DecisionPlace) => void;
+  onExternalDeparturePress?: (place: ExternalMapPlace) => void;
+  onExternalDirectionsPress?: (place: ExternalMapPlace) => void;
+  onExternalPlaceLayout?: (height: number) => void;
+  onFilterPress: (filter: VisitFilter) => void;
+  onGoNowPress: (place: DecisionPlace) => void;
+  onHandlePress: () => void;
+  onOpenCommunity?: () => void;
+  onOpenLikedPlaces?: () => void;
+  onOpenSavedPlaces?: () => void;
+  onStartVisitVerification?: (place: DecisionPlace) => void;
+  onPlacePress: (place: DecisionPlace) => void;
+  onProfilePress?: () => void;
+  onQueryChange: (query: string) => void;
+  onSearchFocus: () => void;
+  onSharePlace?: (place: DecisionPlace) => void;
+  onSubmitSearch: () => void;
+  onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
+  onRankedPlacePress?: (place: RankedPlaceViewModel) => void;
+  onToggleRankedBookmark?: (
+    place: RankedPlaceViewModel,
+    nextBookmarked: boolean,
+  ) => Promise<void>;
+  panHandlers: GestureResponderHandlers;
+  placeActionBusy?: 'directions' | 'share' | null;
+  places: DecisionPlace[];
+  localFeed?: RankedPlaceFeed;
+  nationalFeed?: RankedPlaceFeed;
+  previewFallbackContentByPlaceId?: Record<string, MapPreviewFallbackContent>;
+  explorationImageUrlsByPlaceId?: Record<string, string>;
+  recommendationContext?: string | null;
+  recommendationLimitMessage?: string | null;
+  recommendationPlaces: DecisionPlace[];
+  recommendationsState: 'empty' | 'error' | 'loading' | 'ready';
+  onRetryRecommendations: () => void;
+  onRetryAvailability?: () => void;
+  onRetryMedia?: () => void;
+  onRetryReviews?: () => void;
+  detailError?: unknown;
+  detailBusy?: boolean;
+  onRetryDetail?: () => unknown;
+  resultsError?: unknown;
+  resultsLoading?: boolean;
+  resultsBusy?: boolean;
+  onRetryResults?: () => unknown;
+  selectedPlace: DecisionPlace | null;
+  sheetChromeBottom: Animated.Value;
+  parentOwnsMotion?: boolean;
+  sheetTranslateY: Animated.Value;
+  snapPoint: BottomSheetSnapPoint;
+  userName?: string;
+};
+
+
+
+type SheetCategory = MapHomeCategory;
+
+// Keep the Figma typography stable when an Android device uses a larger system font scale.
+const Text = (props: TextProps) => <NativeText maxFontSizeMultiplier={1} {...props} />;
+const useMapSheetStyles = () => {
+  const { colors, liquidGlass: themedGlass } = useTheme();
+  return useMemo(() => createStyles(colors, themedGlass), [colors, themedGlass]);
+};
+
+// Gap between the sheet chrome and the screen edges at rest; collapses to 0 when expanded.
+const SHEET_RESTING_GAP = 8;
+const HOME_SHEET_VISIBLE_HEIGHT = 386;
+const HOME_SHEET_HANDLE_HEIGHT = 19;
+
+// Figma's resting chrome is 378 dp high, followed by an 8 dp screen-edge gap.
+// Keep those content dimensions on narrow phones; only constrain short viewports.
+export const getMapHomeSheetVisibleHeight = (viewportHeight: number, expandedSheetTop: number) => (
+  Math.min(HOME_SHEET_VISIBLE_HEIGHT, Math.max(0, viewportHeight - expandedSheetTop - 24))
+);
+
+const RECOMMENDATION_NAVIGATION_LOCK_MS = 500;
+const CATEGORY_OPTIONS: Array<{ id: SheetCategory }> = [
+  { id: 'all' },
+  { id: 'popup' }, { id: 'music' }, { id: 'food' }, { id: 'fashion' }, { id: 'beauty' },
+  { id: 'art' }, { id: 'cafe' }, { id: 'heritage' }, { id: 'etc' },
+];
+
+const CardScrim = () => (
+  <View pointerEvents="none" style={styles.cardScrim}>
+    <Svg height="100%" preserveAspectRatio="none" viewBox="0 0 100 100" width="100%">
+      <Defs>
+        <LinearGradient id="card-scrim" x1="0" x2="0" y1="0" y2="1">
+          <Stop offset="0" stopColor="#000000" stopOpacity="0" />
+          <Stop offset="0.52" stopColor="#000000" stopOpacity="0.02" />
+          <Stop offset="0.76" stopColor="#000000" stopOpacity="0.32" />
+          <Stop offset="1" stopColor="#000000" stopOpacity="0.82" />
+        </LinearGradient>
+      </Defs>
+      <Rect fill="url(#card-scrim)" height="100" width="100" />
+    </Svg>
+  </View>
+);
+
+const RecommendationMetaIcon = () => {
+  const themedColors = useTheme().colors ?? lightColors;
+  return <Svg height={16} viewBox="0 0 18 18" width={16}>
+    <Path d="M3 3.5h12v8H8l-3.5 3v-3H3z" fill={themedColors.surfaceMuted} stroke={themedColors.textMuted} strokeLinejoin="round" />
+    <Circle cx="6.5" cy="7.5" fill={themedColors.textMuted} r=".8" />
+    <Circle cx="9" cy="7.5" fill={themedColors.textMuted} r=".8" />
+    <Circle cx="11.5" cy="7.5" fill={themedColors.textMuted} r=".8" />
+  </Svg>
+};
+
+const CategoryIcon = ({ active, category }: { active: boolean; category: SheetCategory }) => {
+  const themedColors = useTheme().colors ?? lightColors;
+  const color = active ? themedColors.primary : themedColors.textSecondary;
+
+  switch (category) {
+    case 'all':
+      return <MapNavigationIcon selected={active} color={color} size={18} testID="map-category-all" />;
+    case 'popup':
+      return <PopupAsset color={color} height={19} width={20} />;
+    case 'music':
+      return <MusicAsset color={color} height={18} width={21} />;
+    case 'food':
+      return <FoodAsset color={color} height={18} width={15} />;
+    case 'fashion':
+      return <FashionAsset color={color} height={18} width={24} />;
+    case 'art':
+      return <ArtAsset color={color} height={18} width={18} />;
+    case 'beauty':
+      return <BeautyAsset color={color} height={18} width={12} />;
+    case 'cafe':
+      return <CafeAsset color={color} height={18} width={19} />;
+    case 'heritage':
+      return <HeritageAsset color={color} height={18} width={21} />;
+    case 'etc':
+      return <EtcAsset color={color} height={18} width={18} />;
+  }
+};
+
+const FeedSegment = ({
+  expanded = false,
+  sheetPanHandlers,
+  feed,
+  onChange,
+  onTouchStart,
+}: {
+  expanded?: boolean;
+  sheetPanHandlers: GestureResponderHandlers;
+  feed: 'local' | 'national';
+  onChange: (feed: 'local' | 'national') => void;
+  onTouchStart: () => void;
+}) => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMapSheetStyles();
+  const [segmentWidth, setSegmentWidth] = useState(0);
+  const indicatorProgress = useRef(new Animated.Value(feed === 'local' ? 0 : 1)).current;
+  const reduceMotion = useReducedMotion();
+  const indicatorWidth = Math.max(0, (segmentWidth - 8) / 2);
+  const trackRef = useRef<View>(null);
+  const trackLeft = useRef<number | null>(null);
+  const dragging = useRef(false);
+  const dragPosition = useRef(0);
+  const current = useRef({ feed, onChange, segmentWidth });
+  current.current = { feed, onChange, segmentWidth };
+  const selectAtFinger = (pageX: number) => {
+    if (trackLeft.current === null || current.current.segmentWidth <= 8) return;
+    const width = current.current.segmentWidth;
+    const x = pageX - trackLeft.current;
+    // The thumb follows the finger; content changes as soon as it crosses halves.
+    indicatorProgress.stopAnimation();
+    indicatorProgress.setValue(Math.max(0, Math.min(1, (x - width / 4) / (width / 2))));
+    const next = x < width / 2 ? 'local' : 'national';
+    if (next !== current.current.feed) {
+      current.current.feed = next;
+      current.current.onChange(next);
+    }
+  };
+  const horizontalDrag = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponderCapture: () => {
+      trackLeft.current = null;
+      trackRef.current?.measureInWindow((x) => {
+        trackLeft.current = x;
+        if (dragging.current) selectAtFinger(dragPosition.current);
+      });
+      return false;
+    },
+    onMoveShouldSetPanResponderCapture: (_, gesture) => (
+      Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2
+    ),
+    onPanResponderGrant: (_, gesture) => {
+      dragging.current = true;
+      dragPosition.current = gesture.moveX;
+      selectAtFinger(gesture.moveX);
+    },
+    onPanResponderMove: (_, gesture) => {
+      dragPosition.current = gesture.moveX;
+      selectAtFinger(gesture.moveX);
+    },
+    onPanResponderRelease: () => {
+      dragging.current = false;
+      runTimingMotion(indicatorProgress, current.current.feed === 'local' ? 0 : 1, {
+        duration: MOTION_DURATION.transition, reduceMotion, useNativeDriver: true,
+      });
+    },
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderTerminate: () => {
+      dragging.current = false;
+      indicatorProgress.setValue(current.current.feed === 'local' ? 0 : 1);
+    },
+  // Mutable selection and layout are read through refs during an active touch.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [indicatorProgress, reduceMotion]);
+
+  useEffect(() => {
+    if (dragging.current) return;
+    const animation = runTimingMotion(indicatorProgress, feed === 'local' ? 0 : 1, {
+      duration: MOTION_DURATION.transition,
+      reduceMotion,
+      useNativeDriver: true,
+    });
+
+    return () => animation?.stop();
+  }, [feed, indicatorProgress, reduceMotion]);
+
+  const segmentContent = (
+    <>
+      {indicatorWidth > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.segmentIndicator,
+            {
+              backgroundColor: expanded ? colors.background : colors.glassFillRaised,
+              transform: [{
+                translateX: indicatorProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, indicatorWidth],
+                }),
+              }],
+              width: indicatorWidth,
+            },
+          ]}
+          testID="feed-segment-indicator"
+        />
+      ) : null}
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'local' }}
+        onPress={() => onChange('local')}
+        style={styles.segment}
+      >
+        <HotPlaceAsset
+          color={feed === 'local' ? colors.primary : colors.labelAssistive}
+          height={20}
+          width={16}
+        />
+        <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'local' && styles.segmentLabelActive]}>
+          {t('map.sheet.localHotPlaces')}
+        </AppText>
+      </Pressable>
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityState={{ selected: feed === 'national' }}
+        onPress={() => onChange('national')}
+        style={styles.segment}
+      >
+        <MapAsset
+          color={feed === 'national' ? colors.primary : colors.labelAssistive}
+          height={20}
+          width={18}
+        />
+        <AppText adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={[styles.segmentLabel, feed === 'national' && styles.segmentLabelActive]}>
+          {t('map.sheet.nationwideTrends')}
+        </AppText>
+      </Pressable>
+    </>
+  );
+
+  // Figma Component 2: the floating sheet (4525:25520) uses a Glass/FillSubtle track with a
+  // Glass/FillRaised thumb; the -Up frame (4683:7488) a flat Fill/Alternative track with a
+  // Background/Normal thumb and no shadow, spanning the full-width sheet minus 8px.
+  return (
+    <View {...sheetPanHandlers} onTouchStart={onTouchStart} style={expanded ? undefined : styles.segmentInset} testID="feed-segment-inset">
+      <View {...horizontalDrag.panHandlers} ref={trackRef} collapsable={false}
+        style={expanded ? styles.segmentFrame : styles.segmentShadow} testID="feed-segment-drag-track">
+        {expanded ? (
+          <View
+            onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
+            style={[styles.segmentOuter, { backgroundColor: colors.fillAlternative }]}
+            testID="feed-segment-control"
+          >
+            {segmentContent}
+          </View>
+        ) : (
+          <GlassSurface
+            glassEffectStyle="regular"
+            intensity={56}
+            onLayout={(event) => setSegmentWidth(event.nativeEvent.layout.width)}
+            style={styles.segmentOuter}
+            testID="feed-segment-control"
+            tintColor={colors.glassFillSubtle}
+          >
+            {segmentContent}
+          </GlassSurface>
+        )}
+      </View>
+    </View>
+  );
+};
+
+const BookmarkStar = ({
+  selected,
+  size = 28,
+}: {
+  selected: boolean;
+  size?: number;
+}) => <FavoriteIcon selected={selected} size={size} />;
+
+const formatDistance = (place: DecisionPlace, language: string) => {
+  if (place.distanceMeters !== undefined) {
+    return formatLocalizedDistance(place.distanceMeters, language);
+  }
+
+  return place.distance;
+};
+
+const formatPreviewLocation = (place: DecisionPlace, language: string) => {
+  const distance = formatDistance(place, language).trim();
+  const address = place.address.trim();
+
+  return [distance, address].filter(Boolean).join(' · ');
+};
+
+const PlaceArtwork = React.memo(({
+  blurBottom = false,
+  imageUrl,
+  variant = 'trend',
+}: {
+  blurBottom?: boolean;
+  imageUrl?: string;
+  variant?: 'grid' | 'trend';
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const [hasImageError, setHasImageError] = useState(false);
+  const imageOpacity = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    setHasImageError(false);
+    imageOpacity.stopAnimation();
+    imageOpacity.setValue(0);
+
+    return () => imageOpacity.stopAnimation();
+  }, [imageOpacity, imageUrl]);
+
+  if (!imageUrl || hasImageError) {
+    const fallbackMessage = t(hasImageError ? 'map.sheet.imageError' : 'map.sheet.imageMissing');
+
+    return (
+      <View
+        accessibilityLabel={fallbackMessage}
+        style={[styles.artwork, styles.artworkFallback, variant === 'grid' && styles.gridArtwork]}
+      >
+        <UnavailableStateIcon size={64} />
+        <AppText style={styles.artworkFallbackText}>{fallbackMessage}</AppText>
+      </View>
+    );
+  }
+
+  const imageSource = { uri: imageUrl };
+  const handleLoad = () => {
+    runTimingMotion(imageOpacity, 1, {
+      reduceMotion,
+      useNativeDriver: true,
+    });
+  };
+
+  return (
+    <Animated.View
+      style={[
+        styles.artwork,
+        variant === 'grid' && styles.gridArtwork,
+        { opacity: imageOpacity },
+      ]}
+    >
+      <Animated.Image
+        onError={() => setHasImageError(true)}
+        onLoad={handleLoad}
+        resizeMethod="resize"
+        resizeMode="cover"
+        source={imageSource}
+        style={styles.artworkImage}
+        testID={blurBottom ? 'recommendation-featured-image' : 'place-artwork-image'}
+      />
+      {blurBottom ? (
+        <View pointerEvents="none" style={styles.artworkBlurClip}>
+          <Image
+            blurRadius={2}
+            onError={() => setHasImageError(true)}
+            resizeMethod="resize"
+            resizeMode="cover"
+            source={imageSource}
+            style={styles.artworkBlurImage}
+            testID="recommendation-featured-blur-image"
+          />
+        </View>
+      ) : null}
+    </Animated.View>
+  );
+});
+
+const RecommendationCardPressable = ({
+  accessibilityLabel,
+  children,
+  onPress,
+  style,
+  testID,
+}: {
+  accessibilityLabel: string;
+  children: React.ReactNode;
+  onPress: () => void;
+  style: object;
+  testID: string;
+}) => {
+  const reduceMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const navigationLocked = useRef(false);
+  const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    scale.stopAnimation();
+    if (unlockTimer.current) clearTimeout(unlockTimer.current);
+  }, [scale]);
+
+  const animateScale = (toValue: number) => {
+    runTimingMotion(scale, toValue, {
+      duration: MOTION_DURATION.press,
+      reduceMotion,
+      useNativeDriver: true,
+    });
+  };
+
+  const handlePress = () => {
+    if (navigationLocked.current) return;
+    navigationLocked.current = true;
+    onPress();
+    unlockTimer.current = setTimeout(() => {
+      navigationLocked.current = false;
+      unlockTimer.current = null;
+    }, RECOMMENDATION_NAVIGATION_LOCK_MS);
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
+        onPress={handlePress}
+        onPressIn={() => animateScale(0.985)}
+        onPressOut={() => animateScale(1)}
+        style={style}
+        testID={testID}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+const RecommendationBookmarkButton = ({
+  bookmarked,
+  onToggleBookmark,
+  pending,
+  size = 28,
+  style,
+}: {
+  bookmarked: boolean;
+  onToggleBookmark: () => Promise<void> | void;
+  pending: boolean;
+  size?: number;
+  style: object;
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const reduceMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const mutationLocked = useRef(false);
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    scale.stopAnimation();
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+  }, [scale]);
+
+  const handlePress = async () => {
+    if (pending || mutationLocked.current) return;
+    mutationLocked.current = true;
+
+    if (!reduceMotion) {
+      runTimingMotion(scale, 0.88, {
+        duration: MOTION_DURATION.press,
+        reduceMotion: false,
+        useNativeDriver: true,
+      });
+      feedbackTimer.current = setTimeout(() => {
+        runTimingMotion(scale, 1, {
+          duration: MOTION_DURATION.press,
+          reduceMotion: false,
+          useNativeDriver: true,
+        });
+        feedbackTimer.current = null;
+      }, MOTION_DURATION.press);
+    }
+
+    try {
+      await onToggleBookmark();
+    } finally {
+      mutationLocked.current = false;
+    }
+  };
+
+  return (
+    <Animated.View style={[style, { transform: [{ scale }] }]}>
+      <Pressable
+        accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
+        accessibilityRole="button"
+        accessibilityState={{ busy: pending, disabled: pending, selected: bookmarked }}
+        disabled={pending}
+        hitSlop={10}
+        onPress={(event) => {
+          event.stopPropagation();
+          void handlePress();
+        }}
+        style={({ pressed }) => reduceMotion && pressed ? styles.bookmarkPressed : undefined}
+      >
+        <BookmarkStar selected={bookmarked} size={size} />
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+const PreviewArtwork = ({ imageUrl, onLoadError }: { imageUrl?: string; onLoadError?: () => void }) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [imageUrl]);
+
+  if (!imageUrl || hasImageError) {
+    const fallbackMessage = t(hasImageError ? 'map.sheet.imageError' : 'map.sheet.imageMissing');
+
+    return (
+      <View accessibilityLabel={fallbackMessage} style={styles.previewArtworkFallback}>
+        <UnavailableStateIcon size={88} />
+        <AppText style={styles.previewArtworkFallbackText}>{fallbackMessage}</AppText>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      accessibilityLabel={t('map.sheet.image')}
+      onError={() => { if (onLoadError) onLoadError(); else setHasImageError(true); }}
+      resizeMode="cover"
+      source={{ uri: imageUrl }}
+      style={styles.previewArtwork}
+    />
+  );
+};
+
+// Failed gallery entries disappear instead of becoming another photo-shaped error card.
+function useVisiblePlacePhotos(placeId: number | string, sources: readonly (string | undefined)[]) {
+  const urls = [...new Set(sources.filter((url): url is string => Boolean(url?.trim())))];
+  const key = JSON.stringify([placeId, urls]);
+  const currentKey = useRef(key);
+  currentKey.current = key;
+  const [failed, setFailed] = useState<{ key: string; urls: string[] }>({ key, urls: [] });
+  const failedUrls = failed.key === key ? failed.urls : [];
+  return {
+    urls: urls.filter(url => !failedUrls.includes(url)),
+    remove: (url: string) => {
+      if (currentKey.current !== key) return;
+      setFailed(previous => ({ key, urls: [...new Set([...(previous.key === key ? previous.urls : []), url])] }));
+    },
+  };
+}
+
+export const RecommendationFeaturedCard = ({
+  bookmarked,
+  designSize = 'default',
+  imageUrl,
+  onPress,
+  onToggleBookmark,
+  pending,
+  place,
+}: {
+  bookmarked: boolean;
+  designSize?: 'default' | 'recommendation' | 'reservation';
+  imageUrl?: string;
+  onPress: () => void;
+  onToggleBookmark: () => Promise<void> | void;
+  pending: boolean;
+  place: DecisionPlace;
+}) => {
+  const { i18n, t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const distance = formatDistance(place, i18n.language);
+  // Figma Component 10 (5062:31880) is shared by the recommendation and reservation rows.
+  const isFigmaCard = designSize !== 'default';
+  const isRecommendation = designSize === 'recommendation';
+  return (
+    <RecommendationCardPressable
+      accessibilityLabel={[place.name, place.recommendationReason, distance]
+        .filter(Boolean)
+        .join(', ')}
+      onPress={onPress}
+      style={[styles.placeCard, isFigmaCard && styles.reservationPlaceCard, isRecommendation && styles.recommendationPlaceCard]}
+      testID={`recommendation-card-${place.id}`}
+    >
+      <View style={[styles.placeCardArtwork, isFigmaCard && styles.reservationPlaceCardArtwork]}>
+        <PlaceArtwork blurBottom imageUrl={imageUrl} />
+        <CardScrim />
+        <RecommendationBookmarkButton
+          bookmarked={bookmarked}
+          onToggleBookmark={onToggleBookmark}
+          pending={pending}
+          style={styles.cardBookmarkStar}
+        />
+        <View style={styles.placeCardBody}>
+          <AppText ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, isFigmaCard && styles.reservationPlaceCardName]}>
+            {place.name || t('map.sheet.placeMissing')}
+          </AppText>
+        </View>
+      </View>
+      {place.recommendationReason && isRecommendation ? (
+        <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationCardReason}>
+          {place.recommendationReason}
+        </AppText>
+      ) : place.recommendationReason ? (
+        <View style={styles.recommendationMetaRow}>
+          <RecommendationMetaIcon />
+          <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationReason}>
+            {place.recommendationReason}
+          </AppText>
+        </View>
+      ) : null}
+      <AppText ellipsizeMode="tail" numberOfLines={1} style={[styles.placeCardDistance, isFigmaCard && styles.reservationPlaceCardDistance, isRecommendation && styles.recommendationCardDistance]}>
+        {t('map.sheet.distanceAway', { distance })}
+      </AppText>
+    </RecommendationCardPressable>
+  );
+};
+
+const RecommendationGridCard = ({
+  bookmarked,
+  imageUrl,
+  onPress,
+  onToggleBookmark,
+  pending,
+  place,
+}: {
+  bookmarked: boolean;
+  imageUrl?: string;
+  onPress: () => void;
+  onToggleBookmark: () => Promise<void> | void;
+  pending: boolean;
+  place: DecisionPlace;
+}) => {
+  const { i18n, t } = useTranslation();
+  const styles = useMapSheetStyles();
+  return (
+    <RecommendationCardPressable
+      accessibilityLabel={`${place.name}, ${formatDistance(place, i18n.language)}`}
+      onPress={onPress}
+      style={styles.gridCard}
+      testID={`recommendation-grid-card-${place.id}`}
+    >
+      <PlaceArtwork blurBottom imageUrl={imageUrl} variant="grid" />
+      <CardScrim />
+      <RecommendationBookmarkButton
+        bookmarked={bookmarked}
+        onToggleBookmark={onToggleBookmark}
+        pending={pending}
+        style={styles.gridBookmarkStar}
+      />
+      <View style={styles.gridCardBody}>
+        <AppText ellipsizeMode="tail" numberOfLines={2} style={styles.gridCardName}>
+          {place.name || t('map.sheet.placeMissing')}
+        </AppText>
+        <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.gridCardDistance}>{place.address}</AppText>
+      </View>
+    </RecommendationCardPressable>
+  );
+};
+
+const PlaceTrendCard = ({
+  bookmarked,
+  imageUrl,
+  onPress,
+  onToggleBookmark,
+  pending,
+  place,
+}: {
+  bookmarked: boolean;
+  imageUrl?: string;
+  onPress: () => void;
+  onToggleBookmark: () => void;
+  pending: boolean;
+  place: RankedPlaceViewModel;
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  return (
+  <Pressable
+    accessibilityLabel={`${place.name}, ${place.address}`}
+    accessibilityRole="button"
+    onPress={onPress}
+    style={({ pressed }) => [styles.homeTrendCard, pressed && styles.pressed]}
+  >
+    {/* Android's bitmap blur duplicates every thumbnail; the scrim supplies contrast. */}
+    <PlaceArtwork blurBottom={Platform.OS !== 'android'} imageUrl={imageUrl} />
+    <CardScrim />
+    <Pressable
+      accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
+      accessibilityRole="button"
+      accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
+      disabled={pending}
+      hitSlop={10}
+      onPress={(event) => {
+        event.stopPropagation();
+        onToggleBookmark();
+      }}
+      style={styles.homeBookmarkStar}
+    >
+      <BookmarkStar selected={bookmarked} />
+    </Pressable>
+    <View style={styles.homeTrendCardBody}>
+      <AppText numberOfLines={1} style={styles.homeTrendCardName}>
+        {place.name || t('map.sheet.placeMissing')}
+      </AppText>
+      <AppText numberOfLines={1} style={styles.homeTrendCardDistance}>
+        {place.address}
+      </AppText>
+    </View>
+  </Pressable>
+  );
+};
+
+// The measured row includes its own padding, but excludes SheetInner's inset.
+// Keep two columns at every width, including an odd final item.
+export const getMapGridCardSize = (rowWidth: number) => {
+  const width = Math.max(0, (rowWidth - 2 * 8 - 16) / 2);
+  return { width, height: width * 222 / 177 };
+};
+
+export const ExpandedPlaceCard = ({
+  bookmarked,
+  imageUrl,
+  onPress,
+  onToggleBookmark,
+  pending,
+  place,
+  size,
+}: {
+  bookmarked: boolean;
+  imageUrl?: string;
+  onPress: () => void;
+  onToggleBookmark: () => void;
+  pending: boolean;
+  place: RankedPlaceViewModel;
+  size: { width: number; height: number };
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  return (
+  <Pressable
+    accessibilityLabel={`${place.name}, ${place.address}`}
+    accessibilityRole="button"
+    onPress={onPress}
+    style={({ pressed }) => [styles.homeGridCard, size, pressed && styles.pressed]}
+  >
+    <PlaceArtwork blurBottom={Platform.OS !== 'android'} imageUrl={imageUrl} variant="grid" />
+    <CardScrim />
+    <Pressable
+      accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
+      accessibilityRole="button"
+      accessibilityState={{ busy: pending, checked: bookmarked, disabled: pending }}
+      disabled={pending}
+      hitSlop={10}
+      onPress={(event) => {
+        event.stopPropagation();
+        onToggleBookmark();
+      }}
+      style={styles.homeBookmarkStar}
+    >
+      <BookmarkStar selected={bookmarked} />
+    </Pressable>
+    <View style={styles.homeGridCardBody}>
+      <AppText ellipsizeMode="tail" numberOfLines={2} style={styles.homeGridCardName}>{place.name}</AppText>
+      <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.homeGridCardDistance}>{place.address}</AppText>
+    </View>
+  </Pressable>
+  );
+};
+
+const ExpandedHomeContent = ({
+  activeCategory,
+  bookmarkPendingPlaceIds,
+  feed,
+  sheetPanHandlers,
+  expandedInteractionsEnabled,
+  expandedOnlyOpacity,
+  onCategoryChange,
+  onFeedChange,
+  onPlacePress,
+  onRetry,
+  onToggleBookmark,
+  places,
+  restingScrollEnabled = false,
+  state,
+  title,
+  userName,
+}: {
+  activeCategory: SheetCategory;
+  bookmarkPendingPlaceIds: Record<string, boolean>;
+  feed: 'local' | 'national';
+  sheetPanHandlers: GestureResponderHandlers;
+  expandedInteractionsEnabled: boolean;
+  expandedOnlyOpacity: Animated.AnimatedInterpolation<number>;
+  onCategoryChange: (category: SheetCategory) => void;
+  onFeedChange: (feed: 'local' | 'national') => void;
+  onPlacePress: (place: RankedPlaceViewModel) => void;
+  onRetry: () => void;
+  onToggleBookmark: (place: RankedPlaceViewModel, nextBookmarked: boolean) => Promise<void>;
+  places: RankedPlaceViewModel[];
+  restingScrollEnabled?: boolean;
+  state?: RankedPlaceFeedStatus;
+  title?: string;
+  userName: string;
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const scrollRef = useRef<ScrollView>(null);
+  const { width: windowWidth } = useWindowDimensions();
+  const [gridWidth, setGridWidth] = useState<number | null>(null);
+  const gridCardSize = getMapGridCardSize(gridWidth ?? windowWidth - SHEET_RESTING_GAP * 2);
+  const { panHandlers: feedPanHandlers, blockHorizontalSwipe } = useMapFeedSwipe(feed, onFeedChange);
+  const [hasRenderedExpandedContent, setHasRenderedExpandedContent] = useState(
+    expandedInteractionsEnabled,
+  );
+  const categoryResult = selectMapHomeCategoryResult(
+    places,
+    activeCategory,
+    state ?? (places.length > 0 ? 'ready' : 'empty'),
+  );
+  const displayedPlaces = categoryResult.places;
+  const shouldRenderExpandedContent = expandedInteractionsEnabled || hasRenderedExpandedContent;
+
+  useEffect(() => {
+    if (expandedInteractionsEnabled) setHasRenderedExpandedContent(true);
+  }, [expandedInteractionsEnabled]);
+  useEffect(() => {
+    if (!expandedInteractionsEnabled) {
+      scrollRef.current?.scrollTo({ animated: false, y: 0 });
+    }
+  }, [expandedInteractionsEnabled]);
+
+  return (
+    <View {...feedPanHandlers} style={styles.expandedScroll} testID="map-feed-swipe">
+    {/* Keep the sheet grip outside the native vertical scroll responder. */}
+    <FeedSegment sheetPanHandlers={sheetPanHandlers} expanded={expandedInteractionsEnabled} feed={feed} onChange={onFeedChange} onTouchStart={blockHorizontalSwipe} />
+    <ScrollView
+      contentContainerStyle={styles.expandedContent}
+      nestedScrollEnabled
+      ref={scrollRef}
+      scrollEnabled={expandedInteractionsEnabled || restingScrollEnabled}
+      showsVerticalScrollIndicator={false}
+      style={styles.expandedScroll}
+      testID="expanded-home-scroll"
+    >
+      <FadeSlideTransition
+        direction={feed === 'local' ? 0 : 1}
+        stateKey={feed}
+        style={styles.feedTransition}
+        testID="feed-content-transition"
+      >
+        {categoryResult.state !== 'ready' ? (
+          <View style={styles.feedStateContainer}>
+            <EmptyCard feed={feed} onRetry={onRetry} state={categoryResult.state} variant="row" />
+          </View>
+        ) : <ScrollView
+          contentContainerStyle={styles.expandedFeaturedRow}
+          onTouchStart={blockHorizontalSwipe}
+          testID="map-feed-featured-scroll"
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+          style={styles.rowScroll}
+        >
+          {categoryResult.state === 'ready' ? displayedPlaces.slice(0, 6).map((place) => (
+            <PlaceTrendCard
+              bookmarked={place.bookmarked}
+              imageUrl={place.imageUrl}
+              key={`featured-${place.placeId}`}
+              onPress={() => onPlacePress(place)}
+              onToggleBookmark={() => void onToggleBookmark(
+                place,
+                !place.bookmarked,
+              )}
+              pending={Boolean(bookmarkPendingPlaceIds[String(place.placeId)])}
+              place={place}
+            />
+          )) : null}
+        </ScrollView>}
+
+        {shouldRenderExpandedContent && !restingScrollEnabled ? (
+          <Animated.View
+            pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
+            style={{ opacity: expandedOnlyOpacity }}
+            testID="expanded-home-only-content"
+          >
+            <AppText style={styles.expandedTitle}>
+              {feed === 'local' && title
+                ? t('map.sheet.categoryPopularRegion', { regionName: title })
+                : t(feed === 'local' ? 'map.sheet.categoryPopular' : 'map.sheet.categoryPopularNational', { userName })}
+            </AppText>
+
+            <ScrollView
+              contentContainerStyle={styles.categoryRow}
+              onTouchStart={blockHorizontalSwipe}
+              testID="map-feed-category-scroll"
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator={false}
+            >
+              {CATEGORY_OPTIONS.map((category) => {
+                const active = category.id === activeCategory;
+
+                return (
+                  <Pressable
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: active }}
+                    key={category.id}
+                    onPress={() => onCategoryChange(category.id)}
+                    style={[styles.categoryChip, active && styles.categoryChipActive]}
+                  >
+                    <CategoryIcon active={active} category={category.id} />
+                    <AppText style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
+                      {t(`map.categories.${category.id}`)}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <View
+              onLayout={({ nativeEvent }) => setGridWidth(nativeEvent.layout.width)}
+              style={styles.gridRow}
+              testID="map-expanded-place-grid"
+            >
+              {displayedPlaces.slice(0, 8).map((place) => (
+                <ExpandedPlaceCard
+                  bookmarked={place.bookmarked}
+                  imageUrl={place.imageUrl}
+                  key={`grid-${place.placeId}`}
+                  onPress={() => onPlacePress(place)}
+                  onToggleBookmark={() => void onToggleBookmark(
+                    place,
+                    !place.bookmarked,
+                  )}
+                  pending={Boolean(bookmarkPendingPlaceIds[String(place.placeId)])}
+                  place={place}
+                  size={gridCardSize}
+                />
+              ))}
+            </View>
+          </Animated.View>
+        ) : null}
+      </FadeSlideTransition>
+    </ScrollView>
+    </View>
+  );
+};
+
+const EmptyCard = ({
+  feed = 'local',
+  onRetry,
+  state = 'loading',
+  variant = 'list',
+}: {
+  feed?: 'local' | 'national';
+  onRetry?: () => void;
+  state?: MapHomeDisplayState;
+  variant?: 'list' | 'row';
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const { suppressLocationStatus } = useMapTutorial();
+  if (suppressLocationStatus && ['location-denied', 'location-pending', 'invalid-location'].includes(state)) return null;
+  const copyState = state === 'ready' ? 'empty' : state;
+  const isCategoryEmpty = copyState === 'category-empty';
+  const nationalCopy = feed === 'national' && ['empty', 'error', 'loading'].includes(copyState);
+  const nationalState = `${copyState[0]?.toUpperCase() ?? ''}${copyState.slice(1)}`;
+  const titleKey = isCategoryEmpty
+    ? 'map.sheet.state.categoryEmptyTitle'
+    : nationalCopy ? `map.sheet.state.national${nationalState}Title` : `map.sheet.state.${copyState}Title`;
+  const bodyKey = isCategoryEmpty
+    ? null
+    : nationalCopy ? `map.sheet.state.national${nationalState}Body` : `map.sheet.state.${copyState}Body`;
+  const accessibilityLabel = t(titleKey);
+  if (copyState === 'loading') return <Skeleton variant="list" count={variant === 'row' ? 1 : 3}
+    accessibilityLabel={accessibilityLabel} testID="map-home-feed-state-loading" style={{ width: '100%', padding: 16 }} />;
+  const retryable = ![
+    'category-empty',
+    'disabled',
+    'empty',
+    'loading',
+    'location-denied',
+    'location-pending',
+  ].includes(copyState);
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={accessibilityLabel}
+      accessibilityLiveRegion="polite"
+      role="status"
+      style={[variant === 'row' ? styles.emptyCardRow : styles.placeCard, styles.emptyCard]}
+      testID={`map-home-feed-state-${copyState}`}
+    >
+      <View style={styles.emptyCardIcon}><UnavailableStateIcon size={64} /></View>
+      <AppText style={styles.emptyCardTitle}>{accessibilityLabel}</AppText>
+      {bodyKey ? <AppText style={styles.emptyCardBody}>{t(bodyKey)}</AppText> : null}
+      {retryable && onRetry ? (
+        <Pressable
+          accessibilityLabel={t('common.error.retry')}
+          accessibilityRole="button"
+          onPress={onRetry}
+          style={styles.retryButton}
+        >
+          <AppText style={styles.retryButtonText}>{t('common.error.retry')}</AppText>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+};
+
+const RecommendationState = ({
+  onRetry,
+  state,
+}: {
+  onRetry: () => void;
+  state: 'empty' | 'error' | 'loading';
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  if (state === 'loading') return <Skeleton accessibilityLabel={t('map.sheet.state.recommendationLoadingTitle')}
+    testID="recommendation-state-loading" style={{ padding: 16 }} />;
+  return (
+  <View
+    accessibilityLiveRegion="polite"
+    style={styles.recommendationState}
+    testID={`recommendation-state-${state}`}
+  >
+    <UnavailableStateIcon size={64} />
+    <AppText style={styles.emptyCardTitle}>
+      {t(`map.sheet.state.recommendation${state[0].toUpperCase()}${state.slice(1)}Title`)}
+    </AppText>
+    <AppText style={styles.emptyCardBody}>
+      {t(`map.sheet.state.recommendation${state[0].toUpperCase()}${state.slice(1)}Body`)}
+    </AppText>
+    {state === 'error' ? (
+      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retryButton}>
+        <AppText style={styles.retryButtonText}>{t('common.error.retry')}</AppText>
+      </Pressable>
+    ) : null}
+  </View>
+  );
+};
+
+const RecommendationStateTransition = ({
+  children,
+  state,
+}: {
+  children: React.ReactNode;
+  state: 'empty' | 'error' | 'loading' | 'ready';
+}) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    opacity.setValue(0);
+    runTimingMotion(opacity, 1, {
+      reduceMotion,
+      useNativeDriver: true,
+    });
+
+    return () => opacity.stopAnimation();
+  }, [opacity, reduceMotion, state]);
+
+  return <Animated.View style={{ opacity }}>{children}</Animated.View>;
+};
+
+const RecommendationContent = ({
+  bookmarkedPlaceIds,
+  bookmarkPendingPlaceIds,
+  expandedInteractionsEnabled,
+  expandedOnlyOpacity,
+  imageUrlsByPlaceId,
+  isBookmarkStateLoading,
+  onPlacePress,
+  onRetry,
+  onToggleBookmark,
+  places,
+  restingScrollEnabled = false,
+  state,
+  userName,
+}: {
+  bookmarkedPlaceIds: Record<string, boolean>;
+  bookmarkPendingPlaceIds: Record<string, boolean>;
+  expandedInteractionsEnabled: boolean;
+  expandedOnlyOpacity: Animated.AnimatedInterpolation<number>;
+  imageUrlsByPlaceId: Record<string, string>;
+  isBookmarkStateLoading: boolean;
+  onPlacePress: (place: DecisionPlace) => void;
+  onRetry: () => void;
+  onToggleBookmark: (place: DecisionPlace, nextBookmarked: boolean) => Promise<void>;
+  places: DecisionPlace[];
+  restingScrollEnabled?: boolean;
+  state: 'empty' | 'error' | 'loading' | 'ready';
+  userName: string;
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const scrollRef = useRef<ScrollView>(null);
+  const featuredPlaces = places.slice(0, 3);
+  const gridPlaces = places.slice(3);
+  const gridRows = [
+    gridPlaces.filter((_, index) => index % 2 === 0),
+    gridPlaces.filter((_, index) => index % 2 === 1),
+  ].filter((row) => row.length > 0);
+  useEffect(() => {
+    if (!expandedInteractionsEnabled) {
+      scrollRef.current?.scrollTo({ animated: false, y: 0 });
+    }
+  }, [expandedInteractionsEnabled]);
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.expandedContent}
+      nestedScrollEnabled
+      ref={scrollRef}
+      scrollEnabled={expandedInteractionsEnabled || restingScrollEnabled}
+      showsVerticalScrollIndicator={false}
+      testID="recommendation-content-scroll"
+    >
+      <View style={styles.recommendationHeader} testID="recommendation-header">
+        <View style={styles.recommendationTitleRow}>
+          <RecommendationTitleAsset height={20} width={20} />
+          <AppText style={styles.recommendationTitle}>{t('map.sheet.recommendationTitle')}</AppText>
+        </View>
+        <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.recommendationSubtitle}>
+          {t('map.recommendations.subtitle', { userName })}
+        </AppText>
+      </View>
+      <RecommendationStateTransition state={state}>
+        {state === 'ready' ? (
+          <>
+          <ScrollView
+            contentContainerStyle={[styles.recommendationCardRow, expandedInteractionsEnabled && styles.recommendationCardRowExpanded]}
+            testID="recommendation-card-row"
+            horizontal
+            nestedScrollEnabled
+            showsHorizontalScrollIndicator={false}
+          >
+            {featuredPlaces.map((place) => (
+              <RecommendationFeaturedCard
+                bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                designSize="recommendation"
+                imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                key={`recommendation-featured-${place.id}`}
+                onPress={() => onPlacePress(place)}
+                onToggleBookmark={() => onToggleBookmark(
+                  place,
+                  !bookmarkedPlaceIds[String(place.id)],
+                )}
+                pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                place={place}
+              />
+            ))}
+          </ScrollView>
+          {gridPlaces.length > 0 && !restingScrollEnabled ? (
+            <Animated.View
+              pointerEvents={expandedInteractionsEnabled ? 'auto' : 'none'}
+              style={{ opacity: expandedOnlyOpacity }}
+              testID="expanded-recommendation-only-content"
+            >
+              <AppText style={styles.recommendationGridTitle}>
+                {t('map.recommendations.verificationTitle')}
+              </AppText>
+              <View style={styles.recommendationGridRows}>
+                {gridRows.map((row, rowIndex) => (
+                  <ScrollView
+                    contentContainerStyle={styles.recommendationGridScroll}
+                    horizontal
+                    key={`recommendation-grid-row-${rowIndex}`}
+                    nestedScrollEnabled
+                    showsHorizontalScrollIndicator={false}
+                    testID={`recommendation-grid-row-${rowIndex + 1}`}
+                  >
+                    {row.map((place) => (
+                      <RecommendationGridCard
+                        bookmarked={Boolean(bookmarkedPlaceIds[String(place.id)])}
+                        imageUrl={imageUrlsByPlaceId[String(place.id)]}
+                        key={`recommendation-grid-${place.id}`}
+                        onPress={() => onPlacePress(place)}
+                        onToggleBookmark={() => onToggleBookmark(
+                          place,
+                          !bookmarkedPlaceIds[String(place.id)],
+                        )}
+                        pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(place.id)])}
+                        place={place}
+                      />
+                    ))}
+                  </ScrollView>
+                ))}
+              </View>
+            </Animated.View>
+          ) : null}
+          </>
+        ) : (
+          <RecommendationState onRetry={onRetry} state={state} />
+        )}
+      </RecommendationStateTransition>
+    </ScrollView>
+  );
+};
+
+const ResultRow = ({
+  onPress,
+  place,
+}: {
+  onPress: () => void;
+  place: DecisionPlace;
+}) => {
+  const { i18n } = useTranslation();
+  const styles = useMapSheetStyles();
+  return (
+  <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
+    <View style={styles.resultThumbnail}><UnavailableStateIcon size={40} /></View>
+    <View style={styles.resultTextBody}>
+      <AppText numberOfLines={1} style={styles.resultName}>{place.name}</AppText>
+      <AppText numberOfLines={1} style={styles.resultAddress}>{place.address}</AppText>
+    </View>
+    <AppText style={styles.resultDistance}>{formatDistance(place, i18n.language)}</AppText>
+  </Pressable>
+  );
+};
+
+const TopReviewFeatures = ({ content }: { content: MapPreviewFallbackContent }) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  return <View testID="place-top-review-features">
+    <ReviewFeatureTags reasons={content.topReviewReasons?.slice(0, 2) ?? []} variant="full" appearance="placeDetail" testID="place-top-review-tags" />
+    {!content.reviewHighlightsComplete && (content.reviewSampleSize ?? 0) > 0
+      ? <AppText style={styles.detailReviewCount}>{t('placeReviewSummary.partialBasis', { count: content.reviewSampleSize })}</AppText> : null}
+  </View>;
+};
+
+const PreviewAmenity = ({ type, expanded = false }: { type: 'english' | 'parking'; expanded?: boolean }) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  return (
+  <View testID={`place-preview-amenity-${type}`} style={expanded ? styles.detailAmenity : styles.previewAmenityChip}>
+    {expanded ? <View style={styles.detailAmenityIcon} testID={`map-detail-amenity-${type}`}>
+      {type === 'english' ? <View style={styles.detailGlobeLayers}><DetailGlobeBaseAsset /><DetailGlobeLinesAsset style={styles.detailGlobeLines} /></View> : <DetailParkingAsset />}
+    </View> : type === 'english'
+      ? <GroupAsset height={16} width={16} />
+      : <ParkAsset height={16} width={16} />}
+    <AppText style={expanded ? styles.detailAmenityText : styles.previewAmenityText}>{t(type === 'english' ? 'map.detail.amenityEnglish' : 'map.detail.amenityParking')}</AppText>
+  </View>
+  );
+};
+
+const ReviewHighlightIcon = ({ label, reason: explicitReason }: { label: string; reason?: ReviewReasonKey }) => {
+  const { t } = useTranslation();
+  const reason = explicitReason ?? (Object.keys(REASON_CODES) as ReviewReasonKey[]).find(key => t(reviewReasonLabelKey(key)) === label);
+  if (reason === 'photoSpot') return <DetailReviewPhotoAsset />;
+  if (reason === 'clean') return <DetailReviewCleanAsset />;
+  if (reason === 'multilingual') return <View style={{ width: 18, height: 18 }}><DetailReviewMultilingualBaseAsset /><DetailReviewMultilingualLinesAsset style={{ position: 'absolute', left: 0.35, top: 0 }} /></View>;
+  if (reason === 'kind') return <DetailReviewKindAsset />;
+  if (reason === 'delicious') return <DetailReviewDeliciousAsset />;
+  if (reason) return <ReviewReasonIcon reason={reason} height={18} />;
+  return null;
+};
+
+const ReviewerAvatar = ({ name, url }: { name: string; url?: string }) => {
+  const [hasError, setHasError] = useState(false);
+  const styles = useMapSheetStyles();
+
+  if (!url || hasError) {
+    return (
+      <View style={styles.detailReviewerAvatar}>
+        <AppText style={styles.detailReviewerInitial}>{name.slice(0, 1)}</AppText>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      onError={() => setHasError(true)}
+      resizeMode="cover"
+      source={{ uri: url }}
+      style={styles.detailReviewerAvatarImage}
+    />
+  );
+};
+
+type PreviewActionKind = 'arrival' | 'departure' | 'directions' | 'reservation' | 'share';
+
+const PreviewActionIcon = ({ kind, expanded = false }: { kind: PreviewActionKind; expanded?: boolean }) => {
+  const color = (useTheme().colors ?? lightColors).textAlternative;
+  if (expanded) {
+    if (kind === 'share') return <DetailShareAsset />;
+    if (kind === 'reservation') return <DetailReservationAsset />;
+    if (kind === 'directions') return <DetailDirectionsAsset />;
+    return null;
+  }
+  if (kind === 'share') {
+    return (
+      <Svg height={12} viewBox="0 0 16 16" width={12}>
+        <Path d="M6 3H3.8A1.8 1.8 0 0 0 2 4.8v7.4A1.8 1.8 0 0 0 3.8 14h7.4a1.8 1.8 0 0 0 1.8-1.8V10M8 2h6v6M14 2 7.5 8.5" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
+      </Svg>
+    );
+  }
+  if (kind === 'reservation') {
+    return (
+      <Svg height={12} viewBox="0 0 16 16" width={12}>
+        <Path d="M3 4.2A1.7 1.7 0 0 1 4.7 2.5h6.6A1.7 1.7 0 0 1 13 4.2v7.1a1.7 1.7 0 0 1-1.7 1.7H4.7A1.7 1.7 0 0 1 3 11.3V4.2Z" fill="none" stroke={color} strokeWidth={1.4} />
+        <Path d="m6 8 1.3 1.3L10.4 6" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} />
+      </Svg>
+    );
+  }
+  if (kind === 'directions') {
+    return (
+      <Svg height={12} viewBox="0 0 16 16" width={12}>
+        <Path d="m2.2 2.7 11.6 4.7-5 1.2-1.4 4.7-5.2-10.6Z" fill="none" stroke={color} strokeLinejoin="round" strokeWidth={1.4} />
+      </Svg>
+    );
+  }
+  return null;
+};
+
+const PreviewActionChip = ({ accessibilityHint, active = false, busy = false, disabled = false, expanded = false, kind, label, onPress }: { expanded?: boolean; accessibilityHint?: string; active?: boolean; busy?: boolean; disabled?: boolean; kind: PreviewActionKind; label: string; onPress?: () => void }) => {
+  const styles = useMapSheetStyles();
+  return <Pressable
+    hitSlop={expanded ? undefined : { top: 5, bottom: 5 }}
+    accessibilityHint={accessibilityHint}
+    accessibilityLabel={label}
+    accessibilityRole={onPress && !disabled ? 'button' : undefined}
+    accessibilityState={{ busy, disabled, selected: active }}
+    disabled={disabled}
+    onPress={onPress}
+    style={({ pressed }) => [
+      expanded ? styles.detailActionChip : styles.previewActionChip,
+      active && styles.previewActionChipActive,
+      pressed && styles.pressed,
+      disabled && { opacity: 0.45 },
+    ]}
+  >
+    <PreviewActionIcon kind={kind} expanded={expanded} />
+    <AppText style={[expanded ? styles.detailActionText : styles.previewActionText, active && styles.previewActionTextActive]}>{label}</AppText>
+  </Pressable>;
+};
+
+const formatPreviewCategory = (category: string) => {
+  const normalized = normalizePlaceCategory(category);
+  return normalized === 'game' ? 'popup' : normalized;
+};
+
+// Figma draws the preview icon buttons at 32px; the slop keeps a 44px touch target.
+const PREVIEW_ICON_BUTTON_HIT_SLOP = 6;
+
+const PreviewContent = ({
+  activeAction,
+  bookmarked,
+  fallbackContent,
+  imageUrl,
+  onBack,
+  onDetail,
+  onDeparture,
+  onDirections,
+  onOpenImages,
+  onReserve,
+  onShare,
+  onRetryAvailability,
+  onRetryMedia,
+  onSelectAction,
+  onToggleBookmark,
+  pending,
+  placeActionBusy,
+  place,
+  sheetPanHandlers,
+}: {
+  activeAction: PreviewActionKind | null;
+  bookmarked: boolean;
+  fallbackContent?: MapPreviewFallbackContent;
+  imageUrl?: string;
+  onBack: () => void;
+  onDetail: () => void;
+  onDeparture?: () => void;
+  onDirections?: () => void;
+  onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
+  onReserve: () => void;
+  onShare?: () => void;
+  onRetryAvailability?: () => void;
+  onRetryMedia?: () => void;
+  onSelectAction: (action: PreviewActionKind) => void;
+  onToggleBookmark: () => void;
+  pending: boolean;
+  placeActionBusy?: 'directions' | 'share' | null;
+  place: DecisionPlace;
+  sheetPanHandlers: GestureResponderHandlers;
+}) => {
+  const { i18n, t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const translationAttribution = useTranslationAttribution(place.name);
+  const sheetColors = useTheme().colors ?? lightColors;
+  const { width: windowWidth } = useWindowDimensions();
+  const photos = useVisiblePlacePhotos(place.id, fallbackContent?.imageUrls.length
+    ? fallbackContent.imageUrls
+    : [imageUrl]);
+  const validImageUrls = photos.urls;
+  const contentWidth = Math.min(windowWidth, 480) - 32;
+  const primaryImageWidth = Math.min(242, contentWidth);
+  const imageHeight = primaryImageWidth * 182 / 242;
+
+  const reservation = fallbackContent?.reservation ?? {
+    kind: 'loading', disabled: true,
+  };
+  const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
+  const selectAction = (action: PreviewActionKind, callback?: () => void) => {
+    onSelectAction(action);
+    callback?.();
+  };
+  const verificationSummary = typeof fallbackContent?.reviewParticipantCount === 'number'
+    ? [t('map.detail.verifiedCount', { count: fallbackContent.reviewParticipantCount }),
+      !fallbackContent.reviewHighlightsComplete && (fallbackContent.reviewSampleSize ?? 0) > 0
+        ? t('placeReviewSummary.partialBasis', { count: fallbackContent.reviewSampleSize }) : null,
+    ].filter(Boolean).join(' · ')
+    : fallbackContent?.statusDescription;
+
+  return (
+    <View style={[styles.previewContent, styles.placePreviewContent]} testID="place-preview-content">
+      <View {...sheetPanHandlers} style={styles.previewHeader} testID="place-preview-drag-header">
+        <View style={styles.previewSummary}>
+          <PlaceNameTranslation
+            attributionPlacement="photos"
+            onTranslationChange={translationAttribution.onTranslationChange}
+            original={place.name}
+            maxNameLength={10}
+            inlineCategory
+            nameStyle={styles.previewName}
+            onNamePress={onDetail}
+            category={<AppText ellipsizeMode="tail" numberOfLines={1} style={styles.previewCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>}
+          />
+          <Pressable accessibilityLabel={t('map.detail.preview', { name: place.name })} accessibilityRole="button" onPress={onDetail}>
+            {fallbackContent && (verificationSummary || fallbackContent.statusEmphasis) ? (
+              <View style={styles.previewStatusRow}>
+                {verificationSummary ? (
+                  <AppText numberOfLines={1} style={styles.previewStatus}>
+                    {verificationSummary}
+                  </AppText>
+                ) : null}
+                {fallbackContent.statusEmphasis ? (
+                <AppText style={styles.previewStatusTail}>
+                  {verificationSummary ? <AppText style={styles.previewStatusSeparator}>{' · '}</AppText> : null}
+                  <AppText style={[
+                    styles.previewStatusEmphasis,
+                    fallbackContent.operatingSummary?.tone === 'positive'
+                      ? styles.detailOperatingPositive
+                      : fallbackContent.operatingSummary?.tone === 'negative'
+                        ? styles.detailOperatingNegative
+                        : fallbackContent.operatingSummary?.tone === 'warning'
+                          ? styles.detailOperatingWarning
+                          : styles.detailOperatingNeutral,
+                  ]}>
+                    {fallbackContent.statusEmphasis}
+                  </AppText>
+                </AppText>
+                ) : null}
+              </View>
+            ) : null}
+            <AppText accessibilityLabel={formatPreviewLocation(place, i18n.language)} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
+              {formatPreviewLocation(place, i18n.language)}
+            </AppText>
+          </Pressable>
+        </View>
+        <Pressable
+          accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
+          accessibilityRole="button"
+          accessibilityState={{ busy: pending, disabled: pending, selected: bookmarked }}
+          disabled={pending}
+          hitSlop={PREVIEW_ICON_BUTTON_HIT_SLOP}
+          onPress={onToggleBookmark}
+          style={({ pressed }) => [styles.previewBookmarkButton, pressed && styles.pressed]}
+          testID="place-preview-bookmark"
+        >
+          <BookmarkStar selected={bookmarked} size={16} />
+        </Pressable>
+        <Pressable
+          accessibilityLabel={t('map.card.dismiss')}
+          accessibilityRole="button"
+          hitSlop={PREVIEW_ICON_BUTTON_HIT_SLOP}
+          onPress={onBack}
+          style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
+          testID="place-preview-close"
+        >
+          <CloseMediumAsset color={sheetColors.textAlternative} height={19} width={19} />
+        </Pressable>
+      </View>
+      <View style={styles.previewControls}>
+      {fallbackContent?.topReviewReasons?.length ? (
+        <TopReviewFeatures content={fallbackContent} />
+      ) : fallbackContent?.amenities.length ? (
+        <View style={styles.previewAmenityRow}>
+          {fallbackContent.amenities.map((amenity) => <PreviewAmenity key={amenity} type={amenity} />)}
+        </View>
+      ) : null}
+      <ScrollView
+        contentContainerStyle={[styles.previewActionRow, styles.previewControlsActionRow]}
+        style={styles.previewActionViewport}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        <PreviewActionChip
+          active={activeAction === 'departure'}
+          disabled={!onDeparture || placeActionBusy != null}
+          kind="departure"
+          label={t('map.card.actions.start')}
+          onPress={() => selectAction('departure', onDeparture)}
+        />
+        <PreviewActionChip
+          active={activeAction === 'arrival'}
+          disabled={!onDirections || placeActionBusy != null}
+          kind="arrival"
+          label={t('map.card.actions.arrive')}
+          onPress={() => selectAction('arrival', onDirections)}
+        />
+        <PreviewActionChip
+          busy={placeActionBusy === 'share'}
+          disabled={!onShare || placeActionBusy != null}
+          kind="share"
+          label={t('map.card.actions.share')}
+          onPress={onShare}
+        />
+        <PreviewActionChip
+          active={activeAction === 'reservation'}
+          disabled={reservation.disabled && reservation.kind !== 'error'}
+          kind="reservation"
+          label={t(reservation.kind === 'error' ? 'map.detail.reservation.retry' : 'map.card.actions.reserve')}
+          onPress={() => selectAction('reservation', reservationPress)}
+        />
+        <PreviewActionChip
+          busy={placeActionBusy === 'directions'}
+          disabled={!onDirections || placeActionBusy != null}
+          kind="directions"
+          label={t('map.card.actions.directions')}
+          onPress={onDirections}
+        />
+      </ScrollView>
+      {fallbackContent?.imageState === 'error' ? (
+        <Pressable accessibilityRole="button" onPress={onRetryMedia}>
+          <AppText style={styles.detailEmptyText}>{t('map.detail.imageError')}</AppText>
+        </Pressable>
+      ) : null}
+      </View>
+      <View style={{ gap: 8 }} testID="place-preview-photos-section">
+      <ScrollView
+        contentContainerStyle={styles.previewImageRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        {fallbackContent?.imageState === 'loading' && validImageUrls.length === 0 ? (
+          <SkeletonGroup accessibilityLabel={t('placeDetail.loading')}>
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <SkeletonBlock width={primaryImageWidth} height={imageHeight} radius={16} />
+              <SkeletonBlock width={primaryImageWidth} height={imageHeight} radius={16} />
+            </View>
+          </SkeletonGroup>
+        ) : validImageUrls.map((url, index) => (
+          <Pressable
+            accessibilityLabel={t('map.detail.imageDetail', { count: index + 1, name: place.name })}
+            accessibilityRole="button"
+            key={`${url ?? 'missing'}-${index}`}
+            onPress={() => {
+              if (url && onOpenImages) {
+                onOpenImages(validImageUrls, validImageUrls.indexOf(url));
+                return;
+              }
+              onDetail();
+            }}
+            style={[
+              styles.previewImagePanel,
+              { height: imageHeight, width: primaryImageWidth },
+            ]}
+          >
+            <PreviewArtwork imageUrl={url} onLoadError={() => photos.remove(url)} />
+          </Pressable>
+        ))}
+      </ScrollView>
+      <TranslationAttribution visible={translationAttribution.visible} testID="place-preview-translation-attribution" />
+      </View>
+    </View>
+  );
+};
+
+// An external search result has no PingDom record, so it offers location actions only:
+// no reservation, bookmark, share, or detail entry.
+const ExternalPlaceContent = ({
+  activeAction,
+  onBack,
+  onDeparture,
+  onDirections,
+  onLayout,
+  onSelectAction,
+  place,
+}: {
+  activeAction: PreviewActionKind | null;
+  onBack: () => void;
+  onDeparture?: () => void;
+  onDirections?: () => void;
+  onLayout?: (height: number) => void;
+  onSelectAction: (action: PreviewActionKind) => void;
+  place: ExternalMapPlace;
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const sheetColors = useTheme().colors ?? lightColors;
+  const selectAction = (action: PreviewActionKind, callback?: () => void) => {
+    onSelectAction(action);
+    callback?.();
+  };
+
+  return (
+    <View
+      onLayout={onLayout ? (event) => onLayout(event.nativeEvent.layout.height) : undefined}
+      style={styles.previewContent}
+      testID="external-place-card"
+    >
+      <View style={styles.externalHeader}>
+        <View style={styles.previewSummary}>
+          <PlaceNameTranslation original={place.name} maxNameLength={10} nameStyle={styles.previewName} />
+          <View style={styles.externalBadge}>
+            <AppText numberOfLines={1} style={styles.externalBadgeText}>{t('map.externalPlace.badge')}</AppText>
+          </View>
+          {place.address ? (
+            <AppText accessibilityLabel={place.address} ellipsizeMode="tail" numberOfLines={1} style={styles.previewAddress}>
+              {place.address}
+            </AppText>
+          ) : null}
+          <AppText numberOfLines={1} style={styles.externalSource}>{t('map.externalPlace.sourceKakao')}</AppText>
+        </View>
+        <Pressable
+          accessibilityLabel={t('map.card.dismiss')}
+          accessibilityRole="button"
+          hitSlop={PREVIEW_ICON_BUTTON_HIT_SLOP}
+          onPress={onBack}
+          style={({ pressed }) => [styles.previewCloseButton, pressed && styles.pressed]}
+          testID="external-place-close"
+        >
+          <CloseMediumAsset color={sheetColors.textAlternative} height={19} width={19} />
+        </Pressable>
+      </View>
+      <View style={styles.externalNotice}>
+        <AppText style={styles.externalNoticeText}>{t('map.externalPlace.reservationUnknown')}</AppText>
+        {!place.coordinate ? (
+          <AppText accessibilityRole="alert" style={styles.externalNoticeText} testID="external-place-location-unavailable">
+            {t('map.externalPlace.locationUnavailable')}
+          </AppText>
+        ) : null}
+      </View>
+      <ScrollView
+        contentContainerStyle={styles.previewActionRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        <PreviewActionChip
+          active={activeAction === 'departure'}
+          disabled={!onDeparture}
+          kind="departure"
+          label={t('map.card.actions.start')}
+          onPress={() => selectAction('departure', onDeparture)}
+        />
+        <PreviewActionChip
+          active={activeAction === 'arrival'}
+          disabled={!onDirections}
+          kind="arrival"
+          label={t('map.card.actions.arrive')}
+          onPress={() => selectAction('arrival', onDirections)}
+        />
+        <PreviewActionChip
+          disabled={!onDirections}
+          kind="directions"
+          label={t('map.card.actions.directions')}
+          onPress={onDirections}
+        />
+      </ScrollView>
+    </View>
+  );
+};
+
+type DetailReview = NonNullable<MapPreviewFallbackContent['reviews']>[number];
+
+const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
+  onOpenImages?: (urls: string[], index: number) => void;
+  placeName: string;
+  review: DetailReview;
+  variant: 'full' | 'summary';
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+
+  const deletion = useDeletePlaceReview(review.placeId, review.reviewId);
+  const deleteAction = useContentDeletion(() => deletion.mutateAsync(), undefined, `${review.placeId}:${review.reviewId}`);
+  return (
+    <View style={styles.detailReviewItem}>
+      <View style={styles.detailReviewerRow}>
+        <ReviewerAvatar name={review.author} url={review.avatarUrl} />
+        <View style={styles.detailReviewBody}>
+          <AppText style={styles.detailReviewerName}>{review.author}</AppText>
+          <AppText style={styles.detailReviewMeta}>{review.createdAt}</AppText>
+        </View>
+        {review.isOwnReview ? <OwnerContentActions busy={deleteAction.busy} onDelete={review.placeId && review.reviewId ? deleteAction.confirm : undefined} key={`${placeName}-${review.reviewId ?? review.createdAt}-${review.text}`} onEdit={review.onEdit} /> : null}
+      </View>
+      <AppText
+        ellipsizeMode="tail"
+        numberOfLines={variant === 'summary' ? 2 : undefined}
+        style={styles.detailReviewText}
+      >
+        {review.text}
+      </AppText>
+      {review.imageUrls?.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.detailReviewImageStrip} contentContainerStyle={styles.detailReviewImageGrid}>
+          {review.imageUrls.map((url, photoIndex) => (
+            <Pressable
+              accessibilityLabel={t('map.detail.imageDetail', { count: photoIndex + 1, name: placeName })}
+              accessibilityRole="button"
+              key={`${url}-${photoIndex}`}
+              onPress={onOpenImages
+                ? () => onOpenImages(review.imageUrls ?? [], photoIndex)
+                : undefined}
+              style={styles.detailReviewImageCell}
+            >
+              <PreviewArtwork imageUrl={url} />
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
+      {review.reasons.length > 0 ? (
+        <View style={styles.detailReviewTags}>
+          <ReviewFeatureTags reasons={review.reasons} variant={variant} appearance="placeDetail" />
+        </View>
+      ) : null}
+    </View>
+  );
+};
+
+const REVIEW_SUMMARY_COUNT = 3;
+
+/** Info-tab review preview; "view all" expands the full reviews in place instead of navigating. */
+const DetailReviewSummary = ({ count, onOpenImages, placeName, reviews }: {
+  count: number;
+  onOpenImages?: (urls: string[], index: number) => void;
+  placeName: string;
+  reviews: readonly DetailReview[];
+}) => {
+  const { t } = useTranslation();
+  const styles = useMapSheetStyles();
+  const [isExpanded, setIsExpanded] = useState(false);
+  if (reviews.length === 0) return null;
+  const visibleReviews = isExpanded ? reviews : reviews.slice(0, REVIEW_SUMMARY_COUNT);
+  const label = t(isExpanded ? 'map.detail.collapseReviews' : 'map.detail.viewAllReviews');
+
+  return (
+    <View style={styles.detailReviewSection} testID="map-detail-review-summary">
+      <AppText style={styles.detailSectionTitle}>{t('map.detail.reviewCount', { count })}</AppText>
+      {visibleReviews.map((review, index) => (
+        <DetailReviewItem
+          key={`${review.author}-${review.createdAt}-${index}`}
+          onOpenImages={onOpenImages}
+          placeName={placeName}
+          review={review}
+          variant={isExpanded ? 'full' : 'summary'}
+        />
+      ))}
+      <Pressable
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isExpanded }}
+        onPress={() => setIsExpanded((current) => !current)}
+        style={({ pressed }) => [styles.detailReviewMore, pressed && styles.pressed]}
+        testID="map-detail-review-more"
+      >
+        <AppText style={styles.detailReviewMoreText}>{label}</AppText>
+      </Pressable>
+    </View>
+  );
+};
+
+type PlaceDetailTab = 'info' | 'reviews';
+
+const ExpandedPlaceContent = ({
+  activeAction,
+  activeTab,
+  bookmarked,
+  couponContent,
+  fallbackContent,
+  imageUrl,
+  onBack,
+  onDeparture,
+  onDirections,
+  onOpenImages,
+  onReserve,
+  onShare,
+  onRetryAvailability,
+  onRetryMedia,
+  onRetryReviews,
+  onSelectAction,
+  onTabChange,
+  onToggleBookmark,
+  pending,
+  placeActionBusy,
+  place,
+  sheetPanHandlers,
+}: {
+  activeAction: PreviewActionKind | null;
+  activeTab: PlaceDetailTab;
+  bookmarked: boolean;
+  couponContent?: React.ReactNode;
+  fallbackContent?: MapPreviewFallbackContent;
+  imageUrl?: string;
+  onBack: () => void;
+  onDeparture?: () => void;
+  onDirections?: () => void;
+  onOpenImages?: (imageUrls: string[], initialIndex: number) => void;
+  onReserve: () => void;
+  onShare?: () => void;
+  onRetryAvailability?: () => void;
+  onRetryMedia?: () => void;
+  onRetryReviews?: () => void;
+  onSelectAction: (action: PreviewActionKind) => void;
+  onTabChange: (tab: PlaceDetailTab) => void;
+  onToggleBookmark: () => void;
+  pending: boolean;
+  placeActionBusy?: 'directions' | 'share' | null;
+  place: DecisionPlace;
+  sheetPanHandlers: GestureResponderHandlers;
+}) => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMapSheetStyles();
+  const translationAttribution = useTranslationAttribution(place.name);
+  const photos = useVisiblePlacePhotos(place.id, fallbackContent?.imageUrls.length
+    ? fallbackContent.imageUrls
+    : [imageUrl]);
+  const validImageUrls = photos.urls;
+  const reservation = fallbackContent?.reservation ?? {
+    kind: 'loading', disabled: true,
+  };
+  const reservationPress = reservation.kind === 'error' ? onRetryAvailability : onReserve;
+  const selectAction = (action: PreviewActionKind, callback?: () => void) => {
+    onSelectAction(action);
+    callback?.();
+  };
+  const insets = useSafeAreaInsets();
+  const reviewImageUrls = (fallbackContent?.reviews ?? [])
+    .flatMap((review) => review.imageUrls ?? []);
+  const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
+  const verificationSummary = typeof fallbackContent?.reviewParticipantCount === 'number'
+    ? [t('map.detail.verifiedCount', { count: fallbackContent.reviewParticipantCount }),
+      !fallbackContent.reviewHighlightsComplete && (fallbackContent.reviewSampleSize ?? 0) > 0
+        ? t('placeReviewSummary.partialBasis', { count: fallbackContent.reviewSampleSize }) : null,
+    ].filter(Boolean).join(' · ')
+    : fallbackContent?.statusDescription || fallbackContent?.englishName;
+
+  return (
+    <>
+    <GlassStyles.ExpandedPlaceScroll
+      contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
+      showsVerticalScrollIndicator={false}
+      testID="map-expanded-place-scroll"
+    >
+      <View {...sheetPanHandlers} style={styles.detailTopBar} testID="map-detail-top-bar">
+        <Pressable
+          accessibilityLabel={t('map.detail.back')}
+          accessibilityRole="button"
+          hitSlop={12}
+          onPress={onBack}
+          style={styles.detailRoundButton}
+          testID="map-detail-back"
+        >
+          <DetailBackAsset style={styles.detailRoundArtwork} />
+        </Pressable>
+        <Pressable
+          accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
+          accessibilityRole="button"
+          accessibilityState={{ busy: pending, disabled: pending, selected: bookmarked }}
+          disabled={pending}
+          hitSlop={12}
+          onPress={onToggleBookmark}
+          style={[styles.detailRoundButton, !bookmarked && styles.detailRoundUnselected]}
+        >
+          <>{bookmarked ? <DetailBookmarkAsset style={styles.detailRoundArtwork} /> : <BookmarkStar selected={false} size={22} />}</>
+        </Pressable>
+      </View>
+
+      <View {...sheetPanHandlers} style={styles.detailHeading} testID="place-detail-drag-heading">
+        <PlaceNameTranslation
+            attributionPlacement="photos"
+            onTranslationChange={translationAttribution.onTranslationChange}
+          original={place.name}
+          nameStyle={styles.detailTitle}
+          category={<AppText ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>}
+        />
+        {verificationSummary ? (
+          <AppText style={styles.detailVerified}>{verificationSummary}</AppText>
+        ) : null}
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.detailActionRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        <PreviewActionChip expanded
+          active={activeAction === 'departure'}
+          disabled={!onDeparture || placeActionBusy != null}
+          kind="departure"
+          label={t('map.card.actions.start')}
+          onPress={() => selectAction('departure', onDeparture)}
+        />
+        <PreviewActionChip expanded
+          active={activeAction === 'arrival'}
+          disabled={!onDirections || placeActionBusy != null}
+          kind="arrival"
+          label={t('map.card.actions.arrive')}
+          onPress={() => selectAction('arrival', onDirections)}
+        />
+        <PreviewActionChip expanded
+          busy={placeActionBusy === 'share'}
+          disabled={!onShare || placeActionBusy != null}
+          kind="share"
+          label={t('map.card.actions.share')}
+          onPress={onShare}
+        />
+        <PreviewActionChip expanded
+          active={activeAction === 'reservation'}
+          disabled={reservation.disabled && reservation.kind !== 'error'}
+          kind="reservation"
+          label={t(reservation.kind === 'error' ? 'map.detail.reservation.retry' : 'map.card.actions.reserve')}
+          onPress={() => selectAction('reservation', reservationPress)}
+        />
+        <PreviewActionChip expanded
+          busy={placeActionBusy === 'directions'}
+          disabled={!onDirections || placeActionBusy != null}
+          kind="directions"
+          label={t('map.card.actions.directions')}
+          onPress={onDirections}
+        />
+      </ScrollView>
+      {fallbackContent?.imageState === 'error' ? (
+        <Pressable accessibilityRole="button" onPress={onRetryMedia}>
+          <AppText style={styles.detailEmptyText}>{t('map.detail.imageError')}</AppText>
+        </Pressable>
+      ) : null}
+
+      <ScrollView
+        contentContainerStyle={styles.detailPhotoRow}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
+        {fallbackContent?.imageState === 'loading' && validImageUrls.length === 0 ? (
+          <SkeletonGroup accessibilityLabel={t('placeDetail.loading')}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <SkeletonBlock width={242} height={182} radius={16} />
+              <SkeletonBlock width={184} height={182} radius={16} />
+            </View>
+          </SkeletonGroup>
+        ) : validImageUrls.map((url, index) => (
+          <Pressable
+            accessibilityLabel={url
+              ? t('map.detail.imageDetail', { count: index + 1, name: place.name })
+              : undefined}
+            accessibilityRole={url ? 'button' : undefined}
+            key={`${url ?? 'missing'}-${index}`}
+            onPress={url && onOpenImages
+              ? () => onOpenImages(validImageUrls, validImageUrls.indexOf(url))
+              : undefined}
+            style={[styles.detailPhoto, index === 0 && styles.detailPhotoPrimary]}
+          >
+            <PreviewArtwork imageUrl={url} onLoadError={() => photos.remove(url)} />
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      <TranslationAttribution visible={translationAttribution.visible} testID="place-detail-translation-attribution" />
+
+      <View style={styles.detailTabs}>
+        {(['info', 'reviews'] as const).map((tab) => (
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === tab }}
+            key={tab}
+            onPress={() => onTabChange(tab)}
+            style={styles.detailTab}
+          >
+            <AppText style={[styles.detailTabText, activeTab === tab && styles.detailTabTextActive]}>
+              {t(tab === 'info' ? 'map.detail.info' : 'map.detail.reviews')}
+            </AppText>
+            {activeTab === tab ? (
+              <View style={styles.detailTabIndicator} testID="map-detail-active-tab-indicator" />
+            ) : null}
+          </Pressable>
+        ))}
+      </View>
+
+      {activeTab === 'info' ? (
+        <View>
+          <View style={styles.detailInfoBlock}>
+            <View style={styles.detailInfoRow}>
+              <DetailPinAsset />
+              <AppText style={styles.detailInfoText}>{detailAddress}</AppText>
+            </View>
+            {fallbackContent ? (
+              <>
+                <View style={styles.detailInfoRow}>
+                  <DetailClockAsset />
+                  <AppText numberOfLines={2} style={styles.detailInfoText}>
+                    <AppText style={[
+                      styles.detailOperatingStatus,
+                      fallbackContent.operatingSummary?.tone === 'positive'
+                        ? styles.detailOperatingPositive
+                        : fallbackContent.operatingSummary?.tone === 'negative'
+                          ? styles.detailOperatingNegative
+                          : fallbackContent.operatingSummary?.tone === 'warning'
+                            ? styles.detailOperatingWarning
+                            : styles.detailOperatingNeutral,
+                    ]}>
+                      {fallbackContent.operatingSummary?.statusText
+                        ?? fallbackContent.statusEmphasis}
+                    </AppText>
+                    {fallbackContent.operatingSummary?.detailText
+                      ? ` · ${fallbackContent.operatingSummary.detailText}` : ''}
+                  </AppText>
+                </View>
+                {fallbackContent.phone ? (
+                  <View style={styles.detailInfoRow}>
+                    <DetailCallAsset />
+                    <AppText style={styles.detailInfoText}>{fallbackContent.phone}</AppText>
+                  </View>
+                ) : null}
+              </>
+            ) : null}
+            {fallbackContent?.topReviewReasons?.length ? (
+              <TopReviewFeatures content={fallbackContent} />
+            ) : fallbackContent?.amenities.length ? (
+              <View style={styles.detailAmenityRow}>
+                {fallbackContent.amenities.map((amenity) => (
+                  <PreviewAmenity key={amenity} type={amenity} expanded />
+                ))}
+              </View>
+            ) : null}
+          </View>
+
+          {fallbackContent?.notice ? (
+            <View style={styles.detailSection}>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.notice')}</AppText>
+              <AppText style={styles.detailInfoText}>{fallbackContent.notice}</AppText>
+            </View>
+          ) : null}
+
+          {fallbackContent?.summary ? (
+            <View style={styles.detailSection}>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.description')}</AppText>
+              <AppText style={styles.detailInfoText}>{fallbackContent.summary}</AppText>
+            </View>
+          ) : null}
+
+          {couponContent ?? (fallbackContent?.coupons?.length ? (
+            <View style={styles.detailSection}>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.coupon')}</AppText>
+              {fallbackContent.coupons.map((coupon, index) => (
+                <View key={`${coupon.title}-${index}`} style={styles.detailCouponRow}>
+                  <View style={styles.detailCouponIcon}><DetailTicketAsset /></View>
+                  <View style={styles.detailCouponBody}>
+                    <AppText style={styles.detailCouponTitle}>{coupon.title}</AppText>
+                    <AppText style={styles.detailCouponPeriod}>{coupon.period}</AppText>
+                  </View>
+                  <DetailDownloadAsset />
+                </View>
+              ))}
+            </View>
+          ) : null)}
+
+          <PlaceMenuSection placeId={place.id} presentation="mapDetail" onOpenImages={onOpenImages} />
+
+          {fallbackContent?.events?.length ? (
+            <View style={styles.detailSection}>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.events')}</AppText>
+              {fallbackContent.events.map((event, index) => (
+                <View key={`${event.title}-${index}`} style={styles.detailCouponRow}>
+                  <View style={styles.detailCouponBody}>
+                    <AppText style={styles.detailCouponTitle}>{event.title}</AppText>
+                    {event.period ? <AppText style={styles.detailCouponPeriod}>{event.period}</AppText> : null}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {fallbackContent?.reviewState === 'ready' && fallbackContent.reviews?.length ? (
+            <DetailReviewSummary
+              count={fallbackContent.reviewCount ?? fallbackContent.reviews.length}
+              onOpenImages={onOpenImages}
+              placeName={place.name}
+              reviews={fallbackContent.reviews}
+            />
+          ) : null}
+        </View>
+      ) : (
+        <View>
+          <View style={styles.detailReviewSection} testID="place-review-highlights">
+            <AppText style={styles.detailReviewTitle}>
+              {t('map.detail.reviewHighlights')}
+              {fallbackContent?.reviewParticipantCount !== undefined && fallbackContent?.reviewState !== 'error' && fallbackContent?.reviewState !== 'loading' ? (
+                <AppText style={styles.detailReviewCount}> {t('map.detail.participantCount', { count: fallbackContent.reviewParticipantCount })}</AppText>
+              ) : null}
+            </AppText>
+            {fallbackContent?.reviewState !== 'error' && fallbackContent?.reviewState !== 'loading'
+              && (fallbackContent?.reviewSampleSize ?? 0) > 0
+              && (!fallbackContent?.reviewHighlightsComplete || fallbackContent?.reviewParticipantCount === undefined) ? (
+              <AppText style={styles.detailReviewCount} testID="place-review-highlights-basis">
+                {t(fallbackContent?.reviewHighlightsComplete ? 'placeReviewSummary.reviewBasis' : 'placeReviewSummary.partialBasis', { count: fallbackContent?.reviewSampleSize })}
+              </AppText>
+            ) : null}
+            {fallbackContent?.reviewState === 'loading' ? (
+              <Skeleton variant="comments" accessibilityLabel={t('placeReviewSummary.loading')} />
+            ) : fallbackContent?.reviewState === 'error' ? (
+              <Pressable accessibilityRole="button" onPress={onRetryReviews}><AppText style={styles.detailEmptyText}>{t('placeReviewSummary.error')}</AppText></Pressable>
+            ) : fallbackContent?.reviewHighlights?.length ? fallbackContent.reviewHighlights.map((highlight, index, items) => {
+              const maxCount = Math.max(...items.map((item) => item.count), 1);
+              const scoreRatio = Math.min(1, Math.max(0, highlight.count / maxCount));
+              const strongest = index === 0;
+              return (
+                <View key={highlight.reason ?? highlight.label} style={styles.detailHighlightRow} accessible
+                  testID={`place-review-highlight-${highlight.reason ?? index}`} accessibilityRole="progressbar"
+                  accessibilityLabel={highlight.label} accessibilityValue={{ min: 0, max: maxCount, now: highlight.count }}>
+                  <View
+                    testID={`place-review-highlight-fill-${highlight.reason ?? index}`}
+                    style={[
+                      styles.detailHighlightFill,
+                      {
+                        backgroundColor: strongest ? colors.primaryAlternative : index === 1 ? colors.primaryAssistive : colors.primaryAssistiveSoft,
+                        width: `${scoreRatio * 100}%`,
+                      },
+                    ]}
+                  />
+                  <View style={styles.detailHighlightLabelRow}>
+                    <ReviewHighlightIcon label={highlight.label} reason={highlight.reason} />
+                    <AppText style={[styles.detailHighlightLabel, strongest && styles.detailHighlightCountOnStrong]}>{highlight.label}</AppText>
+                  </View>
+                  <AppText
+                    style={[
+                      styles.detailHighlightCount,
+                      strongest && styles.detailHighlightCountOnStrong,
+                    ]}
+                  >
+                    {highlight.count}
+                  </AppText>
+                </View>
+              );
+            }) : <AppText style={styles.detailEmptyText}>{t('placeReviewSummary.empty')}</AppText>}
+          </View>
+
+          {reviewImageUrls.length ? (
+            <View style={styles.detailReviewSection}>
+              <AppText style={styles.detailSectionTitle}>{t('map.detail.photoReviews')}</AppText>
+              <ScrollView contentContainerStyle={styles.detailReviewPhotos} horizontal showsHorizontalScrollIndicator={false}>
+              {reviewImageUrls.map((url, index) => (
+                <Pressable
+                  accessibilityLabel={t('map.detail.imageDetail', {
+                    count: index + 1,
+                    name: place.name,
+                  })}
+                  accessibilityRole="button"
+                  key={`${url ?? 'missing'}-review-${index}`}
+                  onPress={onOpenImages
+                    ? () => onOpenImages(reviewImageUrls, index)
+                    : undefined}
+                  style={styles.detailReviewPhoto}
+                >
+                  <PreviewArtwork imageUrl={url} />
+                </Pressable>
+              ))}
+              </ScrollView>
+            </View>
+          ) : null}
+
+          <View style={styles.detailReviewSection}>
+            <AppText style={styles.detailSectionTitle}>{t('map.detail.reviewCount', { count: fallbackContent?.reviewCount ?? 0 })}</AppText>
+            {fallbackContent?.reviewState === 'error' ? (
+              <Pressable accessibilityRole="button" onPress={onRetryReviews}>
+                <AppText style={styles.detailEmptyText}>{t('map.detail.reviewError')}</AppText>
+              </Pressable>
+            ) : fallbackContent?.reviewState === 'loading' ? (
+              <Skeleton variant="comments" accessibilityLabel={t('map.detail.reviewLoading')} />
+            ) : fallbackContent?.reviews?.length ? fallbackContent.reviews.map((review, index) => (
+              <DetailReviewItem
+                key={`${review.author}-${review.createdAt}-${index}`}
+                onOpenImages={onOpenImages}
+                placeName={place.name}
+                review={review}
+                variant="full"
+              />
+            )) : (
+                <AppText style={styles.detailEmptyText}>{t('map.detail.reviewEmpty')}</AppText>
+              )}
+          </View>
+        </View>
+      )}
+    </GlassStyles.ExpandedPlaceScroll>
+    </>
+  );
+};
+
+const DISABLED_RANKED_FEED: RankedPlaceFeed = {
+  hasNext: false,
+  places: [],
+  retry: () => undefined,
+  status: 'disabled',
+};
+
+export default function MapBottomSheet({
+  bookmarkPendingPlaceIds = {},
+  bookmarkedPlaceIds,
+  collapsedTranslateY,
+  expandedTranslateY = 0,
+  content,
+  couponContent,
+  height,
+  isBookmarkStateLoading = false,
+  mediumTranslateY,
+  onBackHome,
+  onCreateReservation,
+  onDetailPress,
+  onDeparturePress,
+  onDirectionsPress,
+  onExternalDeparturePress,
+  onExternalDirectionsPress,
+  onExternalPlaceLayout,
+  onHandlePress,
+  onOpenCommunity,
+  onOpenLikedPlaces,
+  onOpenRecommendations,
+  onOpenSavedPlaces,
+  onPlacePress,
+  onRankedPlacePress = () => undefined,
+  onRetryAvailability,
+  onRetryMedia,
+  onRetryRecommendations,
+  onRetryReviews,
+  onSharePlace,
+  onToggleBookmark,
+  onToggleRankedBookmark = async () => undefined,
+  panHandlers,
+  placeActionBusy = null,
+  places,
+  localFeed = DISABLED_RANKED_FEED,
+  nationalFeed = DISABLED_RANKED_FEED,
+  previewFallbackContentByPlaceId,
+  explorationImageUrlsByPlaceId = {},
+  recommendationPlaces,
+  recommendationsState,
+  selectedPlace,
+  detailError, detailBusy, onRetryDetail, resultsError, resultsLoading, resultsBusy, onRetryResults,
+  sheetChromeBottom,
+  parentOwnsMotion = false,
+  sheetTranslateY,
+  snapPoint,
+  userName,
+}: MapBottomSheetProps) {
+  const activeTheme = useTheme();
+  const themedColors = activeTheme.colors;
+  const styles = useMemo(() => createStyles(themedColors, activeTheme.liquidGlass), [themedColors, activeTheme.liquidGlass]);
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const [feed, setFeed] = useState<'local' | 'national'>('local');
+  const [localCategory, setLocalCategory] = useState<SheetCategory>('all');
+  const [nationalCategory, setNationalCategory] = useState<SheetCategory>('all');
+  const [activePlaceDetailTab, setActivePlaceDetailTab] = useState<PlaceDetailTab>('info');
+  const [activePreviewAction, setActivePreviewAction] = useState<PreviewActionKind | null>(null);
+  const [photoViewer, setPhotoViewer] = useState<{
+    imageUrls: string[];
+    initialIndex: number;
+    placeName: string;
+  } | null>(null);
+  const reservationNavigationLock = useRef(false);
+  const reservationUnlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const externalPlace = content.type === 'external-place' ? content.place : null;
+  const externalPlaceKey = externalPlace ? getExternalPlaceKey(externalPlace) : null;
+  useEffect(() => {
+    setActivePlaceDetailTab('info');
+    setActivePreviewAction(null);
+    setPhotoViewer(null);
+    reservationNavigationLock.current = false;
+    if (reservationUnlockTimer.current) clearTimeout(reservationUnlockTimer.current);
+    reservationUnlockTimer.current = null;
+
+    return () => {
+      if (reservationUnlockTimer.current) clearTimeout(reservationUnlockTimer.current);
+    };
+  }, [externalPlaceKey, selectedPlace?.id]);
+  const query = content.type === 'search' || content.type === 'results' ? content.query.trim() : '';
+  const isSearchMode = content.type === 'search' || content.type === 'results';
+  const selectedFeed = feed === 'local' ? localFeed : nationalFeed;
+  const activeCategory = feed === 'local' ? localCategory : nationalCategory;
+  const setActiveCategory = feed === 'local' ? setLocalCategory : setNationalCategory;
+  const previewPlaces = useMemo(() => {
+    const seenPlaceIds = new Set<number>();
+
+    return [...places, ...recommendationPlaces].filter((place) => {
+      if (seenPlaceIds.has(place.id)) return false;
+      seenPlaceIds.add(place.id);
+      return true;
+    });
+  }, [places, recommendationPlaces]);
+  const { imageUrlsByPlaceId: previewImageUrlsByPlaceId } = usePlacePreviewImages(previewPlaces);
+  const imageUrlsByPlaceId = useMemo(() => ({
+    ...explorationImageUrlsByPlaceId,
+    ...previewImageUrlsByPlaceId,
+  }), [explorationImageUrlsByPlaceId, previewImageUrlsByPlaceId]);
+  const isExpandedPlaceDetail = content.type === 'place-preview' && snapPoint === 'expanded';
+  const isHomeFeed = content.type === 'home' || content.type === 'recommendations';
+  const restingScrollEnabled = isHomeFeed
+    && snapPoint === 'medium'
+    && height - mediumTranslateY < HOME_SHEET_VISIBLE_HEIGHT;
+  const compactContentHeight = Math.max(
+    0,
+    height - mediumTranslateY - HOME_SHEET_HANDLE_HEIGHT
+      - getMapSheetNavigationBottom(insets.bottom) - 64 - 8,
+  );
+  const handleCreateReservation = () => {
+    if (!selectedPlace || !onCreateReservation || reservationNavigationLock.current) return;
+    reservationNavigationLock.current = true;
+    onCreateReservation(
+      selectedPlace,
+      previewFallbackContentByPlaceId?.[String(selectedPlace.id)]?.imageUrls[0]
+        ?? imageUrlsByPlaceId[String(selectedPlace.id)],
+    );
+    reservationUnlockTimer.current = setTimeout(() => {
+      reservationNavigationLock.current = false;
+      reservationUnlockTimer.current = null;
+    }, RECOMMENDATION_NAVIGATION_LOCK_MS);
+  };
+  const contentFadeStart = mediumTranslateY
+    + ((collapsedTranslateY - mediumTranslateY) * 0.42);
+  const contentOpacity = sheetTranslateY.interpolate({
+    extrapolate: 'clamp',
+    inputRange: [mediumTranslateY, contentFadeStart, collapsedTranslateY],
+    outputRange: [1, 0.78, 0],
+  });
+  const contentTranslateY = sheetTranslateY.interpolate({
+    extrapolate: 'clamp',
+    inputRange: [mediumTranslateY, collapsedTranslateY],
+    outputRange: [0, 22],
+  });
+  const expandedOnlyOpacity = sheetTranslateY.interpolate({
+    extrapolate: 'clamp',
+    inputRange: [Math.max(0, mediumTranslateY - 96), mediumTranslateY],
+    outputRange: [1, 0],
+  });
+  return (
+    <GlassStyles.BottomSheetContainer
+      style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}
+    >
+      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} contentInset={content.type === 'place-preview' || content.type === 'external-place' || (snapPoint === 'expanded' && content.type === 'recommendations') ? 0 : 8} testID="map-sheet">
+      {!isExpandedPlaceDetail ? (
+        <View
+          {...panHandlers}
+          style={[styles.handleArea, isHomeFeed && styles.homeHandleArea]}
+          testID="map-sheet-handle-target"
+        >
+          <Pressable
+            accessibilityLabel={t('map.sheet.adjust')}
+            accessibilityRole="adjustable"
+            onPress={onHandlePress}
+            style={[styles.handleButton, isHomeFeed && styles.homeHandleButton]}
+          >
+            <View pointerEvents="none" style={styles.handle} />
+          </Pressable>
+        </View>
+      ) : null}
+
+      <Animated.View
+        {...(snapPoint === 'expanded' || restingScrollEnabled ? {} : panHandlers)}
+        pointerEvents={snapPoint === 'collapsed' ? 'none' : 'auto'}
+        style={[
+          styles.sheetContent,
+          restingScrollEnabled && { flex: 0, height: compactContentHeight },
+          { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] },
+        ]}
+        testID="map-sheet-content"
+      >
+      {/* Keep loaded place data available when an offline refresh fails. */}
+      {content.type === 'place-preview' && detailError && !selectedPlace ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
+      {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState variant="place" description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
+        snapPoint === 'expanded' ? (
+          <ExpandedPlaceContent
+            sheetPanHandlers={panHandlers}
+            activeAction={activePreviewAction}
+            activeTab={activePlaceDetailTab}
+            bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
+            couponContent={couponContent}
+            fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
+            imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
+            onBack={onBackHome}
+            onDeparture={onDeparturePress && hasValidCoordinates({
+              latitude: selectedPlace.latitude,
+              longitude: selectedPlace.longitude,
+            }) ? () => onDeparturePress(selectedPlace) : undefined}
+            onDirections={onDirectionsPress && hasValidCoordinates({
+              latitude: selectedPlace.latitude,
+              longitude: selectedPlace.longitude,
+            })
+              ? () => onDirectionsPress(selectedPlace)
+              : undefined}
+            onOpenImages={(nextImageUrls, initialIndex) => setPhotoViewer({
+              imageUrls: nextImageUrls,
+              initialIndex,
+              placeName: selectedPlace.name,
+            })}
+            onReserve={handleCreateReservation}
+            onShare={onSharePlace ? () => onSharePlace(selectedPlace) : undefined}
+            onRetryAvailability={onRetryAvailability}
+            onRetryMedia={onRetryMedia}
+            onRetryReviews={onRetryReviews}
+            onSelectAction={setActivePreviewAction}
+            onTabChange={setActivePlaceDetailTab}
+            onToggleBookmark={() => void onToggleBookmark(
+              selectedPlace,
+              !bookmarkedPlaceIds[String(selectedPlace.id)],
+            )}
+            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(selectedPlace.id)])}
+            placeActionBusy={placeActionBusy}
+            place={selectedPlace}
+          />
+        ) : (
+          <PreviewContent
+            sheetPanHandlers={panHandlers}
+            activeAction={activePreviewAction}
+            bookmarked={Boolean(bookmarkedPlaceIds[String(selectedPlace.id)])}
+            fallbackContent={previewFallbackContentByPlaceId?.[String(selectedPlace.id)]}
+            imageUrl={imageUrlsByPlaceId[String(selectedPlace.id)]}
+            onBack={onBackHome}
+            onDetail={() => onDetailPress(selectedPlace)}
+            onDeparture={onDeparturePress && hasValidCoordinates({
+              latitude: selectedPlace.latitude,
+              longitude: selectedPlace.longitude,
+            }) ? () => onDeparturePress(selectedPlace) : undefined}
+            onDirections={onDirectionsPress && hasValidCoordinates({
+              latitude: selectedPlace.latitude,
+              longitude: selectedPlace.longitude,
+            })
+              ? () => onDirectionsPress(selectedPlace)
+              : undefined}
+            onOpenImages={(nextImageUrls, initialIndex) => setPhotoViewer({
+              imageUrls: nextImageUrls,
+              initialIndex,
+              placeName: selectedPlace.name,
+            })}
+            onReserve={handleCreateReservation}
+            onShare={onSharePlace ? () => onSharePlace(selectedPlace) : undefined}
+            onRetryAvailability={onRetryAvailability}
+            onRetryMedia={onRetryMedia}
+            onSelectAction={setActivePreviewAction}
+            onToggleBookmark={() => void onToggleBookmark(
+              selectedPlace,
+              !bookmarkedPlaceIds[String(selectedPlace.id)],
+            )}
+            pending={isBookmarkStateLoading || Boolean(bookmarkPendingPlaceIds[String(selectedPlace.id)])}
+            placeActionBusy={placeActionBusy}
+            place={selectedPlace}
+          />
+        )
+      ) : externalPlace ? (
+        <ExternalPlaceContent
+          activeAction={activePreviewAction}
+          onBack={onBackHome}
+          onDeparture={onExternalDeparturePress && externalPlace.coordinate
+            ? () => onExternalDeparturePress(externalPlace)
+            : undefined}
+          onDirections={onExternalDirectionsPress && externalPlace.coordinate
+            ? () => onExternalDirectionsPress(externalPlace)
+            : undefined}
+          onLayout={onExternalPlaceLayout}
+          onSelectAction={setActivePreviewAction}
+          place={externalPlace}
+        />
+      ) : isSearchMode ? (
+        <ScrollView
+          contentContainerStyle={styles.resultsContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.resultsTitleRow}>
+            <AppText style={styles.resultsTitle}>{query ? t('map.sheet.resultsFor', { query }) : t('map.sheet.aroundMe')}</AppText>
+            <AppText style={styles.resultsCount}>{places.length}</AppText>
+          </View>
+          {resultsError ? <ApiErrorState error={resultsError} busy={resultsBusy} onRetry={onRetryResults} /> : null}
+          {places.length > 0 ? places.map((place) => (
+            <ResultRow key={place.id} onPress={() => onPlacePress(place)} place={place} />
+          )) : resultsLoading ? <LoadingState variant="place" description={t('placeDetail.loading')} /> : resultsError ? null : <EmptyCard />}
+        </ScrollView>
+      ) : content.type === 'recommendations' ? (
+        <RecommendationContent
+          bookmarkedPlaceIds={bookmarkedPlaceIds}
+          bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+          expandedInteractionsEnabled={snapPoint === 'expanded'}
+          expandedOnlyOpacity={expandedOnlyOpacity}
+          imageUrlsByPlaceId={imageUrlsByPlaceId}
+          isBookmarkStateLoading={isBookmarkStateLoading}
+          onPlacePress={onPlacePress}
+          onRetry={onRetryRecommendations}
+          onToggleBookmark={onToggleBookmark}
+          places={recommendationPlaces}
+          restingScrollEnabled={restingScrollEnabled}
+          state={recommendationsState}
+          userName={userName?.trim() || 'user'}
+        />
+      ) : (
+        <ExpandedHomeContent
+          sheetPanHandlers={panHandlers}
+          activeCategory={activeCategory}
+          bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
+          expandedInteractionsEnabled={snapPoint === 'expanded'}
+          expandedOnlyOpacity={expandedOnlyOpacity}
+          feed={feed}
+          onCategoryChange={setActiveCategory}
+          onFeedChange={setFeed}
+          onPlacePress={onRankedPlacePress}
+          onRetry={selectedFeed.retry}
+          onToggleBookmark={onToggleRankedBookmark}
+          places={selectedFeed.places}
+          restingScrollEnabled={restingScrollEnabled}
+          state={selectedFeed.status}
+          title={selectedFeed.title}
+          userName={userName?.trim() || 'user'}
+        />
+      )}
+      </Animated.View>
+      </MapSheetSurface>
+
+      {content.type !== 'place-preview' && content.type !== 'external-place' ? (
+        <MapSheetBottomNavigation
+          activeTab={content.type === 'recommendations' ? 'recommendations' : 'map'}
+          onOpenCommunity={onOpenCommunity}
+          onOpenFavorites={onOpenLikedPlaces}
+          onOpenMap={onBackHome}
+          onOpenRecommendations={onOpenRecommendations}
+          onOpenReservations={onOpenSavedPlaces}
+          sheetTranslateY={sheetTranslateY}
+        />
+      ) : null}
+      <PlacePhotoViewer
+        imageUrls={photoViewer?.imageUrls ?? []}
+        initialIndex={photoViewer?.initialIndex ?? 0}
+        onClose={() => setPhotoViewer(null)}
+        placeName={photoViewer?.placeName ?? ''}
+        visible={photoViewer !== null}
+      />
+    </GlassStyles.BottomSheetContainer>
+  );
+}
+
+const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
+const createStyles = (
+  colors: AppTheme['colors'],
+  glass: AppTheme['liquidGlass'] = liquidGlass,
+): Record<string, object> => ({
+  artwork: {
+    backgroundColor: colors.surfaceMuted,
+    height: '100%',
+    overflow: 'hidden',
+    width: '100%',
+  },
+  artworkImage: {
+    height: '100%',
+    width: '100%',
+  },
+  artworkBlurClip: {
+    bottom: 0,
+    height: '40%',
+    left: 0,
+    overflow: 'hidden',
+    position: 'absolute',
+    right: 0,
+  },
+  artworkBlurImage: {
+    bottom: 0,
+    height: '250%',
+    left: 0,
+    position: 'absolute',
+    width: '100%',
+  },
+  artworkFallback: { alignItems: 'center', justifyContent: 'center' },
+  artworkFallbackText: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 5 },
+  detailRoundUnselected: { backgroundColor: colors.surfaceElevated, shadowColor: colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  detailRoundArtwork: { position: 'absolute', left: -20, top: -16 },
+  detailActionChip: { alignItems: 'center', backgroundColor: colors.backgroundAssistive, borderColor: 'transparent', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 6, minHeight: 34, justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 8 },
+  detailActionText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500', lineHeight: 18 },
+  detailAmenity: { alignItems: 'center', gap: 4 },
+  detailAmenityIcon: { width: 56, height: 56, borderRadius: 20, backgroundColor: colors.backgroundNeutral, alignItems: 'center', justifyContent: 'center' },
+  detailAmenityText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500', lineHeight: 18 },
+  detailGlobeLayers: { width: 28.0001, height: 28 },
+  detailGlobeLines: { position: 'absolute', left: 0.5432, top: 0 },
+  detailActionRow: { columnGap: 8, paddingBottom: 14, paddingHorizontal: 16 },
+  detailAmenityRow: { columnGap: 16, flexDirection: 'row' },
+  detailBackText: { color: colors.textMuted, fontSize: 34, fontWeight: '300', lineHeight: 36, marginTop: -4 },
+  detailCategory: { color: colors.text, flexShrink: 0, fontSize: 18, fontWeight: '500', includeFontPadding: false, lineHeight: 24, marginLeft: 4 },
+  detailContent: { backgroundColor: colors.background, flexGrow: 1, paddingBottom: 48 },
+  detailCouponBody: { flex: 1 },
+  detailCouponIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryAssistive,
+    borderRadius: 8,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  detailCouponIconText: { color: colors.primary, fontSize: 18, fontWeight: '900' },
+  detailCouponPeriod: { color: colors.textSecondary, fontSize: 12, marginTop: 4, lineHeight: 16 },
+  detailCouponRow: { alignItems: 'center', backgroundColor: colors.backgroundAssistive, borderRadius: 12, flexDirection: 'row', gap: 10, marginTop: 16, minHeight: 64, padding: 12 },
+  detailCouponTitle: { color: colors.textStrong, fontSize: 16, fontWeight: '500', lineHeight: 21 },
+  detailEmptyText: { color: colors.textMuted, fontSize: 12, paddingVertical: 24, textAlign: 'center' },
+  detailHeading: { paddingBottom: 14, paddingHorizontal: 16 },
+  detailHighlightCount: { color: colors.primary, fontSize: 14, fontWeight: '700', position: 'absolute', right: 16 },
+  detailHighlightCountOnStrong: { color: colors.textInverse },
+  detailHighlightFill: {
+    backgroundColor: colors.primaryAssistive,
+    borderBottomLeftRadius: 9,
+    borderTopLeftRadius: 9,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 0,
+  },
+  detailHighlightLabel: { color: colors.textStrong, fontSize: 14, fontWeight: '700', lineHeight: 19, flexShrink: 1 },
+  detailHighlightLabelRow: { alignItems: 'center', flexDirection: 'row', gap: 6, paddingLeft: 16, paddingRight: 54 },
+  detailHighlightRow: { backgroundColor: colors.surfaceMuted, borderRadius: 16, height: 56, justifyContent: 'center', marginTop: 16, overflow: 'hidden' },
+  detailInfoBlock: { paddingVertical: 16, paddingHorizontal: 24, gap: 16 },
+  detailInfoRow: { alignItems: 'center', flexDirection: 'row', gap: 12, minHeight: 21 },
+  detailInfoText: { color: colors.textSecondary, flex: 1, fontSize: 16, lineHeight: 21 },
+  detailMenuBody: { flex: 1 },
+  detailMenuDescription: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+  detailMenuImage: { borderRadius: 10, height: 64, overflow: 'hidden', width: 72 },
+  detailMenuName: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  detailMenuPrice: { color: colors.text, fontSize: 12, fontWeight: '800', marginTop: 7 },
+  detailMenuRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    minHeight: 105,
+    paddingVertical: 12,
+  },
+  detailOperatingNegative: { color: colors.statusError },
+  detailOperatingNeutral: { color: colors.textSecondary },
+  detailOperatingPositive: { color: colors.statusSuccess },
+  detailOperatingStatus: { fontWeight: '500' },
+  detailOperatingWarning: { color: colors.warning },
+  detailPhoto: { borderRadius: 16, height: 182, overflow: 'hidden', width: 242 },
+  detailPhotoPrimary: { width: 242 },
+  detailPhotoRow: { columnGap: 16, paddingBottom: 12, paddingHorizontal: 16 },
+  detailReviewBody: { flex: 1 },
+  detailReviewCount: { color: colors.textSecondary, fontSize: 14, fontWeight: '500' },
+  detailReviewItem: { borderBottomColor: colors.border, borderBottomWidth: 1, paddingVertical: 16 },
+  detailReviewImageCell: { height: 182, width: 242, overflow: 'hidden' },
+  detailReviewImageStrip: { borderRadius: 16, marginTop: 8, overflow: 'hidden' },
+  detailReviewImageGrid: { flexDirection: 'row', gap: 2 },
+  detailReviewMeta: { color: colors.textSecondary, fontSize: 14, lineHeight: 18, marginTop: 1 },
+  detailReviewPhoto: { borderRadius: 16, height: 164, overflow: 'hidden', width: 164 },
+  detailReviewPhotos: { columnGap: 16, paddingTop: 16 },
+  detailReviewSection: { borderBottomColor: colors.surfaceMuted, borderBottomWidth: 8, paddingVertical: 16, paddingHorizontal: 24 },
+  detailReviewTags: { paddingTop: 8 },
+  detailReviewMore: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 20,
+    height: 48,
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  detailReviewMoreText: { color: colors.textStrong, fontSize: 14, fontWeight: '600' },
+  detailReviewText: { color: colors.textStrong, fontSize: 16, lineHeight: 21, marginTop: 8 },
+  detailReviewTitle: { color: colors.textStrong, fontSize: 18, fontWeight: '700', lineHeight: 24 },
+  detailReviewerAvatar: { alignItems: 'center', backgroundColor: colors.backgroundNeutral, borderRadius: 22, height: 44, justifyContent: 'center', width: 44 },
+  detailReviewerAvatarImage: { borderRadius: 22, height: 44, width: 44 },
+  detailReviewerInitial: { color: colors.textMuted, fontSize: 13, fontWeight: '800' },
+  detailReviewerName: { color: colors.textStrong, fontSize: 18, fontWeight: '500', lineHeight: 24 },
+  detailReviewerRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  detailRoundButton: { alignItems: 'center', borderRadius: 22, height: 44, justifyContent: 'center', width: 44 },
+  detailSection: { borderTopColor: colors.surfaceMuted, borderTopWidth: 8, paddingVertical: 16, paddingHorizontal: 24 },
+  detailSectionTitle: { color: colors.textStrong, fontSize: 18, fontWeight: '700', lineHeight: 24 },
+  detailTab: { alignItems: 'center', flex: 1, height: 56, justifyContent: 'center', position: 'relative' },
+  detailTabIndicator: {
+    backgroundColor: colors.primary,
+    bottom: -1,
+    height: 2,
+    position: 'absolute',
+    width: 40,
+  },
+  detailTabText: { color: colors.textSecondary, fontSize: 18, fontWeight: '400', lineHeight: 24 },
+  detailTabTextActive: { color: colors.primary, fontWeight: '500' },
+  detailTabs: { borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row' },
+  detailTitle: { color: colors.textStrong, flexShrink: 1, fontSize: 24, fontWeight: '700', includeFontPadding: false, lineHeight: 31, letterSpacing: -0.48, minWidth: 0 },
+  detailTitleRow: { alignItems: 'baseline', flexDirection: 'row', minWidth: 0 },
+  detailTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 2,
+  },
+  detailVerified: { color: colors.text, fontSize: 16, lineHeight: 21, marginTop: 4 },
+  cardRow: {
+    gap: 12,
+    paddingBottom: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  rowScroll: {
+    flexGrow: 0,
+  },
+  cardScrim: {
+    ...absoluteFill,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  emptyCardBody: { color: colors.textMuted, fontSize: 11, marginTop: 4, textAlign: 'center' },
+  emptyCardRow: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 16,
+    height: 182,
+    width: '100%',
+  },
+  feedStateContainer: { paddingHorizontal: 16, paddingTop: 29, paddingBottom: 18 },
+  emptyCardIcon: {
+    alignItems: 'center',
+    height: 64,
+    justifyContent: 'center',
+    marginBottom: 8,
+    width: 64,
+  },
+  emptyCardTitle: { color: colors.textStrong, fontSize: 14, fontWeight: '800' },
+  expandedContent: { paddingBottom: 116 },
+  expandedFeaturedRow: {
+    gap: 16,
+    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingTop: 29,
+  },
+  expandedScroll: { flex: 1 },
+  expandedTitle: {
+    color: colors.textStrong,
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 27,
+    paddingHorizontal: 8,
+  },
+  expandedTitleAccent: { color: colors.primary },
+  bookmarkPill: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.primary,
+    borderRadius: 16,
+    borderWidth: 1,
+    elevation: 3,
+    minWidth: 66,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    position: 'absolute',
+    right: 10,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    top: 10,
+    zIndex: 3,
+  },
+  bookmarkPillActive: { backgroundColor: colors.primaryAction },
+  bookmarkPillText: { color: colors.primary, fontSize: 12, fontWeight: '900' },
+  bookmarkPillTextActive: { color: colors.onPrimary },
+  categoryChip: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.backgroundNeutral,
+    borderRadius: 22,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 7,
+    height: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+  },
+  categoryChipActive: {
+    backgroundColor: colors.selectedSurface,
+    borderColor: colors.selectedBorder,
+  },
+  categoryChipLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '700' },
+  categoryChipLabelActive: { color: colors.primary },
+  categoryRow: {
+    gap: 9,
+    paddingBottom: 16,
+    paddingHorizontal: 8,
+    paddingTop: 14,
+  },
+  gridArtwork: { height: '100%' },
+  // Figma Post (5069:32278): 242x182, 16px radius, no drop shadow.
+  gridCard: {
+    backgroundColor: colors.staticBlack,
+    borderRadius: 16,
+    height: 182,
+    overflow: 'hidden',
+    width: 242,
+  },
+  gridCardBody: {
+    bottom: 0,
+    left: 0,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
+    position: 'absolute',
+    right: 0,
+  },
+  gridCardDistance: { color: colors.fillAlternative, flexShrink: 1, fontSize: 12, fontWeight: '500', lineHeight: 16, maxWidth: '100%', paddingRight: 40 },
+  gridCardName: { color: colors.backgroundAssistive, flexShrink: 1, fontSize: 16, fontWeight: '700', lineHeight: 21, maxWidth: '100%', paddingRight: 40 },
+  gridBookmarkStar: { bottom: 12, padding: 4, position: 'absolute', right: 8, zIndex: 3 },
+  gridRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    paddingHorizontal: 8,
+  },
+  homeGridCard: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  homeGridCardBody: { bottom: 0, left: 0, paddingBottom: 12, paddingHorizontal: 14, position: 'absolute', right: 0 },
+  homeGridCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, fontWeight: '500', lineHeight: 16, marginTop: 2, paddingRight: 29 },
+  homeGridCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', lineHeight: 21, paddingRight: 31 },
+  homeBookmarkStar: { bottom: 9, padding: 4, position: 'absolute', right: 10, zIndex: 3 },
+  homeTrendCard: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 16,
+    height: 182,
+    overflow: 'hidden',
+    width: 242,
+  },
+  homeTrendCardBody: { bottom: 0, left: 0, paddingBottom: 13, paddingHorizontal: 14, position: 'absolute', right: 0 },
+  homeTrendCardDistance: { color: 'rgba(255,255,255,0.92)', fontSize: 12, marginTop: 2 },
+  homeTrendCardName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', paddingRight: 35 },
+  handle: { backgroundColor: colors.secondaryNormal, borderRadius: 3, height: 5, width: 56 },
+  handleArea: { alignItems: 'center', height: 20, justifyContent: 'center', zIndex: 4 },
+  handleButton: { alignItems: 'center', height: 20, justifyContent: 'center', width: 160 },
+  homeHandleArea: { height: HOME_SHEET_HANDLE_HEIGHT },
+  homeHandleButton: { height: HOME_SHEET_HANDLE_HEIGHT, justifyContent: 'flex-start', paddingTop: 6 },
+  placeCard: {
+    backgroundColor: 'transparent',
+    height: 206,
+    minHeight: 206,
+    overflow: 'hidden',
+    width: 156,
+  },
+  placeCardArtwork: {
+    backgroundColor: '#161616',
+    borderRadius: 13,
+    height: 156,
+    overflow: 'hidden',
+    shadowColor: '#12161D',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+  },
+  placeCardBody: {
+    bottom: 0,
+    left: 0,
+    paddingBottom: 9,
+    paddingHorizontal: 10,
+    position: 'absolute',
+    right: 0,
+  },
+  placeCardDistance: { color: colors.textMuted, flexShrink: 1, fontSize: 11, marginTop: 1, maxWidth: '100%' },
+  placeCardName: { color: '#FFFFFF', flexShrink: 1, fontSize: 13, fontWeight: '800', lineHeight: 16, maxWidth: '100%', paddingRight: 25 },
+  cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
+  bookmarkPressed: { opacity: 0.64 },
+  recommendationContent: { paddingBottom: 108 },
+  recommendationCardRow: { gap: 16, paddingBottom: 16, paddingHorizontal: 16, paddingTop: 12 },
+  // Figma keeps the cards 24dp from the screen edge in both states (7973:10445, 7973:10640).
+  recommendationCardRowExpanded: { paddingHorizontal: 24 },
+  recommendationContext: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 4 },
+  // Figma PlaceRecommend-Up (5408:26180): 16px gaps, Headline1/Bold title 14px above the cards.
+  recommendationGridRows: { gap: 16 },
+  recommendationGridScroll: { gap: 16, paddingHorizontal: 24 },
+  recommendationGridTitle: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', lineHeight: 26, marginBottom: 14, marginTop: 2, paddingHorizontal: 16 },
+  // Figma PlaceRecommend (7973:10494): title text 13dp below the handle, 16dp from the sheet edge.
+  recommendationHeader: { paddingHorizontal: 16 },
+  recommendationReason: { color: colors.text, flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
+  reservationPlaceCard: { height: 214, minHeight: 214, width: 164 },
+  reservationPlaceCardArtwork: { borderRadius: 16, height: 164 },
+  reservationPlaceCardDistance: { fontSize: 14, marginTop: 1 },
+  reservationPlaceCardName: { fontSize: 16, lineHeight: 21, paddingRight: 30 },
+  // Figma 5062:31879: Body/Medium reason and Label/Regular distance, 8px under the artwork.
+  recommendationPlaceCard: { height: 209, minHeight: 209 },
+  recommendationCardReason: { color: colors.labelNeutral, fontSize: 16, fontWeight: '500', lineHeight: 21, marginTop: 10 },
+  recommendationCardDistance: { color: colors.textAlternative, fontWeight: '400', lineHeight: 18, marginTop: 0 },
+  recommendationMetaRow: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 5, maxWidth: '100%' },
+  recommendationState: { alignItems: 'center', minHeight: 160, justifyContent: 'center', paddingHorizontal: 24 },
+  recommendationSubtitle: { color: colors.textSecondary, fontSize: 14, includeFontPadding: false, lineHeight: 18, marginTop: 4 },
+  recommendationTitle: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', includeFontPadding: false, lineHeight: 26 },
+  recommendationTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  retryButton: { backgroundColor: colors.primaryAction, borderRadius: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 8 },
+  retryButtonText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
+  externalBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 10,
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  externalBadgeText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', includeFontPadding: false, lineHeight: 16 },
+  externalHeader: { alignItems: 'flex-start', flexDirection: 'row' },
+  externalNotice: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 10,
+    marginBottom: 12,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    rowGap: 4,
+  },
+  externalNoticeText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  externalSource: { color: colors.textMuted, fontSize: 12, fontWeight: '600', includeFontPadding: false, lineHeight: 16, marginTop: 4 },
+  pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
+  placePreviewContent: { rowGap: 14 },
+  previewControls: { rowGap: 8 },
+  previewActionViewport: { overflow: 'visible', flexGrow: 0 },
+  previewControlsActionRow: { paddingBottom: 0 },
+  // Figma PingSelected chips (5191:39646): 34px map pills — Glass/Fill + Shadow/Float,
+  // selected Glass/Selected + Glass/SelectedStroke, Label/Medium text, 8px apart.
+  previewActionChip: {
+    alignItems: 'center',
+    backgroundColor: glass.category.tint,
+    borderColor: glass.category.border,
+    borderRadius: 17,
+    borderWidth: 1,
+    boxShadow: glass.category.shadow,
+    flexDirection: 'row',
+    gap: 6,
+    height: 34,
+    justifyContent: 'center',
+    minWidth: 57,
+    paddingHorizontal: 15,
+  },
+  previewActionChipActive: { backgroundColor: glass.category.activeTint, borderColor: glass.category.activeBorder },
+  previewActionRow: { columnGap: 8, paddingBottom: 14 },
+  previewActionText: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18 },
+  previewActionTextActive: { color: colors.primary },
+  // Figma 5175:37756: Body/Regular address, directly under the status line.
+  previewAddress: { color: colors.labelNeutral, flexShrink: 1, fontSize: 16, fontWeight: '400', includeFontPadding: false, lineHeight: 21, minWidth: 0 },
+  // Figma 5253:42974: 34px info chips, 16px icon 12px from the edge, Label/Medium text.
+  previewAmenityChip: {
+    alignItems: 'center',
+    backgroundColor: glass.category.tint,
+    borderColor: glass.category.border,
+    borderRadius: 17,
+    borderWidth: 1,
+    boxShadow: glass.category.shadow,
+    flexDirection: 'row',
+    gap: 6,
+    height: 34,
+    paddingHorizontal: 11,
+  },
+  previewAmenityIcon: {
+    alignItems: 'center',
+    backgroundColor: '#2398EF',
+    borderRadius: 10,
+    height: 20,
+    justifyContent: 'center',
+    width: 20,
+  },
+  previewAmenityIconText: { color: colors.textInverse, fontSize: 13, fontWeight: '900', lineHeight: 16 },
+  previewAmenityRow: { columnGap: 8, flexDirection: 'row', paddingBottom: 8 },
+  previewAmenityText: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18 },
+  previewArtwork: { height: '100%', width: '100%' },
+  previewArtworkFallback: {
+    alignItems: 'center', backgroundColor: colors.primarySoft,
+    height: '100%', justifyContent: 'center', width: '100%',
+  },
+  previewArtworkFallbackText: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 5 },
+  // Figma Component 18 (5175:37945): 32px Glass/FillRaised circles, 12px apart.
+  previewBookmarkButton: {
+    alignItems: 'center',
+    backgroundColor: colors.glassFillRaised,
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 32,
+  },
+  previewCategory: { color: colors.labelNeutral, flexShrink: 0, fontSize: 18, fontWeight: '500', includeFontPadding: false, lineHeight: 23, marginLeft: 4 },
+  previewCloseButton: {
+    alignItems: 'center',
+    backgroundColor: colors.glassFillRaised,
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  previewContent: { paddingHorizontal: 16 },
+  previewHeader: { alignItems: 'flex-start', flexDirection: 'row' },
+  previewImagePanel: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: 17,
+    height: 174,
+    overflow: 'hidden',
+    width: 180,
+  },
+  previewImageRow: { columnGap: 16, paddingRight: 16 },
+  previewName: { color: colors.labelStrong, flexShrink: 1, fontSize: 24, fontWeight: '700', includeFontPadding: false, lineHeight: 31, minWidth: 0 },
+  previewParkingIcon: { borderRadius: 5 },
+  // Figma 5175:37753: Body/Regular status line 4px under the 32px title row.
+  previewStatus: { color: colors.textAlternative, flexShrink: 1, fontSize: 16, fontWeight: '400', lineHeight: 21 },
+  previewStatusEmphasis: { fontWeight: '500' },
+  previewStatusSeparator: { color: colors.textAlternative, fontWeight: '400' },
+  previewStatusTail: { fontSize: 16, lineHeight: 21 },
+  previewStatusRow: { alignItems: 'center', flexDirection: 'row', marginTop: 4 },
+  previewSummary: { flex: 1, minWidth: 0 },
+  previewTitleRow: { alignItems: 'center', flexDirection: 'row', height: 32, minWidth: 0, paddingRight: 4 },
+  resultAddress: { color: colors.textMuted, fontSize: 11, marginTop: 3 },
+  resultDistance: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
+  resultName: { color: colors.textStrong, fontSize: 14, fontWeight: '800' },
+  resultRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    minHeight: 72,
+  },
+  resultTextBody: { flex: 1 },
+  resultThumbnail: {
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderRadius: 13,
+    height: 64,
+    justifyContent: 'center',
+    width: 48,
+  },
+  resultsContent: { paddingBottom: 105, paddingHorizontal: 17 },
+  resultsCount: { color: colors.primary, fontSize: 13, fontWeight: '900' },
+  resultsTitle: { color: colors.textStrong, flex: 1, fontSize: 18, fontWeight: '900' },
+  resultsTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 8, paddingBottom: 8, paddingTop: 6 },
+  segment: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    borderRadius: 20,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  segmentLabel: {
+    color: colors.labelAssistive,
+    // Lets a long translated label shrink inside its half instead of running under the other tab.
+    flexShrink: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 21,
+  },
+  segmentLabelActive: { color: colors.primary, fontWeight: '700' },
+  segmentInset: {
+    paddingHorizontal: 8,
+  },
+  segmentIndicator: {
+    borderRadius: 20,
+    bottom: 4,
+    left: 4,
+    position: 'absolute',
+    top: 4,
+  },
+  feedTransition: { width: '100%' },
+  segmentOuter: {
+    alignItems: 'stretch',
+    backgroundColor: 'transparent',
+    borderRadius: 24,
+    flexDirection: 'row',
+    height: 48,
+    overflow: 'hidden',
+    padding: 4,
+    width: '100%',
+  },
+  segmentFrame: { alignSelf: 'center', borderRadius: 24, width: '100%' },
+  segmentShadow: {
+    alignSelf: 'center',
+    borderRadius: 24,
+    boxShadow: `0px 4px 20px -4px ${colors.shadowFloat}`,
+    width: '100%',
+  },
+  sheetContent: { flex: 1 },
+});
+
+// Compatibility for tiny icon/render helpers; screen content uses the live themed styles above.
+const styles = createStyles(lightColors);

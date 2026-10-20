@@ -1,3 +1,127 @@
 export { ApiError, toApiError } from './ApiError';
-export { apiClient } from './apiClient';
-export type { GetRequestOptions } from './apiClient';
+export {
+  apiClient,
+  configureApiAccessTokenProvider,
+  configureApiTransport,
+  createApiClient,
+} from './apiClient';
+export { getApiErrorUx } from './getApiErrorUx';
+export { getMockScenario, mockApiClient, setMockScenario } from './mock/mockApiClient';
+export {
+  trustFixture,
+} from './mock/fixtures';
+export type {
+  ApiAccessTokenProvider,
+  ApiClient,
+  ApiTransport,
+  GetRequestOptions,
+  HttpTransport,
+  MutationRequestOptions,
+} from './apiClient';
+export type {
+  ApiOperationName,
+  ApiSchema,
+  ApiSchemaName,
+  ErrorCode,
+  ErrorResponse,
+  FieldError,
+  OperationPath,
+  OperationQuery,
+  OperationRequestBody,
+  OperationResponse,
+  components,
+  operations,
+  paths,
+} from './contract';
+export type {
+  VisitVerificationComponents,
+  VisitVerificationOperationName,
+  VisitVerificationOperationRequestBody,
+  VisitVerificationOperationResponse,
+  VisitVerificationOperations,
+  VisitVerificationPaths,
+  VisitVerificationSchema,
+  VisitVerificationSchemaName,
+} from './visitVerificationContract';
+export type {
+  PlaceExplorationComponents,
+  PlaceExplorationOperationName,
+  PlaceExplorationOperationPath,
+  PlaceExplorationOperationQuery,
+  PlaceExplorationOperationRequestBody,
+  PlaceExplorationOperationResponse,
+  PlaceExplorationOperations,
+  PlaceExplorationPaths,
+  PlaceExplorationSchema,
+  PlaceExplorationSchemaName,
+} from './placeExplorationContract';
+export type {
+  MapHomeFeedsComponents,
+  MapHomeFeedsOperationName,
+  MapHomeFeedsOperationQuery,
+  MapHomeFeedsOperationResponse,
+  MapHomeFeedsOperations,
+  MapHomeFeedsPaths,
+  MapHomeFeedsSchema,
+  MapHomeFeedsSchemaName,
+} from './mapHomeFeedsContract';
+export type {
+  PlaceMenusComponents,
+  PlaceMenusOperationName,
+  PlaceMenusOperationResponse,
+  PlaceMenusOperations,
+  PlaceMenusPaths,
+  PlaceMenusSchema,
+  PlaceMenusSchemaName,
+} from './placeMenusContract';
+export type {
+  OffersCouponsComponents,
+  OffersCouponsOperationName,
+  OffersCouponsOperationPath,
+  OffersCouponsOperationQuery,
+  OffersCouponsOperationRequestBody,
+  OffersCouponsOperationResponse,
+  OffersCouponsOperations,
+  OffersCouponsPaths,
+  OffersCouponsSchema,
+  OffersCouponsSchemaName,
+} from './offersCouponsContract';
+export type {
+  CommunityComponents,
+  CommunityOperationName,
+  CommunityOperationPath,
+  CommunityOperationQuery,
+  CommunityOperationRequestBody,
+  CommunityOperationResponse,
+  CommunityOperations,
+  CommunityPaths,
+  CommunitySchema,
+  CommunitySchemaName,
+} from './communityContract';
+export type {
+  ReservationPaymentComponents,
+  ReservationPaymentOperationName,
+  ReservationPaymentOperationPath,
+  ReservationPaymentOperationQuery,
+  ReservationPaymentOperationRequestBody,
+  ReservationPaymentOperationResponse,
+  ReservationPaymentOperations,
+  ReservationPaymentPaths,
+  ReservationPaymentSchema,
+  ReservationPaymentSchemaName,
+} from './reservationPaymentContract';
+export type { ApiErrorUx, ApiErrorUxKind } from './getApiErrorUx';
+export type {
+  AccountApiOperationName,
+  AccountApiSchema,
+  AccountApiSchemaName,
+  AccountComponents,
+  AccountOperationRequestBody,
+  AccountOperationResponse,
+  AccountOperations,
+  AccountPaths,
+} from './accountContract';
+
+export { configureDomainMockHandlers } from './mock/registry';
+
+export type { PlaceReviewsSchema, PlaceReviewsOperationRequestBody, PlaceReviewsOperationResponse } from './placeReviewsContract';

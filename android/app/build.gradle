@@ -110,7 +110,12 @@ def readEnvValue(String key) {
 
 def kakaoNativeAppKey = System.getenv("KAKAO_NATIVE_APP_KEY") ?: readEnvValue("KAKAO_NATIVE_APP_KEY") ?: ""
 
+// 빌드 환경변수 → 루트 .env 순으로 지도 SDK의 공개 식별자를 읽는다.
+// 아래 BuildConfig 필드를 통해 MainApplication에 전달하며 Client Secret은 앱에 넣지 않는다.
+def naverMapClientId = System.getenv("NAVER_MAP_CLIENT_ID") ?: readEnvValue("NAVER_MAP_CLIENT_ID") ?: ""
+
 android {
+    sourceSets.main.assets.srcDir "$rootDir/../native/wake-word/assets"
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -125,11 +130,12 @@ android {
         versionName "1.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+        buildConfigField "String", "NAVER_MAP_CLIENT_ID", "\"${naverMapClientId}\""
         buildConfigField "String", "KAKAO_NATIVE_APP_KEY", "\"${kakaoNativeAppKey}\""
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
+            storeFile file(System.getenv('PINGDOM_DEBUG_KEYSTORE') ?: new File(System.getProperty('user.home'), '.android/pingdom-debug.keystore').absolutePath)
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'
@@ -183,9 +189,11 @@ android {
 }
 
 dependencies {
+    implementation files("$rootDir/../native/wake-word/vendor/sherpa-onnx-kws-1.13.8.aar")
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation 'com.kakao.maps.open:android:2.13.1'
+    implementation 'com.naver.maps:map-sdk:3.24.0'
     implementation 'com.google.mlkit:language-id:17.0.6'
     implementation 'com.google.mlkit:translate:17.0.3'
 
@@ -213,3 +221,30 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+// Worktrees must share the same signing identity; never generate a replacement silently.
+def verifyPingdomDebugKey = tasks.register('verifyPingdomDebugKey') {
+    doLast {
+        def keyFile = android.signingConfigs.debug.storeFile
+        if (!keyFile.isFile()) {
+            throw new GradleException("Missing shared Pingdom debug key: ${keyFile}. Restore the team key; see docs/android-debug-signing.md.")
+        }
+        def keyStore = java.security.KeyStore.getInstance(keyFile, 'android'.toCharArray())
+        def certificate = keyStore.getCertificate('androiddebugkey')
+        def fingerprint = certificate == null ? '' : java.security.MessageDigest.getInstance('SHA-256').digest(certificate.encoded).encodeHex().toString()
+        if (fingerprint != '84d91790b44bc957b9eed6ab30d2aa79f9f5d20b1889c578a652123c5552a6b8') {
+            throw new GradleException('Wrong Pingdom debug signing identity. Restore the shared key; see docs/android-debug-signing.md.')
+        }
+    }
+}
+tasks.configureEach { task ->
+    if (task.name.startsWith('validateSigning')) {
+        task.dependsOn(verifyPingdomDebugKey)
+    }
+}
+
+def verifyWakeWordAssets = tasks.register('verifyWakeWordAssets', Exec) {
+    workingDir rootDir.parentFile
+    commandLine 'python3', 'scripts/prepare-wake-word.py', '--platform', 'android', '--check'
+}
+tasks.named('preBuild').configure { dependsOn(verifyWakeWordAssets) }

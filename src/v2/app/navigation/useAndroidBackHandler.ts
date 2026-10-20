@@ -1,17 +1,19 @@
+import { useAppDialog } from '../../shared/components/AppDialogProvider';
 import type {
   NavigationContainerRefWithCurrent,
   ParamListBase,
 } from '@react-navigation/native';
 import { useEffect, useRef } from 'react';
-import { BackHandler, Platform, ToastAndroid } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { BackHandler, Platform } from 'react-native';
 
 import { getAndroidBackAction } from './androidBack';
-
-const EXIT_HINT = '뒤로가기를 한 번 더 누르면 앱이 종료됩니다.';
 
 export function useAndroidBackHandler<ParamList extends ParamListBase>(
   navigationRef: NavigationContainerRefWithCurrent<ParamList>,
 ) {
+  const { t } = useTranslation();
+  const dialog = useAppDialog();
   const lastRootBackPressAt = useRef(0);
 
   useEffect(() => {
@@ -35,10 +37,10 @@ export function useAndroidBackHandler<ParamList extends ParamListBase>(
       }
 
       lastRootBackPressAt.current = now;
-      ToastAndroid.show(EXIT_HINT, ToastAndroid.SHORT);
+      dialog.toast(t('common.navigation.exitHint'));
       return true;
     });
 
     return () => subscription.remove();
-  }, [navigationRef]);
+  }, [dialog, navigationRef, t]);
 }

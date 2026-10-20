@@ -1,10 +1,22 @@
-import React from 'react';
-import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
+import React, { useEffect } from 'react';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  ViewStyle,
+} from 'react-native';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 
 type ButtonProps = {
+  accessibilityHint?: string;
+  accessibilityLabel?: string;
   label: string;
+  loadingAnnouncement?: string;
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
@@ -12,12 +24,31 @@ type ButtonProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-const Button = ({ label, onPress, disabled = false, loading = false, labelStyle, style }: ButtonProps) => {
+const Button = ({
+  accessibilityHint,
+  accessibilityLabel,
+  label,
+  loadingAnnouncement,
+  onPress,
+  disabled = false,
+  loading = false,
+  labelStyle,
+  style,
+}: ButtonProps) => {
   const isDisabled = disabled || loading;
+
+  useEffect(() => {
+    if (loading && loadingAnnouncement) {
+      AccessibilityInfo.announceForAccessibility(loadingAnnouncement);
+    }
+  }, [loading, loadingAnnouncement]);
 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ busy: loading, disabled: isDisabled }}
       disabled={isDisabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -28,7 +59,7 @@ const Button = ({ label, onPress, disabled = false, loading = false, labelStyle,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.background} />
+        <ActivityIndicator accessibilityElementsHidden color={colors.background} />
       ) : (
         <Text style={[styles.label, labelStyle]}>{label}</Text>
       )}
@@ -44,6 +75,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   buttonDisabled: {
     opacity: 0.55,
@@ -55,6 +87,8 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontSize: 16,
     fontWeight: '700',
+    flexShrink: 1,
+    textAlign: 'center',
   },
 });
 

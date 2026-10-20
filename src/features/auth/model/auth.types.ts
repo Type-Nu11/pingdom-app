@@ -12,7 +12,6 @@ export type User = {
 
 export type LoginResponse = {
   accessToken: string;
-  refreshToken: string;
   user?: User;
 };
 
@@ -44,6 +43,17 @@ export type ChangePasswordRequest = {
 
 export type ChangeUsernameRequest = {
   newUsername: string;
+};
+
+export type PasswordResetRequest = {
+  email: string;
+};
+
+export type PasswordResetConfirmRequest = {
+  confirmPassword: string;
+  email: string;
+  newPassword: string;
+  token: string;
 };
 
 export type PhoneSendRequest = {

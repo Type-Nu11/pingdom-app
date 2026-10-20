@@ -1,0 +1,383 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "x-source": {
+    "location": "https://www.typenull.xyz/v3/api-docs/app",
+    "sha256": "7e35e699698a9c749a0fc8bd11704d3db16085c28fa0cab66c8b1f5b02ecc0b2"
+  },
+  "paths": {
+    "/ai/chat": {
+      "post": {
+        "tags": [
+          "AI 대화"
+        ],
+        "summary": "앱 도구 기반 AI 대화",
+        "description": "messages 전체와 앱이 등록한 tools를 모델에 전달합니다. assistant 응답은 content와 tool_calls를 동시에 포함할 수 있습니다.\n앱은 tool_calls를 실행한 뒤 같은 호출 ID를 tool_call_id에 넣은 tool 메시지와 이전 대화 전체를 재전송합니다.\n기존 /voice-ai/sessions API와 ProviderEnvelope v1 계약은 그대로 유지되며 이 endpoint와 상태를 공유하지 않습니다.\n",
+        "operationId": "chat",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChatRequest"
+              },
+              "examples": {
+                "일반 장소 검색": {
+                  "description": "일반 장소 검색",
+                  "value": {
+                    "messages": [
+                      {
+                        "role": "user",
+                        "content": "갈비탕집 있어?"
+                      }
+                    ],
+                    "tools": [
+                      {
+                        "type": "function",
+                        "function": {
+                          "name": "searchNearbyPlaces",
+                          "description": "현재 위치 주변 장소를 조회합니다.",
+                          "parameters": {
+                            "type": "object",
+                            "properties": {
+                              "keyword": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 100
+                              },
+                              "limit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 3
+                              }
+                            },
+                            "required": [],
+                            "additionalProperties": false
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                "도구 결과 후속 대화": {
+                  "description": "도구 결과 후속 대화",
+                  "value": {
+                    "messages": [
+                      {
+                        "role": "user",
+                        "content": "갈비탕집 있어?"
+                      },
+                      {
+                        "role": "assistant",
+                        "content": null,
+                        "tool_calls": [
+                          {
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {
+                              "name": "searchNearbyPlaces",
+                              "arguments": {
+                                "keyword": "갈비탕",
+                                "limit": 3
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "role": "tool",
+                        "tool_call_id": "call_1",
+                        "content": {
+                          "places": []
+                        }
+                      }
+                    ],
+                    "tools": [
+                      {
+                        "type": "function",
+                        "function": {
+                          "name": "searchNearbyPlaces",
+                          "description": "현재 위치 주변 장소를 조회합니다.",
+                          "parameters": {
+                            "type": "object",
+                            "properties": {
+                              "keyword": {
+                                "type": "string"
+                              },
+                              "limit": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 3
+                              }
+                            },
+                            "required": [],
+                            "additionalProperties": false
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "미등록 도구, 잘못된 호출 ID 또는 schema 불일치",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "provider 장애 또는 응답 계약 위반",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "일반 답변 또는 tool 호출 반환",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChatResponse"
+                },
+                "example": {
+                  "content": null,
+                  "tool_calls": [
+                    {
+                      "id": "call_1",
+                      "type": "function",
+                      "function": {
+                        "name": "searchNearbyPlaces",
+                        "arguments": {
+                          "keyword": "갈비탕",
+                          "limit": 3
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "유효하지 않거나 만료된 Bearer JWT (INVALID_TOKEN 또는 EXPIRED_TOKEN)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "권한이 없거나 접근이 거부됨 (ACCESS_DENIED 또는 도메인 권한 오류)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AiChatRequest": {
+        "required": [
+          "messages"
+        ],
+        "type": "object",
+        "properties": {
+          "messages": {
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "tools": {
+            "maxItems": 20,
+            "minItems": 0,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tool"
+            }
+          }
+        },
+        "description": "앱이 대화 이력과 실행 가능한 function 도구를 함께 전달하는 AI chat 요청"
+      },
+      "Message": {
+        "required": [
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "tool"
+            ]
+          },
+          "content": {
+            "$ref": "#/components/schemas/JsonNode"
+          },
+          "tool_call_id": {
+            "type": "string"
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          }
+        },
+        "description": "user·assistant·tool 대화 메시지. tool은 이전 assistant tool_calls의 ID를 참조합니다."
+      },
+      "JsonNode": {
+        "type": "object",
+        "description": "function 인자 JSON object"
+      },
+      "ToolCall": {
+        "required": [
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "function"
+            ]
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionCall"
+          }
+        }
+      },
+      "FunctionCall": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "arguments": {
+            "$ref": "#/components/schemas/JsonNode"
+          }
+        }
+      },
+      "Tool": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "function"
+            ]
+          },
+          "function": {
+            "$ref": "#/components/schemas/Function"
+          }
+        },
+        "description": "앱이 등록한 function 도구"
+      },
+      "Function": {
+        "required": [
+          "description",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/JsonNode"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "에러 메시지",
+            "example": "유효하지 않은 토큰입니다."
+          },
+          "code": {
+            "type": "string",
+            "description": "도메인 에러 코드. 일부 공통 검증 오류에서는 제공되지 않을 수 있습니다.",
+            "nullable": true,
+            "example": "INVALID_TOKEN"
+          }
+        },
+        "description": "에러 응답"
+      },
+      "AiChatResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          }
+        },
+        "description": "일반 답변과 앱이 실행할 tool 호출. 둘은 한 응답에 함께 포함될 수 있습니다."
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

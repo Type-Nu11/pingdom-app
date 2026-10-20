@@ -1,9 +1,10 @@
 import React from 'react';
 
+import UnavailableStateIcon from './UnavailableStateIcon';
 import StateLayout, { type StateLayoutProps } from './StateLayout';
 
 export type EmptyStateProps = Omit<StateLayoutProps, 'visual'>;
 
 export default function EmptyState(props: EmptyStateProps) {
-  return <StateLayout {...props} />;
+  return <StateLayout {...props} visual={<UnavailableStateIcon />} />;
 }

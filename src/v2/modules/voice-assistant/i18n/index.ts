@@ -1,0 +1,1 @@
+export { voiceAssistantResources } from './voiceAssistantResources';

@@ -2,11 +2,9 @@ import * as Keychain from 'react-native-keychain';
 
 const SERVICE_NAME = 'com.pingdom.auth';
 
-// accessToken : 실제 API 요청 시 매번 첨부하는 인증표냥 (유효기간 짧음)
-// refreshToken: accessToken이 만료됐을 때 새로 발급받기 위한 갱신표냥 (유효기간 김)
-export type AuthTokens = { 
+// Access Token은 앱이 보관하고, Refresh Token은 서버가 HttpOnly Cookie로 관리합니다.
+export type AuthTokens = {
     accessToken: string;
-    refreshToken: string;
 };
 
 export function normalizeAuthToken(token: string): string {
@@ -16,14 +14,13 @@ export function normalizeAuthToken(token: string): string {
 export function normalizeAuthTokens(tokens: AuthTokens): AuthTokens {
     return {
         accessToken: normalizeAuthToken(tokens.accessToken),
-        refreshToken: normalizeAuthToken(tokens.refreshToken),
     };
 }
 
 /**
  * 로그인 성공 후 서버에서 받은 토큰을 기기 저장소에 저장합니다
  * 
- * @param tokens - 저장할 accessToken과 refreshToken 쌍
+ * @param tokens - 저장할 accessToken
  * 
  * 저장 방식:
  *   - 토큰 객체를 JSON 문자열로 직렬화해 저장합니다

@@ -1,0 +1,217 @@
+import { useMutation, useQueries, useQuery } from '@tanstack/react-query';
+
+import { placeQueryKeys } from '../../core';
+import { placeExplorationApi } from '../api/placeExplorationApi';
+import type {
+  MapLinkConversionVariables,
+  MapViewportParams,
+  PlaceAutocompleteParams,
+  PlaceListParams,
+  PlaceRecommendationsParams,
+} from '../model/placeExploration.types';
+import {
+  selectMapViewportParams,
+  selectPlaceAutocompleteParams,
+  selectPlaceListParams,
+  selectPlaceRecommendationsParams,
+} from '../model/placeExploration.types';
+
+type PlaceExplorationApi = typeof placeExplorationApi;
+
+export { placeQueryKeys } from '../../core';
+
+export function createPlaceCardQueryOptions(
+  placeId: number,
+  api: Pick<PlaceExplorationApi, 'getPlaceCard'> = placeExplorationApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) => api.getPlaceCard(placeId, signal),
+    queryKey: placeQueryKeys.card(placeId),
+  };
+}
+
+export function createPlaceVisitDecisionQueryOptions(
+  placeId: number,
+  api: Pick<PlaceExplorationApi, 'getPlaceVisitDecision'> = placeExplorationApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getPlaceVisitDecision(placeId, signal),
+    queryKey: placeQueryKeys.visitDecision(placeId),
+  };
+}
+
+export function createPlaceOperatingNoticesQueryOptions(
+  placeId: number,
+  api: Pick<PlaceExplorationApi, 'getPlaceOperatingNotices'> = placeExplorationApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getPlaceOperatingNotices(placeId, signal),
+    queryKey: placeQueryKeys.operatingNotices(placeId),
+  };
+}
+
+export function createPlaceVerificationMediaQueryOptions(
+  id: number,
+  api: Pick<PlaceExplorationApi, 'getPlaceVerificationMedia'> = placeExplorationApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getPlaceVerificationMedia(id, signal),
+    queryKey: placeQueryKeys.verificationMedia(id),
+  };
+}
+
+export function createPlaceExplorationMediaQueryOptions(
+  id: number,
+  api: Pick<PlaceExplorationApi, 'getPlaceExplorationMedia'> = placeExplorationApi,
+) {
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getPlaceExplorationMedia(id, signal),
+    queryKey: placeQueryKeys.explorationMedia(id),
+  };
+}
+
+export function createRecommendationExplanationQueryOptions(
+  requestId: string,
+  api: Pick<PlaceExplorationApi, 'getRecommendationExplanation'> = placeExplorationApi,
+) {
+  return {
+    enabled: Boolean(requestId.trim()),
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getRecommendationExplanation(requestId, signal),
+    queryKey: placeQueryKeys.recommendationExplanation(requestId),
+  };
+}
+
+export function createPlaceRecommendationsQueryOptions(
+  params: PlaceRecommendationsParams,
+  api: Pick<PlaceExplorationApi, 'getRecommendations'> = placeExplorationApi,
+) {
+  const contractParams = selectPlaceRecommendationsParams(params);
+
+  return {
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      api.getRecommendations(contractParams, signal),
+    queryKey: placeQueryKeys.recommendationList(contractParams),
+  };
+}
+
+export function createMapLinkConversionMutationOptions(
+  api: Pick<PlaceExplorationApi, 'recordMapLinkConversion'> = placeExplorationApi,
+) {
+  return {
+    mutationFn: ({ body, placeId, signal }: MapLinkConversionVariables) =>
+      api.recordMapLinkConversion(placeId, body, signal),
+    // The server contract has no idempotency key or duplicate result for this endpoint.
+    retry: false as const,
+  };
+}
+
+type PlaceExplorationQueryConfig = {
+  enabled?: boolean;
+};
+
+const MAX_PARALLEL_EXPLORATION_MEDIA_QUERIES = 20;
+
+export function usePlaceCard(
+  placeId: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceCardQueryOptions(placeId), enabled });
+}
+
+export function usePlaceVisitDecision(
+  placeId: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceVisitDecisionQueryOptions(placeId), enabled });
+}
+
+export function usePlaceOperatingNotices(
+  placeId: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceOperatingNoticesQueryOptions(placeId), enabled });
+}
+
+export function usePlaceVerificationMedia(
+  id: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceVerificationMediaQueryOptions(id), enabled });
+}
+
+export function usePlaceExplorationMedia(
+  id: number,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({ ...createPlaceExplorationMediaQueryOptions(id), enabled });
+}
+
+export function usePlaceExplorationMediaList(
+  placeIds: number[],
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  const uniquePlaceIds = [...new Set(placeIds.filter((id) => Number.isFinite(id) && id > 0))]
+    .slice(0, MAX_PARALLEL_EXPLORATION_MEDIA_QUERIES);
+
+  return useQueries({
+    queries: uniquePlaceIds.map((placeId) => ({
+      ...createPlaceExplorationMediaQueryOptions(placeId),
+      enabled,
+    })),
+    combine: (results) => results.reduce<Record<string, string[]>>((imageUrlsByPlaceId, result, index) => {
+      const media = result.data?.media ?? [];
+      const imageUrls = media
+        .slice()
+        .sort((left, right) => (left.displayOrder - right.displayOrder) || (left.id - right.id))
+        .map((item) => item.imageUrl?.trim())
+        .filter((url): url is string => Boolean(url));
+
+      if (imageUrls.length > 0) {
+        imageUrlsByPlaceId[String(uniquePlaceIds[index])] = [...new Set(imageUrls)];
+      }
+
+      return imageUrlsByPlaceId;
+    }, {}),
+  });
+}
+
+export function useRecommendationExplanation(
+  requestId: string,
+  { enabled = true }: PlaceExplorationQueryConfig = {},
+) {
+  return useQuery({
+    ...createRecommendationExplanationQueryOptions(requestId),
+    enabled: enabled && Boolean(requestId.trim()),
+  });
+}
+
+export function usePlaceCardResources(placeId: number) {
+  return useQueries({
+    queries: [
+      createPlaceCardQueryOptions(placeId),
+      createPlaceOperatingNoticesQueryOptions(placeId),
+      createPlaceVerificationMediaQueryOptions(placeId),
+    ],
+  });
+}
+
+export function usePlaceVisitDecisionResources(placeId: number) {
+  return useQueries({
+    queries: [
+      createPlaceVisitDecisionQueryOptions(placeId),
+      createPlaceOperatingNoticesQueryOptions(placeId),
+      createPlaceVerificationMediaQueryOptions(placeId),
+    ],
+  });
+}
+
+export function useRecordMapLinkConversion() {
+  return useMutation(createMapLinkConversionMutationOptions());
+}
+
+export { createPlaceListQueryOptions, createPlaceAutocompleteQueryOptions, createPlaceMapQueryOptions, usePlaceMap, usePlaceList, usePlaceAutocomplete } from '../../search/queries';

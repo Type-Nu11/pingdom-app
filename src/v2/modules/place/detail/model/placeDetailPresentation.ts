@@ -1,0 +1,211 @@
+import { summarizeReviewHighlights } from './reviewHighlights';
+import { normalizeReviewReasons, reviewReasonsFromResponse, type ReviewReasonKey } from '../../../../shared/api/reviewReasons';
+import type { PlaceReviewPage, PlaceReviewSummary } from '../../visit-verification';
+import type {
+  PlaceCard,
+  PlaceExplorationMedia,
+  PlaceOperatingNotices,
+  PlaceVisitDecision,
+} from '../../exploration';
+import { selectReservationCta, type ReservationCtaState, type PlaceAvailabilities } from '../../../booking';
+import type { PlaceDetail } from './placeDetail.types';
+import {
+  selectPlaceOperatingSummary,
+  type PlaceOperatingSummary,
+} from './placeOperatingSummary';
+
+export type ResourceState<T> = {
+  data?: T;
+  error?: unknown;
+  isError: boolean;
+  isPending: boolean;
+};
+
+
+export type PlaceDetailPresentation = {
+  address: string | null;
+  category: string | null;
+  coupons: Array<{ period: string; title: string }>;
+  description: string | null;
+  englishName: string | null;
+  events: Array<{ period: string; title: string }>;
+  imageState: 'empty' | 'error' | 'loading' | 'ready';
+  imageUrls: string[];
+  informationVerificationStatus: PlaceDetail['informationVerificationStatus'] | null;
+  isCurrentlyOperating: boolean | null;
+  merchant: {
+    businessName: string | null;
+    contactEmail: string | null;
+    contactPhone: string | null;
+    description: string | null;
+    displayName: string | null;
+    reservationUrl: string | null;
+    websiteUrl: string | null;
+  } | null;
+  name: string | null;
+  notice: string | null;
+  operatingStatus: PlaceDetail['operatingStatus'] | null;
+  operatingSummary: PlaceOperatingSummary | null;
+  placeId: number;
+  reservation: ReservationCtaState;
+  reviewState: 'empty' | 'error' | 'loading' | 'ready';
+  reviews: Array<{
+    reviewId: number | null;
+    userId: number | null;
+    authorKey: 'placeDetail.review.anonymousUser';
+    createdAt: string;
+    imageUrls: string[];
+    reasons: ReviewReasonKey[];
+    text: string;
+  }>;
+  reviewTotal: number | null;
+  reviewHighlights: Array<{ reason: ReviewReasonKey; count: number }>;
+  reviewParticipantCount: number | null;
+  reviewSampleSize: number;
+  reviewHighlightsComplete: boolean;
+  roadAddress: string | null;
+  jibunAddress: string | null;
+  touristSummary: string | null;
+  verifiedEvidenceCount: number | null;
+  verificationLabelKey: 'placeDetail.verification.admin' | 'placeDetail.verification.owner' | 'placeDetail.verification.source' | null;
+};
+
+export type PlaceDetailPresentationResources = {
+  availabilities: ResourceState<PlaceAvailabilities>;
+  card: ResourceState<PlaceCard>;
+  detail: ResourceState<PlaceDetail>;
+  media: ResourceState<PlaceExplorationMedia>;
+  notices: ResourceState<PlaceOperatingNotices>;
+  reviews: ResourceState<PlaceReviewPage>;
+  reviewSummary?: ResourceState<PlaceReviewSummary>;
+  visitDecision: ResourceState<PlaceVisitDecision>;
+};
+
+const clean = (value: unknown): string | null =>
+  typeof value === 'string' && value.trim() ? value.trim() : null;
+
+
+function formatDateRange(startsAt: unknown, endsAt: unknown): string {
+  const start = clean(startsAt);
+  const end = clean(endsAt);
+  if (start && end) return `${start} ~ ${end}`;
+  return start ?? end ?? '';
+}
+
+
+
+export function buildPlaceDetailPresentation(
+  placeId: number,
+  resources: PlaceDetailPresentationResources,
+  now: Date = new Date(),
+): PlaceDetailPresentation {
+  const detail = resources.detail.data?.id === placeId ? resources.detail.data : undefined;
+  const decision = resources.visitDecision.data?.place?.id === placeId
+    ? resources.visitDecision.data
+    : undefined;
+  const card = resources.card.data?.id === placeId ? resources.card.data : undefined;
+  const notices = resources.notices.data?.placeId === placeId ? resources.notices.data : undefined;
+  const media = resources.media.data?.placeId === placeId ? resources.media.data : undefined;
+  const base = detail ?? decision?.place;
+  const mediaUrls = (media?.media ?? [])
+    .slice()
+    .sort((left, right) => (left.displayOrder - right.displayOrder) || (left.id - right.id))
+    .map((item) => clean(item.imageUrl))
+    .filter((url): url is string => Boolean(url));
+  // The card image is a fallback thumbnail, not an additional gallery photo.
+  const imageUrls = [...new Set((mediaUrls.length ? mediaUrls : [clean(card?.imageUrl)]).filter(
+    (url): url is string => Boolean(url),
+  ))];
+  const reviewItems = (resources.reviews.isError || resources.reviews.isPending ? [] : resources.reviews.data?.content ?? []).filter(
+    (review) => review.placeId === undefined || review.placeId === placeId,
+  );
+  const owner = base?.merchantOwner;
+  const operatingSource = base ?? card;
+  const merchantInformation = decision?.merchantInformation;
+  const merchant = owner || merchantInformation ? {
+    businessName: clean(owner?.businessName),
+    contactEmail: clean(owner?.contactEmail),
+    contactPhone: clean(merchantInformation?.contactPhone) ?? clean(owner?.contactPhone),
+    description: clean(merchantInformation?.description) ?? clean(owner?.description),
+    displayName: clean(owner?.displayName),
+    reservationUrl: clean(merchantInformation?.reservationUrl),
+    websiteUrl: clean(merchantInformation?.websiteUrl),
+  } : null;
+
+  const loadedSummary = summarizeReviewHighlights(reviewItems, resources.reviews.data);
+  const remote = !resources.reviewSummary?.isError && !resources.reviewSummary?.isPending ? resources.reviewSummary?.data : undefined;
+  const reviewSummary = remote && remote.placeId === placeId ? {
+    highlights: remote.reasonCounts.flatMap(item => {
+      const reason = normalizeReviewReasons([item.reason])[0];
+      return reason && item.count > 0 ? [{ reason, count: item.count }] : [];
+    }).sort((left, right) => right.count - left.count),
+    participantCount: remote.participantCount, sampleSize: remote.totalReviewCount, complete: true,
+  } : loadedSummary;
+  return {
+    address: clean(base?.address) ?? clean(card?.address),
+    category: clean(card?.category) ?? base?.touristCategories?.[0] ?? null,
+    coupons: (decision?.availableOffers?.offers ?? []).flatMap((offer) => {
+      const title = clean(offer.title);
+      return title ? [{ period: formatDateRange(offer.startsAt, offer.endsAt), title }] : [];
+    }),
+    description: clean(base?.description),
+    englishName: clean(base?.englishName) ?? clean(card?.englishName),
+    events: (decision?.ongoingEvents ?? []).flatMap((event) => {
+      const title = clean(event.title);
+      return title ? [{ period: formatDateRange(event.startAt, event.endAt), title }] : [];
+    }),
+    imageState: resources.media.isPending ? 'loading'
+      : resources.media.isError ? 'error'
+        : imageUrls.length ? 'ready' : 'empty',
+    imageUrls,
+    informationVerificationStatus: base?.informationVerificationStatus ?? card?.informationVerificationStatus ?? null,
+    isCurrentlyOperating: notices?.currentlyOperating ?? base?.currentlyOperating ?? card?.currentlyOperating ?? null,
+    merchant,
+    name: clean(base?.name) ?? clean(card?.name),
+    notice: clean((notices?.notices ?? base?.activeOperatingNotices ?? [])
+      .filter((item) => item.visibleNow && item.status === 'ACTIVE')
+      .sort((left, right) => {
+        const priority = (noticeType: string) => noticeType === 'TEMPORARY_CLOSURE'
+          ? 0 : noticeType === 'HOURS_CHANGE' ? 1 : 2;
+        return priority(left.noticeType) - priority(right.noticeType);
+      })[0]?.message),
+    operatingStatus: base?.operatingStatus ?? card?.operatingStatus ?? null,
+    operatingSummary: operatingSource ? selectPlaceOperatingSummary({
+      ...operatingSource,
+      currentlyOperating: notices?.currentlyOperating ?? operatingSource.currentlyOperating,
+    }, now) : null,
+    placeId,
+    reservation: selectReservationCta(resources.availabilities, now),
+    reviewState: resources.reviews.isPending ? 'loading'
+      : resources.reviews.isError ? 'error'
+        : reviewItems.length ? 'ready' : 'empty',
+    reviews: reviewItems.map((review) => ({
+      reviewId: typeof review.reviewId === 'number' && Number.isSafeInteger(review.reviewId) && review.reviewId > 0 ? review.reviewId : null,
+      userId: typeof review.userId === 'number' && Number.isSafeInteger(review.userId) && review.userId > 0 ? review.userId : null,
+      authorKey: 'placeDetail.review.anonymousUser',
+      createdAt: clean(review.createdAt) ?? '',
+      imageUrls: (review.reviewMedia !== undefined ? review.reviewMedia.map(media => media.imageUrl) : review.imageUrls ?? []).map(clean).filter((url): url is string => Boolean(url)),
+      reasons: reviewReasonsFromResponse(review),
+      text: clean(review.content) ?? '',
+    })),
+    reviewHighlights: reviewSummary.highlights,
+    reviewParticipantCount: reviewSummary.participantCount,
+    reviewSampleSize: reviewSummary.sampleSize,
+    reviewHighlightsComplete: reviewSummary.complete,
+    reviewTotal: remote?.placeId === placeId ? remote.totalReviewCount : resources.reviews.isError || resources.reviews.isPending
+      ? null : Math.max(0, resources.reviews.data?.totalElements ?? reviewItems.length),
+    roadAddress: clean(base?.roadAddress) ?? clean(card?.roadAddress),
+    jibunAddress: clean(base?.jibunAddress),
+    touristSummary: clean(base?.touristSummary) ?? clean(card?.touristSummary),
+    verifiedEvidenceCount: typeof (base?.verifiedEvidenceCount ?? card?.verifiedEvidenceCount) === 'number'
+      ? Math.max(0, base?.verifiedEvidenceCount ?? card?.verifiedEvidenceCount ?? 0)
+      : null,
+    verificationLabelKey: (() => {
+      const status = base?.informationVerificationStatus ?? card?.informationVerificationStatus;
+      if (status === 'ADMIN_VERIFIED') return 'placeDetail.verification.admin';
+      if (status === 'SOURCE_CONFIRMED') return 'placeDetail.verification.source';
+      if (status === 'OWNER_SUBMITTED') return 'placeDetail.verification.owner';
+      return null;
+    })(),
+  };
+}

@@ -15,14 +15,21 @@ import {
   parseNotificationId,
   parsePlaceId,
   parsePostId,
+  parseReservationId,
+  parseCheckInId,
 } from '../types.ts';
-import { getProfileBackAction } from '../../../features/profile/utils/profileBack.ts';
 import { getSettingsBackAction } from '../../../features/settings/utils/settingsBack.ts';
-import { getMapBackAction } from '../../../features/place/utils/mapBack.ts';
+import { getMapBackAction } from '../../../v2/modules/place/map/navigation/index.ts';
 import {
   ANDROID_EXIT_CONFIRMATION_WINDOW_MS,
   getAndroidBackAction,
-} from '../androidBack.ts';
+} from '../../../application/navigation/androidBack.ts';
+import {
+  createOnboardingCompletion,
+  getAuthInitialRoute,
+  getInitialAppRoute,
+  getUnauthenticatedNavigationKey,
+} from '../../../v2/modules/onboarding/entry/__tests__/index.ts';
 
 test('route ID parsers accept only positive safe integers', () => {
   assert.equal(parsePlaceId(123), 123);
@@ -30,10 +37,19 @@ test('route ID parsers accept only positive safe integers', () => {
   assert.equal(parseMerchantId('456'), 456);
   assert.equal(parsePostId('7'), 7);
   assert.equal(parseNotificationId('8'), 8);
+  assert.equal(parseReservationId('901'), 901);
+  assert.equal(parseCheckInId('7001'), 7001);
 
   for (const invalidId of [undefined, null, '', '0', '01', '-1', '1.2', 0, -1, 1.2, Number.MAX_SAFE_INTEGER + 1]) {
     assert.equal(parsePlaceId(invalidId), null);
   }
+});
+
+test('visit verification routes carry numeric server identifiers', () => {
+  assert.equal(MAIN_ROUTES.VisitVerificationPlaces, 'VisitVerificationPlaces');
+  assert.equal(MAIN_ROUTES.VisitVerificationReview, 'VisitVerificationReview');
+  assert.equal(parsePlaceId(17), 17);
+  assert.equal(parseCheckInId(7001), 7001);
 });
 
 test('authentication state selects an exclusive root stack', () => {
@@ -41,7 +57,41 @@ test('authentication state selects an exclusive root stack', () => {
   assert.equal(getRootRouteName(true), ROOT_ROUTES.Main);
 });
 
-test('notification payload creates a validated place detail intent', () => {
+test('auth and onboarding hydration gate every initial route without onboarding flicker', () => {
+  const hydrating = { kind: 'hydrating' };
+  const incomplete = { kind: 'incomplete' };
+  const completion = createOnboardingCompletion({
+    birthYear: 2000,
+    country: 'KR',
+    language: 'ko',
+  });
+  const completed = { completion, kind: 'completed' };
+
+  assert.equal(getInitialAppRoute(true, false, incomplete), 'loading');
+  assert.equal(getInitialAppRoute(false, false, hydrating), 'loading');
+  assert.equal(getInitialAppRoute(false, false, incomplete), 'onboarding');
+  assert.equal(getInitialAppRoute(false, false, completed), 'auth-landing');
+  assert.equal(getInitialAppRoute(false, true, completed), 'main');
+});
+
+test('completion replaces the onboarding stack and logout returns to auth landing', () => {
+  const completion = createOnboardingCompletion({
+    birthYear: 2000,
+    country: 'US',
+    language: 'en',
+  });
+
+  assert.equal(getAuthInitialRoute(), 'Onboarding');
+  assert.equal(getAuthInitialRoute(completion), 'AuthLanding');
+  assert.equal(getUnauthenticatedNavigationKey(), 'unauthenticated-incomplete');
+  assert.equal(
+    getUnauthenticatedNavigationKey(completion),
+    'unauthenticated-completed',
+  );
+  assert.equal(getInitialAppRoute(false, false, { completion, kind: 'completed' }), 'auth-landing');
+});
+
+test('notification payload focuses the place in the map detail sheet', () => {
   const intent = createNotificationNavigationIntent({
     body: 'body',
     messageId: 'message-1',
@@ -55,19 +105,19 @@ test('notification payload creates a validated place detail intent', () => {
 
   assert.deepEqual(intent, {
     params: {
+      focusedPlaceId: 42,
       notificationContext: {
         body: 'body',
         notificationId: 8,
         postId: 7,
         title: 'title',
       },
-      placeId: 42,
     },
-    screen: MAIN_ROUTES.PlaceDetail,
+    screen: MAIN_ROUTES.Map,
   });
   assert.deepEqual(toMainNavigatorParams(intent), {
     params: intent.params,
-    screen: MAIN_ROUTES.PlaceDetail,
+    screen: MAIN_ROUTES.Map,
   });
 });
 
@@ -102,20 +152,29 @@ test('bookmark IDs produce Map focus params without creating string IDs', () => 
 test('custom deep links map to typed navigation intents', () => {
   assert.deepEqual(parseDeepLink('pingdom://map'), { screen: MAIN_ROUTES.Map });
   assert.deepEqual(parseDeepLink('pingdom://places/123'), {
-    params: { placeId: 123 },
-    screen: MAIN_ROUTES.PlaceDetail,
+    params: { focusedPlaceId: 123 },
+    screen: MAIN_ROUTES.Map,
   });
   assert.deepEqual(parseDeepLink('pingdom://places/123/check-in'), {
     params: { placeId: 123 },
     screen: MAIN_ROUTES.CheckIn,
   });
-  assert.deepEqual(parseDeepLink('pingdom://coupons'), { screen: MAIN_ROUTES.CouponWallet });
+  // 쿠폰함 진입점은 마이페이지의 쿠폰 통계 하나뿐이다. 쿠폰 링크는 쿠폰함을
+  // 직접 열지 않고 마이페이지로 보내 두 번째 진입 경로가 생기지 않게 한다.
+  assert.deepEqual(parseDeepLink('pingdom://coupons'), { screen: MAIN_ROUTES.MyPage });
+  assert.equal(
+    Object.values(MAIN_ROUTES).includes('CouponBox'),
+    true,
+  );
+  assert.notDeepEqual(parseDeepLink('pingdom://coupons'), { screen: MAIN_ROUTES.CouponBox });
   assert.deepEqual(parseDeepLink('pingdom://profile'), { screen: MAIN_ROUTES.Profile });
   assert.deepEqual(parseDeepLink('pingdom://settings'), { screen: MAIN_ROUTES.Settings });
   assert.deepEqual(parseDeepLink('pingdom://merchants/456'), {
     params: { merchantId: 456 },
     screen: MAIN_ROUTES.Merchant,
   });
+  assert.deepEqual(parseDeepLink('pingdom://profile/edit'), { screen: MAIN_ROUTES.Map });
+  assert.deepEqual(parseDeepLink('pingdom://merchants/456/reviews'), { screen: MAIN_ROUTES.Map });
 });
 
 test('invalid app links fall back to Map and unrelated schemes are ignored', () => {
@@ -125,11 +184,7 @@ test('invalid app links fall back to Map and unrelated schemes are ignored', () 
   assert.equal(parseDeepLink('https://example.com/places/123'), null);
 });
 
-test('Profile and Settings consume hardware back only for local UI state', () => {
-  assert.equal(getProfileBackAction(true, 'profile'), 'close-likes');
-  assert.equal(getProfileBackAction(false, 'archive-detail'), 'show-archive');
-  assert.equal(getProfileBackAction(false, 'archive'), 'show-profile');
-  assert.equal(getProfileBackAction(false, 'profile'), 'navigate-back');
+test('Settings consumes hardware back only for local UI state', () => {
   assert.equal(getSettingsBackAction(2), 'pop-page');
   assert.equal(getSettingsBackAction(1), 'navigate-back');
 });

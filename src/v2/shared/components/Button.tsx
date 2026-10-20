@@ -7,14 +7,19 @@ import {
 } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 
+import { Text } from './Typography';
+
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
-export type ButtonSize = 'medium' | 'large';
+export type ButtonSize = 'medium' | 'large' | 'onboarding';
+export type ButtonShape = 'rounded' | 'pill';
 
 export type ButtonProps = Omit<PressableProps, 'children' | 'disabled' | 'style'> & {
   disabled?: boolean;
   fullWidth?: boolean;
   label: string;
+  labelColor?: string;
   loading?: boolean;
+  shape?: ButtonShape;
   size?: ButtonSize;
   variant?: ButtonVariant;
 };
@@ -25,9 +30,11 @@ const Button = forwardRef<View, ButtonProps>(function Button(
     disabled = false,
     fullWidth = false,
     label,
+    labelColor,
     loading = false,
     onPressIn,
     onPressOut,
+    shape = 'rounded',
     size = 'large',
     variant = 'primary',
     ...pressableProps
@@ -38,6 +45,7 @@ const Button = forwardRef<View, ButtonProps>(function Button(
   const [pressed, setPressed] = useState(false);
   const isDisabled = disabled || loading;
   const palette = getButtonPalette(theme, variant, pressed, isDisabled);
+  const contentColor = isDisabled ? palette.content : labelColor ?? palette.content;
 
   const handlePressIn = (event: GestureResponderEvent) => {
     setPressed(true);
@@ -56,6 +64,7 @@ const Button = forwardRef<View, ButtonProps>(function Button(
       $backgroundColor={palette.background}
       $borderColor={palette.border}
       $fullWidth={fullWidth}
+      $shape={shape}
       $size={size}
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityRole="button"
@@ -65,9 +74,9 @@ const Button = forwardRef<View, ButtonProps>(function Button(
       onPressOut={handlePressOut}
     >
       {loading ? (
-        <ActivityIndicator color={palette.content} />
+        <ActivityIndicator color={contentColor} />
       ) : (
-        <Label $color={palette.content}>{label}</Label>
+        <Label $color={contentColor} $size={size}>{label}</Label>
       )}
     </Container>
   );
@@ -104,8 +113,8 @@ function getButtonPalette(
   }
 
   return {
-    background: pressed ? theme.colors.primaryPressed : theme.colors.primary,
-    border: pressed ? theme.colors.primaryPressed : theme.colors.primary,
+    background: pressed ? theme.colors.primaryActionPressed : theme.colors.primaryAction,
+    border: pressed ? theme.colors.primaryActionPressed : theme.colors.primaryAction,
     content: theme.colors.onPrimary,
   };
 }
@@ -114,27 +123,42 @@ type ContainerProps = {
   $backgroundColor: string;
   $borderColor: string;
   $fullWidth: boolean;
+  $shape: ButtonShape;
   $size: ButtonSize;
 };
 
 const Container = styled.Pressable<ContainerProps>`
   width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
   min-height: ${({ $size, theme }) =>
-    $size === 'large' ? theme.spacing.xxl : theme.spacing.xl + theme.spacing.sm}px;
+    $size === 'onboarding'
+      ? theme.spacing.xxl + theme.spacing.md
+      : $size === 'large'
+        ? theme.spacing.xxl
+        : theme.spacing.xl + theme.spacing.sm}px;
   align-items: center;
   justify-content: center;
   padding: ${({ theme }) => theme.spacing.none}px ${({ theme }) => theme.spacing.lg}px;
   border-width: 1px;
   border-color: ${({ $borderColor }) => $borderColor};
-  border-radius: ${({ theme }) => theme.radius.md}px;
+  border-radius: ${({ $shape, theme }) =>
+    $shape === 'pill' ? theme.radius.full : theme.radius.md}px;
   background-color: ${({ $backgroundColor }) => $backgroundColor};
 `;
 
-const Label = styled.Text<{ $color: string }>`
+const Label = styled(Text)<{ $color: string; $size: ButtonSize }>`
   color: ${({ $color }) => $color};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-  line-height: ${({ theme }) => theme.typography.label.lineHeight}px;
+  font-size: ${({ $size, theme }) =>
+    $size === 'onboarding'
+      ? theme.typography.onboardingAction.fontSize
+      : theme.typography.label.fontSize}px;
+  font-weight: ${({ $size, theme }) =>
+    $size === 'onboarding'
+      ? theme.typography.onboardingAction.fontWeight
+      : theme.typography.label.fontWeight};
+  line-height: ${({ $size, theme }) =>
+    $size === 'onboarding'
+      ? theme.typography.onboardingAction.lineHeight
+      : theme.typography.label.lineHeight}px;
 `;
 
 export default Button;

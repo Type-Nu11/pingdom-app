@@ -1,0 +1,43 @@
+Pingdom foreground keyword spotting: Hey Pingdy
+
+ENGINE
+sherpa-onnx v1.13.8 - Copyright (c) Xiaomi Corporation and contributors.
+Apache License 2.0. Original source: https://github.com/k2-fsa/sherpa-onnx/tree/v1.13.8
+Source and ONNX Runtime URLs and SHA-256 digests are pinned in artifacts.lock.json.
+The application builds sherpa-onnx with TTS and speaker diarization disabled.
+No eSpeak/piper TTS library or data is linked into the KWS engine.
+The engine and these notices are included in the Android and iOS application.
+
+MODEL
+sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20
+Model author: pkufool and upstream contributors.
+Upstream model: https://modelscope.cn/models/pkufool/icefall-kws-zipformer-zh-en-3M-2025-12-20
+Author's Apache-2.0 declaration (2026-10-08):
+https://github.com/k2-fsa/sherpa-onnx/issues/3802#issuecomment-6052663364
+The original ONNX weights (epoch-13-avg-2, chunk-16-left-64) and tokens.txt
+are bundled unmodified. The filenames were shortened to encoder.onnx,
+decoder.onnx and joiner.onnx. Model archive provenance is in artifacts.lock.json.
+No upstream audio samples or pronunciation lexicon are redistributed.
+
+LOCAL KEYWORD CONFIGURATION
+keywords.txt is added by Pingdom. It registers the entire phrase Hey Pingdy
+with the application alias Hey_Pingdy. HH EY1 P IH1 NG D IY0 is a manually
+specified English pronunciation for the proper name, not a verified acoustic
+claim. Korean-accented pronunciation, false-positive/negative rates and device
+performance have not been verified by adding this configuration.
+
+DEPENDENCIES
+ONNX Runtime 1.28.2 - Copyright (c) Microsoft Corporation.
+MIT License. See LICENSE-ONNX-RUNTIME.txt and THIRD-PARTY-NOTICES-ONNX-RUNTIME.txt.
+Additional native dependencies and notices:
+- kaldi-native-fbank 1.22.3, kaldi-decoder 0.3.0 and kaldifst: Apache-2.0.
+- OpenFst: Apache-2.0, see LICENSE-OPENFST.txt.
+- simple-sentencepiece: Apache-2.0, see LICENSE-SIMPLE-SENTENCEPIECE.txt.
+- Kiss FFT: BSD-3-Clause, see LICENSE-KISSFFT.txt.
+- Eigen: MPL-2.0/BSD/MINPACK, see the LICENSE-EIGEN-* files.
+- nlohmann/json: MIT, see LICENSE-NLOHMANN-JSON.txt.
+These dependencies are unmodified and their revisions are pinned by the
+sherpa-onnx v1.13.8 source CMake manifests.
+
+Copies of Apache License 2.0 and upstream dependency notices accompany this file.
+No upstream author endorses Pingdom.

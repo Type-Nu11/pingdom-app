@@ -1,0 +1,352 @@
+import { Text as AppText } from '../../../../shared/components/Typography';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  BackHandler,
+} from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import styled, { useTheme } from 'styled-components/native';
+
+import { appVersion, env } from '../../../../shared/config';
+import { WakeWordSettingsControl } from '../../../voice-assistant';
+import { useProfile } from '../../profile';
+import { NotificationSettingsScreen } from '../../notifications';
+import { HeaderBackButton } from '../../../../shared/components';
+import { getLanguageEndonym } from '../../../../shared/i18n';
+import ChevronIcon from '../../../../shared/assets/icons/chevron-right-24.svg';
+import { SETTINGS_DETAIL_IDS, type SettingsDetailId } from '../model/settings.types';
+import { resolveSelectedLanguage } from '../model/languageOptions';
+import { useSettingsLogout } from '../hooks/useSettingsLogout';
+import LocationPrivacyScreen from './LocationPrivacyScreen';
+import LanguageSettingsScreen from './LanguageSettingsScreen';
+import AppearanceSettingsScreen from './AppearanceSettingsScreen';
+import AccountManagementScreen from './AccountManagementScreen';
+import SettingsDetailScreen from './SettingsDetailScreen';
+import { useAppearance, type AppearancePreference } from '../../../../shared/theme';
+
+type SettingsPage = 'account' | 'appearance' | 'language' | 'location' | 'notifications' | 'root';
+
+export type SettingsScreenProps = {
+  initialPage?: 'root' | 'notifications';
+  onBack: () => void;
+  onLogout?: () => Promise<void>;
+  onOpenAccountManagement?: () => void;
+  onOpenDetail?: (detail: SettingsDetailId) => void;
+  onOpenNotificationSettings?: () => void;
+  onOpenProfileEdit?: () => void;
+};
+
+type RowProps = {
+  accessibilityLabel?: string;
+  destructive?: boolean;
+  disabled?: boolean;
+  label: string;
+  onPress?: () => void;
+  value?: string;
+  hint?: string;
+};
+
+function SettingsRow({
+  accessibilityLabel,
+  destructive = false,
+  disabled = false,
+  label,
+  onPress,
+  value,
+  hint,
+}: RowProps) {
+  const actionable = Boolean(onPress) && !disabled;
+
+  return (
+    <Row
+      accessibilityLabel={accessibilityLabel ?? [label, hint].filter(Boolean).join(', ')}
+      accessibilityHint={hint}
+      accessibilityRole={actionable ? 'button' : 'text'}
+      accessibilityState={{ disabled: !actionable }}
+      disabled={!actionable}
+      onPress={onPress}
+    >
+      <RowLabel $destructive={destructive} $disabled={disabled}>{label}</RowLabel>
+      <RowTrailing>
+        {value ? <RowValue numberOfLines={1}>{value}</RowValue> : null}
+        {actionable ? <ChevronIcon height={24} width={24} /> : null}
+      </RowTrailing>
+    </Row>
+  );
+}
+
+type HeaderProps = {
+  onBack: () => void;
+  title: string;
+};
+
+function SettingsHeader({ onBack, title }: HeaderProps) {
+  const { t } = useTranslation();
+
+  return (
+    <Header>
+      <HeaderBackButton accessibilityLabel={t('settings.back')} onPress={onBack} />
+      <HeaderTitle numberOfLines={1}>{title}</HeaderTitle>
+      <HeaderSpacer />
+    </Header>
+  );
+}
+
+type SectionProps = React.PropsWithChildren<{ title?: string }>;
+
+function SettingsSection({ children, title }: SectionProps) {
+  return (
+    <Section>
+      <SectionInner>
+        {title ? <SectionTitle>{title}</SectionTitle> : null}
+        {children}
+      </SectionInner>
+    </Section>
+  );
+}
+
+export default function SettingsScreen({
+  initialPage = 'root',
+  onBack,
+  onLogout,
+  onOpenAccountManagement,
+  onOpenDetail: navigateDetail,
+  onOpenNotificationSettings,
+  onOpenProfileEdit,
+}: SettingsScreenProps) {
+  const theme = useTheme();
+  const { logout, isLoggingOut, failed } = useSettingsLogout(onLogout);
+  const { preference } = useAppearance();
+  const { i18n, t } = useTranslation();
+  const { profile } = useProfile();
+  const [page, setPage] = useState<SettingsPage>(initialPage);
+  const [localDetail, setLocalDetail] = useState<SettingsDetailId | null>(null);
+  const onOpenDetail = useCallback((detail: SettingsDetailId) => {
+    if (navigateDetail) {
+      navigateDetail(detail);
+    } else if ((detail === SETTINGS_DETAIL_IDS.ProfileEdit || detail === SETTINGS_DETAIL_IDS.PasswordChange) && onOpenProfileEdit) {
+      onOpenProfileEdit();
+    } else {
+      setLocalDetail(detail);
+    }
+  }, [navigateDetail, onOpenProfileEdit]);
+  const goBack = useCallback(() => {
+    if (localDetail) { setLocalDetail(null); return; }
+    if (page !== initialPage) {
+      setPage('root');
+      return;
+    }
+    onBack();
+  }, [initialPage, localDetail, onBack, page]);
+
+  useEffect(() => {
+    if (page === initialPage && !localDetail) return undefined;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      goBack();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [goBack, initialPage, localDetail, page]);
+
+  const appearanceValueKeys: Record<AppearancePreference, string> = {
+    SYSTEM: 'settings.appearance.system',
+    LIGHT: 'settings.appearance.light',
+    DARK: 'settings.appearance.dark',
+  };
+
+  if (page === 'notifications') return <NotificationSettingsScreen onBack={goBack} />;
+  if (localDetail) return <SettingsDetailScreen detail={localDetail} onBack={goBack} />;
+
+  return (
+    <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-settings-screen">
+      {page === 'root' ? (
+        <>
+          <SettingsHeader onBack={goBack} title={t('settings.title')} />
+          <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
+            <SettingsSection title={t('settings.sections.account')}>
+              <SettingsRow
+                label={t('settings.account.title')}
+                onPress={onOpenAccountManagement ?? (() => setPage('account'))}
+                value={profile?.username}
+              />
+            </SettingsSection>
+
+            <SettingsSection title={t('settings.sections.notifications')}>
+              <SettingsRow
+                label={t('settings.rows.notificationSettings')}
+                onPress={onOpenNotificationSettings ?? (() => setPage('notifications'))}
+              />
+            </SettingsSection>
+
+            <SettingsSection title={t('settings.sections.preferences')}>
+              <SettingsRow
+                label={t('settings.appearance.section')}
+                onPress={() => setPage('appearance')}
+                value={t(appearanceValueKeys[preference])}
+              />
+              <SettingsRow
+                label={t('settings.language.section')}
+                onPress={() => setPage('language')}
+                value={getLanguageEndonym(resolveSelectedLanguage(i18n.resolvedLanguage))}
+              />
+              {env.featureFlags.voiceAssistant ? <WakeWordSettingsControl /> : null}
+            </SettingsSection>
+
+            <SettingsSection title={t('settings.sections.privacy')}>
+              <SettingsRow label={t('settings.rows.locationSettings')} onPress={() => setPage('location')} />
+              <SettingsRow
+                label={t('settings.location.dataSection')}
+                onPress={() => onOpenDetail(SETTINGS_DETAIL_IDS.DataManagement)}
+              />
+            </SettingsSection>
+
+            <SettingsSection title={t('settings.sections.appInfo')}>
+              <SettingsRow label={t('settings.rows.version')} value={appVersion} />
+            </SettingsSection>
+            <FooterActions>
+              <FooterButton accessibilityRole="button" accessibilityLabel={t('settings.logout')}
+                accessibilityState={{ disabled: !onLogout || isLoggingOut, busy: isLoggingOut }}
+                disabled={!onLogout || isLoggingOut} onPress={() => { void logout(); }}>
+                {isLoggingOut ? <ActivityIndicator color={theme.colors.textMuted} />
+                  : <FooterLabel>{t('settings.logout')}</FooterLabel>}
+              </FooterButton>
+              <FooterButton accessibilityRole="button" accessibilityLabel={t('settings.deleteAccount')}
+                onPress={() => onOpenDetail(SETTINGS_DETAIL_IDS.DeleteAccount)}>
+                <DangerLabel>{t('settings.deleteAccount')}</DangerLabel>
+              </FooterButton>
+              {failed ? <FooterLabel accessibilityRole="alert">{t('settings.support.logoutError')}</FooterLabel> : null}
+            </FooterActions>
+          </Content>
+        </>
+      ) : null}
+
+      {page === 'location' ? (
+        <LocationPrivacyScreen
+          onBack={goBack}
+        />
+      ) : null}
+
+      {page === 'language' ? (
+        <LanguageSettingsScreen onBack={goBack} />
+      ) : null}
+
+      {page === 'appearance' ? (
+        <AppearanceSettingsScreen onBack={goBack} />
+      ) : null}
+
+      {page === 'account' ? (
+        <AccountManagementScreen onBack={goBack} onOpenDetail={onOpenDetail} onLogout={onLogout} />
+      ) : null}
+    </Screen>
+  );
+}
+
+const CONTENT_CONTAINER_STYLE = { paddingBottom: 0 };
+
+const Screen = styled(SafeAreaView)`
+  background-color: ${({ theme }) => theme.colors.background};
+  flex: 1;
+`;
+
+const Content = styled.ScrollView.attrs({
+  alwaysBounceVertical: false,
+  keyboardShouldPersistTaps: 'handled',
+  showsVerticalScrollIndicator: false,
+})`
+  flex: 1;
+`;
+
+const Header = styled.View`
+  align-items: center;
+  flex-direction: row;
+  height: 56px;
+  justify-content: space-between;
+  padding: 0 16px;
+`;
+
+const HeaderTitle = styled(AppText)`
+  color: ${({ theme }) => theme.colors.textStrong};
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+`;
+
+const HeaderSpacer = styled.View`
+  height: 44px;
+  width: 44px;
+`;
+
+const Section = styled.View`
+  border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};
+  border-bottom-width: 8px;
+  padding: 16px 0;
+`;
+
+const SectionInner = styled.View`
+  padding: 0 16px;
+`;
+
+// Figma Setting (5941:6143): Headline2/Bold section titles over Setting/MenuRow rows.
+const SectionTitle = styled(AppText)`
+  color: ${({ theme }) => theme.colors.labelStrong};
+  font-size: ${({ theme }) => theme.typography.headline2Bold.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.headline2Bold.fontWeight};
+  line-height: ${({ theme }) => theme.typography.headline2Bold.lineHeight}px;
+  margin-bottom: 4px;
+`;
+
+const Row = styled.Pressable`
+  align-items: center;
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 14px 0;
+`;
+
+const RowLabel = styled(AppText)<{ $destructive?: boolean; $disabled?: boolean }>`
+  color: ${({ $destructive, $disabled, theme }) => (
+    $destructive ? theme.colors.danger : $disabled ? theme.colors.textDisabled : theme.colors.labelNormal
+  )};
+  flex-shrink: 1;
+  font-size: ${({ theme }) => theme.typography.bodyMedium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyMedium.fontWeight};
+  line-height: ${({ theme }) => theme.typography.bodyMedium.lineHeight}px;
+`;
+
+const RowTrailing = styled.View`
+  align-items: center;
+  flex-direction: row;
+  gap: 4px;
+  margin-left: 12px;
+  max-width: 55%;
+`;
+
+const RowValue = styled(AppText)`
+  color: ${({ theme }) => theme.colors.labelAssistive};
+  flex-shrink: 1;
+  font-size: ${({ theme }) => theme.typography.bodyRegular.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyRegular.fontWeight};
+  line-height: ${({ theme }) => theme.typography.bodyRegular.lineHeight}px;
+`;
+
+const FooterActions = styled.View`
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px 16px 32px;
+`;
+const FooterButton = styled.Pressable`
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 52px;
+  width: 100%;
+`;
+const FooterLabel = styled(AppText)`
+  color: ${({ theme }) => theme.colors.labelAssistive};
+  font-size: ${({ theme }) => theme.typography.bodyMedium.fontSize}px;
+  font-weight: ${({ theme }) => theme.typography.bodyMedium.fontWeight};
+  line-height: ${({ theme }) => theme.typography.bodyMedium.lineHeight}px;
+`;
+const DangerLabel = styled(FooterLabel)`
+  color: ${({ theme }) => theme.colors.statusError};
+`;

@@ -1,0 +1,362 @@
+import React from 'react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+
+import { renderWithProviders } from '../../../../app/testing/testProviders';
+import { profileApi } from '../../profile/__tests__';
+import type { Profile } from '../../profile';
+import { notificationApi } from '../../notifications/__tests__';
+import { LANGUAGE_SETTING_OPTIONS } from '../model/languageOptions';
+import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+
+const PROFILE: Profile = {
+  birthYear: 1998,
+  country: 'South Korea',
+  email: 'woo.sm@pingdom.app',
+  id: 1,
+  language: 'ko',
+  profileImageUrl: null,
+  role: 'USER',
+  username: 'woo._sm',
+};
+
+function renderSettings(overrides: Partial<React.ComponentProps<typeof SettingsScreen>> = {}) {
+  return renderWithProviders(
+    <SettingsScreen
+      onBack={jest.fn()}
+      onLogout={jest.fn(async () => undefined)}
+      onOpenProfileEdit={jest.fn()}
+      {...overrides}
+    />,
+  );
+}
+
+describe('SettingsScreen', () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+    jest.spyOn(notificationApi, 'getNotificationSettings').mockResolvedValue({
+      newHotplaceEnabled: true,
+      newLikeEnabled: true,
+      quietHoursEnabled: false,
+    });
+    jest.spyOn(notificationApi, 'updateNotificationSettings').mockImplementation(async (body) => ({
+      newHotplaceEnabled: true,
+      newLikeEnabled: true,
+      quietHoursEnabled: false,
+      ...body,
+    }));
+  });
+
+  test('설정 진입 시 디자인의 섹션과 실제 프로필 값을 표시한다', async () => {
+    await renderSettings();
+
+    expect(screen.getByTestId('v2-settings-screen')).toBeVisible();
+    expect(screen.getByText('설정')).toHaveStyle({ fontFamily: expect.stringMatching(/^Pretendard/) });
+    expect(screen.getByText('계정')).toBeVisible();
+    expect(screen.queryByText('기록 · 장소')).toBeNull();
+    expect(screen.getByText('개인정보 · 위치')).toBeVisible();
+    expect(screen.getByText('앱 정보')).toBeVisible();
+    await waitFor(() => expect(screen.getByText('woo._sm')).toBeVisible());
+  });
+
+  test('프로필 편집 행을 production callback에 연결한다', async () => {
+    const onOpenProfileEdit = jest.fn();
+    const view = await renderSettings({ onOpenProfileEdit });
+
+    await view.user.press(screen.getByText('계정 관리'));
+    await view.user.press(await screen.findByText('프로필 편집'));
+    expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
+  });
+
+  test('MERCHANT에게 관광객 프로필 편집 액션을 노출하지 않는다', async () => {
+    jest.spyOn(profileApi, 'getProfile').mockResolvedValue({
+      ...PROFILE,
+      role: 'MERCHANT_OWNER',
+    });
+    await renderSettings();
+
+    await waitFor(() => expect(screen.getByText('woo._sm')).toBeVisible());
+    expect(screen.queryByRole('button', { name: '프로필 편집' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '비밀번호 변경' })).toBeNull();
+  });
+
+  test('설정 루트는 현재 언어만 표시하고 선택은 전용 페이지에서 제공한다', async () => {
+    const view = await renderSettings();
+
+    expect(screen.getByText('환경설정')).toBeVisible();
+    expect(screen.getByText('언어')).toBeVisible();
+    expect(screen.getByText('한국어')).toBeVisible();
+    expect(screen.queryByText('English')).not.toBeOnTheScreen();
+
+    await view.user.press(screen.getByText('언어'));
+
+    expect(screen.getByTestId('v2-language-settings-screen')).toBeVisible();
+    expect(screen.getByText('언어 설정')).toBeVisible();
+    expect(screen.getByRole('radio', { name: '한국어, 선택됨' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: 'English' })).not.toBeSelected();
+  });
+
+  test('현재 표시 모드를 보여주고 기존 내부 탐색에 appearance 페이지만 연결한다', async () => {
+    const view = await renderSettings();
+    expect(screen.getByText('화면 모드')).toBeVisible();
+    expect(screen.getByText('라이트 모드')).toBeVisible();
+
+    await view.user.press(screen.getByText('화면 모드'));
+    expect(screen.getByTestId('v2-appearance-settings-screen')).toBeVisible();
+    expect(screen.getByRole('radio', { name: '라이트 모드, 선택됨' })).toBeSelected();
+  });
+
+  test('언어 전용 페이지에서 선택과 뒤로가기를 각각 처리한다', async () => {
+    const onBack = jest.fn();
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen
+        onBack={onBack}
+        onSelectLanguage={onSelectLanguage}
+      />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: 'English' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('en');
+
+    await view.user.press(screen.getByLabelText('뒤로가기'));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('#389 언어 페이지는 日本語를 선택지로 제공하고 선택 상태를 표시한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    const labels = screen.getAllByRole('radio').map((radio) => radio.props.accessibilityLabel);
+    expect(labels.slice(0, 3)).toEqual(['한국어, 선택됨', 'English', '日本語']);
+    expect(labels).toHaveLength(LANGUAGE_SETTING_OPTIONS.length);
+    await view.user.press(screen.getByRole('radio', { name: '日本語' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('ja');
+  });
+
+  test('#389 일본어로 선택하면 설정 루트가 즉시 일본어와 日本語 값을 표시한다', async () => {
+    const view = await renderWithProviders(
+      <SettingsScreen onBack={jest.fn()} onLogout={jest.fn(async () => undefined)} onOpenProfileEdit={jest.fn()} />,
+      { language: 'ja' },
+    );
+
+    expect(screen.getByText('設定')).toBeVisible();
+    expect(screen.getByText('環境設定')).toBeVisible();
+    expect(screen.getByText('日本語')).toBeVisible();
+    await view.user.press(screen.getByText('言語'));
+    expect(screen.getByRole('radio', { name: '日本語, 選択中' })).toBeSelected();
+  });
+
+  test('#389 일본어 UI에서는 언어 페이지와 설정 행이 일본어로 표시된다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'ja' },
+    );
+
+    expect(screen.getByText('言語')).toBeVisible();
+    expect(screen.getByRole('radio', { name: '日本語, 選択中' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: 'English' })).not.toBeSelected();
+    expect(screen.queryByText('韓国語')).not.toBeOnTheScreen();
+  });
+
+  test('알림 하위 화면은 서버 설정을 읽고 해당 field만 변경한다', async () => {
+    const view = await renderSettings();
+    await view.user.press(screen.getByText('알림 설정'));
+
+    await waitFor(() => expect(
+      screen.getByLabelText('핫플레이스 알림'),
+    ).toBeEnabled());
+    await view.user.press(screen.getByLabelText('핫플레이스 알림'));
+
+    await waitFor(() => expect(notificationApi.updateNotificationSettings).toHaveBeenCalledWith({
+      newHotplaceEnabled: false,
+    }));
+    await waitFor(() => expect(notificationApi.getNotificationSettings).toHaveBeenCalledTimes(2));
+  });
+
+  test('하위 화면의 뒤로가기는 설정 루트로 복귀하고 루트 뒤로가기는 navigation을 호출한다', async () => {
+    const onBack = jest.fn();
+    const view = await renderSettings({ onBack });
+
+    await view.user.press(screen.getByText('계정 관리'));
+    expect(screen.getByText('계정 관리')).toBeVisible();
+    await view.user.press(screen.getByLabelText('뒤로가기'));
+    expect(screen.getByText('설정')).toBeVisible();
+    expect(onBack).not.toHaveBeenCalled();
+
+    await view.user.press(screen.getByLabelText('뒤로가기'));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('위치 설정 진입은 실제 권한과 인증 상태만 표시한다', async () => {
+    const view = await renderSettings();
+    await view.user.press(screen.getByText('위치 정보 설정'));
+    expect(screen.getByTestId('v2-location-privacy-screen')).toBeVisible();
+    expect(screen.getByText('GPS 현장 인증')).toBeVisible();
+    expect(screen.queryByText('공개 범위')).toBeNull();
+    expect(screen.queryAllByRole('switch')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: '내 데이터 내보내기' })).toBeNull();
+  });
+
+  test('로그아웃 연속 탭을 한 번만 처리한다', async () => {
+    let resolveLogout: (() => void) | undefined;
+    const onLogout = jest.fn(() => new Promise<void>((resolve) => {
+      resolveLogout = resolve;
+    }));
+    const view = await renderSettings({ onLogout });
+
+    const logout = screen.getByLabelText('로그아웃');
+    await fireEvent.press(logout);
+    await fireEvent.press(logout);
+    expect(onLogout).toHaveBeenCalledTimes(1);
+
+    await act(async () => resolveLogout?.());
+    await waitFor(() => expect(screen.getByLabelText('로그아웃')).toBeEnabled());
+  });
+});
+
+test('Android back closes a local language page before delegating to the stack', async () => {
+  const { BackHandler } = require('react-native');
+  const subscription = jest.spyOn(BackHandler, 'addEventListener');
+  const onBack = jest.fn();
+  const view = await renderSettings({ onBack });
+  await view.user.press(screen.getByText('언어'));
+  const handler = subscription.mock.calls.filter(([event]) => event === 'hardwareBackPress').at(-1)?.[1] as () => boolean;
+  await act(async () => { expect(handler()).toBe(true); });
+  expect(screen.getByText('설정')).toBeVisible();
+  expect(onBack).not.toHaveBeenCalled();
+  await view.user.press(screen.getByLabelText('뒤로가기'));
+  expect(onBack).toHaveBeenCalledTimes(1);
+});
+
+test('account profile entry keeps the existing callback without a duplicate password entry', async () => {
+  jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
+  const onOpenProfileEdit = jest.fn();
+  const view = await renderSettings({ onOpenProfileEdit });
+  await screen.findByText('woo._sm');
+  await view.user.press(screen.getByText('계정 관리'));
+  await view.user.press(await screen.findByText('프로필 편집'));
+  expect(screen.queryByText('비밀번호 변경')).toBeNull();
+  expect(onOpenProfileEdit).toHaveBeenCalledTimes(1);
+});
+
+describe('#413 중국어 언어 설정', () => {
+  test('언어 페이지는 간체와 번체를 별도 선택지로 제공하고 각각 선택할 수 있다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: '简体中文' }));
+    await view.user.press(screen.getByRole('radio', { name: '繁體中文' }));
+    expect(onSelectLanguage.mock.calls.map(([language]) => language)).toEqual(['zh-CN', 'zh-TW']);
+    expect(screen.getByRole('radio', { name: '繁體中文' }).props.accessibilityLanguage).toBe('zh-TW');
+  });
+
+  test.each([
+    ['zh-CN', '语言设置', '简体中文, 已选择', '繁體中文'],
+    ['zh-TW', '語言設定', '繁體中文, 已選取', '简体中文'],
+  ] as const)('%s UI에서는 해당 변형만 선택 상태로 표시한다', async (language, title, selected, other) => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language },
+    );
+
+    expect(screen.getByText(title)).toBeVisible();
+    expect(screen.getByRole('radio', { name: selected })).toBeSelected();
+    expect(screen.getByRole('radio', { name: other })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+  });
+});
+
+describe('#414 베트남어 언어 설정', () => {
+  test('언어 페이지는 Tiếng Việt를 선택지로 제공하고 선택을 전달한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: 'Tiếng Việt' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('vi');
+  });
+
+  test('베트남어 UI에서는 언어 페이지가 베트남어로 표시되고 Tiếng Việt만 선택 상태다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'vi' },
+    );
+
+    expect(screen.getByText('Ngôn ngữ')).toBeVisible();
+    expect(screen.getByRole('radio', { name: 'Tiếng Việt, Đã chọn' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.queryByText('Tiếng Hàn')).not.toBeOnTheScreen();
+  });
+});
+
+describe('#415 스페인어 언어 설정', () => {
+  test('언어 페이지는 Español를 선택지로 제공하고 선택을 전달한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: 'Español' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('es');
+  });
+
+  test('스페인어 UI에서는 언어 페이지가 스페인어로 표시되고 Español만 선택 상태다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'es' },
+    );
+
+    expect(screen.getByText('Idioma')).toBeVisible();
+    expect(screen.getByRole('radio', { name: 'Español, Seleccionado' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.queryByText('Coreano')).not.toBeOnTheScreen();
+  });
+});
+
+describe('#416 브라질 포르투갈어 언어 설정', () => {
+  test('언어 페이지는 Português (Brasil)를 선택지로 제공하고 선택을 전달한다', async () => {
+    const onSelectLanguage = jest.fn();
+    const view = await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={onSelectLanguage} />,
+    );
+
+    await view.user.press(screen.getByRole('radio', { name: 'Português (Brasil)' }));
+    expect(onSelectLanguage).toHaveBeenCalledWith('pt-BR');
+  });
+
+  test('브라질 포르투갈어 UI에서는 언어 페이지가 브라질 포르투갈어로 표시되고 Português (Brasil)만 선택 상태다', async () => {
+    await renderWithProviders(
+      <LanguageSettingsScreen onBack={jest.fn()} onSelectLanguage={jest.fn()} />,
+      { language: 'pt-BR' },
+    );
+
+    expect(screen.getByText('Idioma')).toBeVisible();
+    expect(screen.getByRole('radio', { name: 'Português (Brasil), Selecionado' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: '한국어' })).not.toBeSelected();
+    expect(screen.queryByText('Coreano')).not.toBeOnTheScreen();
+  });
+});
+
+test.each([
+  ['LIGHT', '#000000', '#0C0C0D', '#767680', '#EE2B2B'],
+  ['DARK', '#FFFFFF', '#F4F4F5', '#85858F', '#FF5A5A'],
+] as const)('%s 설정 목록은 Figma Setting/MenuRow 글꼴과 토큰 색을 쓴다', async (appearancePreference, title, label, assistive, error) => {
+  await renderWithProviders(
+    <SettingsScreen onBack={jest.fn()} onLogout={jest.fn(async () => undefined)} onOpenProfileEdit={jest.fn()} />,
+    { appearancePreference },
+  );
+  expect(screen.getByText('환경설정')).toHaveStyle({ color: title, fontFamily: 'PretendardStdVariable-Bold', fontSize: 18, lineHeight: 23 });
+  expect(screen.getByText('화면 모드')).toHaveStyle({ color: label, fontFamily: 'PretendardStdVariable-Medium', fontSize: 16, lineHeight: 21 });
+  expect(screen.getByText(appearancePreference === 'DARK' ? '다크 모드' : '라이트 모드'))
+    .toHaveStyle({ color: assistive, fontSize: 16, lineHeight: 21 });
+  expect(screen.getByText('로그아웃')).toHaveStyle({ color: assistive, fontFamily: 'PretendardStdVariable-Medium', fontSize: 16 });
+  expect(screen.getByText('회원 탈퇴')).toHaveStyle({ color: error, fontSize: 16 });
+});

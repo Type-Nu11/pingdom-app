@@ -1,0 +1,218 @@
+import type {
+  CommunityCommentLikeStatus,
+  CommunityCommentPage,
+  CommunityImageUpload,
+  CommunityLikeStatus,
+  CommunityPostDetail,
+  CommunityPostPage,
+  CreateCommentResponse,
+  CreatePostResponse,
+  ListCategoriesResponse,
+  ListCountriesResponse,
+  RecordPlaceViewResponse,
+  ReportResponse,
+} from '../api/communityApi';
+
+export const categoriesFixture = {
+  categories: [
+    { categoryId: 'PLACE', categoryName: '장소' },
+    { categoryId: 'TRAVEL', categoryName: '여행' },
+    { categoryId: 'MONEY', categoryName: '돈' },
+  ],
+} satisfies ListCategoriesResponse;
+
+export const postPageFixture = {
+  hasNext: false,
+  limit: 20,
+  page: 1,
+  posts: [
+    {
+      category: { categoryId: 'PLACE', categoryName: '장소' },
+      commentCount: 1,
+      contentPreview: '즐거운 경험이었습니다.',
+      countryCode: 'KR',
+      createdAt: '2026-09-01T08:48:00Z',
+      imageCount: 0,
+      likeCount: 12,
+      postId: 1,
+      region: '다사읍',
+      title: '대소고 다녀왔어요',
+      viewCount: 128,
+    },
+    {
+      category: { categoryId: 'TRAVEL', categoryName: '여행' },
+      commentCount: 0,
+      contentPreview: '오늘 하루 여러 곳을 다녀왔어요.',
+      createdAt: '2026-09-01T07:30:00Z',
+      imageCount: 0,
+      likeCount: 0,
+      postId: 2,
+      title: '오늘 오아시스 영화 봤어요',
+      viewCount: 0,
+    },
+  ],
+  totalCount: 2,
+  totalPages: 1,
+} satisfies CommunityPostPage;
+
+export const emptyPostPageFixture = {
+  hasNext: false,
+  limit: 20,
+  page: 1,
+  posts: [],
+  totalCount: 0,
+  totalPages: 0,
+} satisfies CommunityPostPage;
+
+export const countriesFixture = ['KR', 'US', 'JP', 'VN', 'CN', 'TH'] satisfies ListCountriesResponse;
+
+export const postDetailFixture = {
+  author: { authorId: 7, authorName: 'pingdom', profileImageUrl: undefined },
+  category: { categoryId: 'PLACE', categoryName: '장소' },
+  content: '즐거운 경험이었습니다.',
+  countryCode: 'KR',
+  createdAt: '2026-09-01T08:48:00Z',
+  images: [],
+  places: [{
+    address: '대구광역시 달성군 다사읍 대실로 33',
+    category: '학교',
+    deleted: false,
+    placeId: 17,
+    placeName: '대소고',
+    region: '다사읍',
+  }],
+  postId: 1,
+  region: '다사읍',
+  title: '대소고 다녀왔어요',
+  viewCount: 128,
+} satisfies CommunityPostDetail;
+
+export const postDetailMultiplePlacesFixture = {
+  content: '오늘 하루 여러 곳을 다녀왔어요.',
+  places: [
+    { deleted: false, placeId: 17, placeName: '대소고' },
+    { deleted: false, placeId: 21, placeName: '오아시스 영화관' },
+    { deleted: false, placeId: 22, placeName: '다사 전통시장' },
+  ],
+  postId: 2,
+  title: '오늘 오아시스 영화 봤어요',
+} satisfies CommunityPostDetail;
+
+export const postDetailWithDeletedPlaceFixture = {
+  content: '이 게시글의 연결 장소 중 하나는 삭제되었어요.',
+  places: [
+    { deleted: false, placeId: 17, placeName: '대소고' },
+    { deleted: true, placeId: undefined, placeName: '삭제된 장소예요' },
+  ],
+  postId: 3,
+  title: '삭제된 장소가 포함된 글',
+} satisfies CommunityPostDetail;
+
+export const commentPageFixture = {
+  comments: [
+    {
+      authorId: 7,
+      authorName: 'pingdom',
+      commentId: 101,
+      content: '저도 가보고 싶네요!',
+      createdAt: '2026-09-01T09:00:00Z',
+      likeCount: 2,
+      liked: false,
+    },
+  ],
+  hasNext: false,
+  limit: 20,
+  page: 1,
+  totalCount: 1,
+  totalPages: 1,
+} satisfies CommunityCommentPage;
+
+export const emptyCommentPageFixture = {
+  comments: [],
+  hasNext: false,
+  limit: 20,
+  page: 1,
+  totalCount: 0,
+  totalPages: 0,
+} satisfies CommunityCommentPage;
+
+export const createPostResponseFixture = {
+  placeIds: [17],
+  postId: 9001,
+} satisfies CreatePostResponse;
+
+export const createCommentResponseFixture = {
+  commentId: 9101,
+  content: '저도 가보고 싶네요!',
+  postId: 1,
+} satisfies CreateCommentResponse;
+
+export const likeStatusFixture = {
+  likeCount: 12,
+  liked: false,
+  postId: 1,
+} satisfies CommunityLikeStatus;
+
+export const likedStatusFixture = {
+  ...likeStatusFixture,
+  likeCount: 13,
+  liked: true,
+} satisfies CommunityLikeStatus;
+
+export const imageUploadFixture = {
+  expiresAt: '2026-09-02T09:00:00Z',
+  imageId: 501,
+  imageUrl: 'https://mock.invalid/community/images/501.jpg',
+} satisfies CommunityImageUpload;
+
+export const commentLikeStatusFixture = {
+  commentId: 101,
+  likeCount: 2,
+  liked: false,
+} satisfies CommunityCommentLikeStatus;
+
+export const commentLikedStatusFixture = {
+  ...commentLikeStatusFixture,
+  likeCount: 3,
+  liked: true,
+} satisfies CommunityCommentLikeStatus;
+
+export const reportResponseFixture = {
+  reportId: 1,
+  status: 'PENDING',
+} satisfies ReportResponse;
+
+// Recording a view returns the standard place detail payload with the
+// community-attributed view count folded in (`communityViewCount`).
+export const placeViewFixture = {
+  activeOperatingNotices: [],
+  address: '대구광역시 달성군 다사읍 대실로 33',
+  communityViewCount: 13,
+  currentlyOperating: true,
+  currentlyOperatingCheckedAt: '2026-09-01T09:00:00Z',
+  description: null,
+  englishName: null,
+  geocodingSource: 'KAKAO',
+  id: 17,
+  informationEvidenceUpdatedAt: null,
+  informationVerificationStatus: 'UNVERIFIED',
+  informationVerifiedAt: null,
+  jibunAddress: null,
+  lastVerifiedAt: null,
+  lastVerifiedSourceType: null,
+  latitude: 35.85,
+  longitude: 128.47,
+  merchantOwner: null,
+  name: '대소고',
+  operatingExceptions: [],
+  operatingStatus: 'OPERATING',
+  operatingStatusCheckedAt: null,
+  postalCode: null,
+  primaryInformationSource: 'LEGACY',
+  registrant: 'system',
+  regularHours: [],
+  roadAddress: null,
+  touristCategories: [],
+  touristSummary: null,
+  verifiedEvidenceCount: 0,
+} satisfies RecordPlaceViewResponse;

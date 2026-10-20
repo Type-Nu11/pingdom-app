@@ -1,22 +1,49 @@
 import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
 
-import { useFcmTokenSync } from '../../features/notifications/hooks/useFcmTokenSync';
-import { useForegroundNotifications } from '../../features/notifications/hooks/useForegroundNotifications';
-import { useNotificationOpenSync } from '../../features/notifications/hooks/useNotificationOpenSync';
-import type { NotificationRoute } from '../../features/notifications/model/notification.types';
-import HomeScreen from '../../features/home/screens/HomeScreen';
-import MapScreen from '../../features/map/screens/MapScreen';
-import PlaceListExampleScreen from '../../features/place-list/screens/PlaceListExampleScreen';
-import PlaceDetailScreen from '../../features/place-detail/screens/PlaceDetailScreen';
+import { useFcmTokenSync } from '../../modules/user/notifications/lifecycle';
+import { useForegroundNotifications } from '../../modules/user/notifications/lifecycle';
+import { useNotificationOpenSync } from '../../modules/user/notifications/lifecycle';
+import type { NotificationRoute } from '../../modules/user/notifications/routing';
+import { useSettingsDetailRedirect, useSettingsNavigation } from '../../modules/user/settings';
+import HomeScreen from '../home/screens/HomeScreen';
+import { MyCommunityPostsScreen, MyCommunityPostsPreview, CommunityDetailScreen, CommunityEditScreen, CommunityWriteScreen, useDiscardOnLeaveGuard } from '../../modules/community';
+import { MapScreen } from '../../modules/place/map';
+import { CouponBoxScreen } from '../../modules/user/profile/my-page';
+import { CouponDetailContainer } from '../../modules/user/profile/my-page';
+import { MyPageScreen, MyReviewScreen, MyReviewEditScreen } from '../../modules/user/profile/my-page';
+import { useProfile } from '../../modules/user/profile';
+import { VerifiedPlacesScreen } from '../../modules/user/profile/my-page';
+import { ProfileEditScreen } from '../../modules/user/profile';
+import { PlaceListExampleScreen } from '../../modules/place/search';
+import { PlaceDetailScreen } from '../../modules/place/detail';
+import { CreateReservationScreen } from '../../modules/booking/reservations/routes';
+import { ReservationBoxScreen } from '../../modules/booking/reservations/routes';
+import { ReservationDetailScreen } from '../../modules/booking/reservations/routes';
+import {
+  AccountManagementScreen,
+  SettingsDetailScreen,
+  SETTINGS_DETAIL_IDS,
+  SettingsScreen,
+} from '../../modules/user/settings';
+import {
+  VisitVerificationPlacesScreen,
+  VisitVerificationReviewScreen,
+  useForegroundVisitVerification,
+  useVisitVerificationCandidates,
+} from '../../modules/place/visit-verification';
 import { env } from '../../shared/config';
+import { clearTokenSession } from '../../shared/auth/tokenSession';
 import {
   claimNotificationMessage,
   createNotificationNavigationIntent,
 } from './notificationIntent';
-import { V2_ROUTES, type V2StackParamList } from './types';
+import { V2_ROUTES, parseCheckInId, parsePlaceId, type V2ScreenProps, type V2StackParamList } from './types';
 import { useAndroidBackHandler } from './useAndroidBackHandler';
+import { useAppNavigationTheme } from '../../shared/theme';
+import { useStartupPermissions } from '../permissions/useStartupPermissions';
 
 const Stack = createNativeStackNavigator<V2StackParamList>();
 const navigationRef = createNavigationContainerRef<V2StackParamList>();
@@ -25,7 +52,242 @@ function HomeRouteScreen() {
   return env.featureFlags.placeList ? <PlaceListExampleScreen /> : <HomeScreen />;
 }
 
+function MapRouteScreen({ navigation }: V2ScreenProps<'Map'>) {
+  const { profile } = useProfile();
+  return (
+    <MapScreen
+      onEditReview={(reviewId) => navigation.navigate(V2_ROUTES.MyReviewEdit, { reviewId })}
+      onNavigateAssistantPage={(target) => {
+        if (target.page === 'reservations') navigation.navigate(V2_ROUTES.ReservationBox);
+        else if (target.page === 'myPage') navigation.navigate(V2_ROUTES.MyPage);
+        else if (target.page === 'settings') navigation.navigate(V2_ROUTES.Settings);
+        else if (target.page === 'coupons') navigation.navigate(V2_ROUTES.CouponBox);
+        else if (target.page === 'verifiedPlaces') {
+          if (!profile || profile.role === 'MERCHANT_OWNER') return false;
+          navigation.navigate(V2_ROUTES.VerifiedPlaces);
+        } else if (target.page === 'accountManagement') navigation.navigate(V2_ROUTES.AccountManagement);
+        else if (target.page === 'notificationSettings') navigation.navigate(V2_ROUTES.NotificationSettings);
+        else if (target.page === 'loginInformation' || target.page === 'locationSettings'
+          || target.page === 'privacySettings' || target.page === 'dataManagement') {
+          navigation.navigate(V2_ROUTES.SettingsDetail, { detail: target.page });
+        } else if (target.page === 'communityPost') {
+          if (!Number.isSafeInteger(target.postId) || target.postId <= 0) return false;
+          navigation.navigate(V2_ROUTES.CommunityDetail, { postId: target.postId });
+        }
+        else if (target.page === 'createReservation') {
+          const placeId = parsePlaceId(target.placeId);
+          if (!placeId) return false;
+          navigation.navigate(V2_ROUTES.CreateReservation, { placeId });
+        } else if (target.page === 'placeDetail') {
+          const placeId = parsePlaceId(target.placeId);
+          if (!placeId) return false;
+          navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
+        } else return false;
+        return true;
+      }}
+      onOpenCommunityPost={(postId) => navigation.navigate(V2_ROUTES.CommunityDetail, { postId })}
+      onOpenCommunityWrite={(categoryId) => navigation.navigate(
+        V2_ROUTES.CommunityWrite,
+        categoryId ? { initialCategoryId: categoryId } : undefined,
+      )}
+      onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
+      onOpenVisitVerification={() => navigation.navigate(
+        V2_ROUTES.VisitVerificationPlaces,
+      )}
+      onStartVisitVerification={(value) => {
+        const placeId = parsePlaceId(value);
+        if (placeId) navigation.navigate(V2_ROUTES.VisitVerificationPlaces);
+      }}
+      onSignIn={() => void clearTokenSession()}
+    />
+  );
+}
+
+function CommunityDetailRouteScreen({ navigation, route }: V2ScreenProps<'CommunityDetail'>) {
+  return (
+    <CommunityDetailScreen
+      onEditPost={(postId) => navigation.navigate(V2_ROUTES.CommunityEdit, { postId })}
+      onBack={navigation.goBack}
+      onOpenPlace={(value) => {
+        const placeId = parsePlaceId(value);
+        if (placeId) navigation.navigate(V2_ROUTES.PlaceDetail, { placeId });
+      }}
+      onSignIn={() => void clearTokenSession()}
+      postId={route.params.postId}
+    />
+  );
+}
+
+function CommunityWriteRouteScreen({ navigation, route }: V2ScreenProps<'CommunityWrite'>) {
+  const hasUnsavedInput = useDiscardOnLeaveGuard(navigation);
+
+  return (
+    <CommunityWriteScreen
+      initialCategoryId={route.params?.initialCategoryId}
+      onBack={navigation.goBack}
+      onDirtyChange={(dirty) => { hasUnsavedInput.current = dirty; }}
+      onSignIn={() => void clearTokenSession()}
+      onSubmitSuccess={({ postId }) => {
+        hasUnsavedInput.current = false;
+        navigation.replace(V2_ROUTES.CommunityDetail, { postId });
+      }}
+    />
+  );
+}
+
+function MyPageRouteScreen({ navigation }: V2ScreenProps<'MyPage'>) {
+  return (
+    <MyPageScreen
+          authoredPostsContent={<MyCommunityPostsPreview onOpenList={() => navigation.navigate(V2_ROUTES.MyCommunityPosts)}
+            onOpenPost={(postId: number) => navigation.navigate(V2_ROUTES.CommunityDetail, { postId })} onEditPost={(postId: number) => navigation.navigate(V2_ROUTES.CommunityEdit, { postId })} />}
+      onBack={navigation.goBack}
+      onOpenCoupons={() => navigation.navigate(V2_ROUTES.CouponBox)}
+      onOpenProfileEdit={() => navigation.navigate(V2_ROUTES.ProfileEdit)}
+      onOpenReview={(reviewId) => navigation.navigate(V2_ROUTES.MyReview, { reviewId })}
+      onOpenReservations={() => navigation.navigate(V2_ROUTES.ReservationBox)}
+      onOpenSettings={() => navigation.navigate(V2_ROUTES.Settings)}
+      onOpenVerifiedPlaces={() => navigation.navigate(V2_ROUTES.VerifiedPlaces)}
+    />
+  );
+}
+
+function VerifiedPlacesRouteScreen({ navigation }: V2ScreenProps<'VerifiedPlaces'>) {
+  const { profile } = useProfile();
+  if (!profile || profile.role === 'MERCHANT_OWNER') return null;
+  return <VerifiedPlacesScreen onBack={navigation.goBack} onOpenReview={(reviewId) => navigation.navigate(V2_ROUTES.MyReview, { reviewId })} />;
+}
+
+function MyCommunityPostsRouteScreen({ navigation }: V2ScreenProps<'MyCommunityPosts'>) {
+  return <MyCommunityPostsScreen onBack={navigation.goBack} onOpenPost={(postId: number) => navigation.navigate(V2_ROUTES.CommunityDetail, { postId })} onEditPost={(postId: number) => navigation.navigate(V2_ROUTES.CommunityEdit, { postId })} />;
+}
+
+function CommunityEditRouteScreen({ navigation, route }: V2ScreenProps<'CommunityEdit'>) {
+  const dirty = useDiscardOnLeaveGuard(navigation);
+  return <CommunityEditScreen postId={route.params.postId} onBack={navigation.goBack} onDirtyChange={value => { dirty.current = value; }} />;
+}
+function MyReviewEditRouteScreen({ navigation, route }: V2ScreenProps<'MyReviewEdit'>) {
+  const dirty = useDiscardOnLeaveGuard(navigation);
+  return <MyReviewEditScreen reviewId={route.params.reviewId} onBack={navigation.goBack} onDirtyChange={value => { dirty.current = value; }} />;
+}
+
+function MyReviewRouteScreen({ navigation, route }: V2ScreenProps<'MyReview'>) {
+  return <MyReviewScreen onBack={navigation.goBack} reviewId={route.params.reviewId} onEdit={(reviewId) => navigation.navigate(V2_ROUTES.MyReviewEdit, { reviewId })} />;
+}
+
+function CouponBoxRouteScreen({ navigation }: V2ScreenProps<'CouponBox'>) {
+  return (
+    <CouponBoxScreen
+      onBack={navigation.goBack}
+      onOpenCoupon={(coupon) => navigation.navigate(V2_ROUTES.CouponDetail, {
+        couponId: coupon.id,
+      })}
+      onSignIn={() => void clearTokenSession()}
+    />
+  );
+}
+
+function ReservationBoxRoute({ navigation }: V2ScreenProps<'ReservationBox'>) {
+  return (
+    <ReservationBoxScreen
+      onBack={navigation.goBack}
+      onOpenReservation={(reservationId) => navigation.navigate(
+        V2_ROUTES.ReservationDetail,
+        { reservationId },
+      )}
+      onOpenSettings={() => navigation.navigate(V2_ROUTES.Settings)}
+    />
+  );
+}
+
+function ReservationDetailRoute({ navigation, route }: V2ScreenProps<'ReservationDetail'>) {
+  return (
+    <ReservationDetailScreen
+      onBack={navigation.goBack}
+      reservationId={route.params.reservationId}
+    />
+  );
+}
+
+function CouponDetailRoute({ navigation, route }: V2ScreenProps<'CouponDetail'>) {
+  return (
+    <CouponDetailContainer
+      couponId={route.params.couponId}
+      onBack={navigation.goBack}
+      onReserve={(placeId) => {
+        const parsed = parsePlaceId(placeId);
+        if (parsed) {
+          navigation.navigate(V2_ROUTES.CreateReservation, { placeId: parsed });
+        }
+      }}
+      onSignIn={() => void clearTokenSession()}
+    />
+  );
+}
+
+export function SettingsRouteScreen({ navigation }: V2ScreenProps<'Settings'>) {
+  const openDetail = useSettingsNavigation(navigation);
+  return (
+    <SettingsScreen
+      onBack={navigation.goBack}
+      onLogout={clearTokenSession}
+      onOpenAccountManagement={() => openDetail(SETTINGS_DETAIL_IDS.AccountManagement)}
+      onOpenDetail={openDetail}
+      onOpenNotificationSettings={() => openDetail(SETTINGS_DETAIL_IDS.NotificationSettings)}
+      onOpenProfileEdit={() => openDetail(SETTINGS_DETAIL_IDS.ProfileEdit)}
+    />
+  );
+}
+
+function ProfileEditRouteScreen({ navigation }: V2ScreenProps<'ProfileEdit'>) {
+  return <ProfileEditScreen onBack={navigation.goBack} />;
+}
+
+export function AccountManagementRouteScreen({ navigation }: V2ScreenProps<'AccountManagement'>) {
+  const openDetail = useSettingsNavigation(navigation);
+  return (
+    <AccountManagementScreen
+      onLogout={clearTokenSession}
+      onBack={navigation.goBack}
+      onOpenDetail={openDetail}
+    />
+  );
+}
+
+function SettingsDetailRouteScreen({ navigation, route }: V2ScreenProps<'SettingsDetail'>) {
+  const redirecting = useSettingsDetailRedirect(navigation, route.params.detail);
+  if (redirecting) return null;
+  return (
+    <SettingsDetailScreen
+      detail={route.params.detail}
+      onBack={navigation.goBack}
+    />
+  );
+}
+
+function NotificationSettingsRoute({ navigation }: V2ScreenProps<'NotificationSettings'>) {
+  return <SettingsScreen initialPage="notifications" onBack={navigation.goBack} />;
+}
+
+function VisitVerificationPlacesRoute({ navigation }: V2ScreenProps<'VisitVerificationPlaces'>) {
+  return <VisitVerificationPlacesScreen onBack={navigation.goBack} onSelectPlace={({ checkInId: value, placeId: placeValue }) => {
+    const checkInId = parseCheckInId(value);
+    const placeId = parsePlaceId(placeValue);
+    if (checkInId && placeId) navigation.navigate(V2_ROUTES.VisitVerificationReview, { checkInId, placeId });
+  }} />;
+}
+
+function VisitVerificationReviewRoute({ navigation, route }: V2ScreenProps<'VisitVerificationReview'>) {
+  return <VisitVerificationReviewScreen checkInId={route.params.checkInId} onBack={navigation.goBack} onComplete={() => navigation.popTo(V2_ROUTES.Map)} placeId={route.params.placeId} />;
+}
+
+function VisitVerificationSessionRoute({ navigation }: V2ScreenProps<'VisitVerificationSession'>) {
+  useEffect(() => { navigation.replace(V2_ROUTES.VisitVerificationPlaces); }, [navigation]);
+  return null;
+}
+
 export default function RootNavigator() {
+  const navigationTheme = useAppNavigationTheme();
+  const startupPermissions = useStartupPermissions();
   const [isNavigationReady, setIsNavigationReady] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<NotificationRoute | null>(null);
   const handledMessageIds = useRef(new Set<string>());
@@ -36,8 +298,8 @@ export default function RootNavigator() {
     setPendingRoute(route);
   }, []);
 
-  useFcmTokenSync();
-  useForegroundNotifications();
+  useFcmTokenSync(startupPermissions.ready && startupPermissions.notificationsGranted);
+  useForegroundNotifications(startupPermissions.ready && startupPermissions.notificationsGranted);
   useNotificationOpenSync(handleNotificationOpen);
 
   useEffect(() => {
@@ -61,13 +323,46 @@ export default function RootNavigator() {
     setPendingRoute(null);
   }, [isNavigationReady, pendingRoute]);
 
+  if (!startupPermissions.ready) {
+    return <View style={{ flex: 1, backgroundColor: navigationTheme.colors.background }} />;
+  }
+
   return (
-    <NavigationContainer ref={navigationRef} onReady={() => setIsNavigationReady(true)}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => setIsNavigationReady(true)}>
+      <ForegroundVisitVerification />
       <Stack.Navigator initialRouteName={V2_ROUTES.Map} screenOptions={{ headerShown: false }}>
-        <Stack.Screen name={V2_ROUTES.Map} component={MapScreen} />
+        <Stack.Screen name={V2_ROUTES.CreateReservation} component={CreateReservationScreen} />
+        <Stack.Screen name={V2_ROUTES.CommunityDetail} component={CommunityDetailRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.CommunityWrite} component={CommunityWriteRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.MyCommunityPosts} component={MyCommunityPostsRouteScreen} />
+      <Stack.Screen name={V2_ROUTES.CommunityEdit} component={CommunityEditRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.MyReviewEdit} component={MyReviewEditRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.Map} component={MapRouteScreen} />
         <Stack.Screen name={V2_ROUTES.Home} component={HomeRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.MyPage} component={MyPageRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.CouponBox} component={CouponBoxRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.CouponDetail} component={CouponDetailRoute} />
+        <Stack.Screen name={V2_ROUTES.ReservationBox} component={ReservationBoxRoute} />
+        <Stack.Screen name={V2_ROUTES.ReservationDetail} component={ReservationDetailRoute} />
+        <Stack.Screen name={V2_ROUTES.VerifiedPlaces} component={VerifiedPlacesRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.MyReview} component={MyReviewRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.ProfileEdit} component={ProfileEditRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.Settings} component={SettingsRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.AccountManagement} component={AccountManagementRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.SettingsDetail} component={SettingsDetailRouteScreen} />
+        <Stack.Screen name={V2_ROUTES.NotificationSettings} component={NotificationSettingsRoute} />
         <Stack.Screen name={V2_ROUTES.PlaceDetail} component={PlaceDetailScreen} />
+        <Stack.Screen name={V2_ROUTES.VisitVerificationPlaces} component={VisitVerificationPlacesRoute} />
+        <Stack.Screen name={V2_ROUTES.VisitVerificationReview} component={VisitVerificationReviewRoute} />
+        <Stack.Screen name={V2_ROUTES.VisitVerificationSession} component={VisitVerificationSessionRoute} />
       </Stack.Navigator>
     </NavigationContainer>
   );
+}
+
+function ForegroundVisitVerification() {
+  useForegroundVisitVerification();
+  // Keep the recent visits and their photos warm for immediate button navigation.
+  useVisitVerificationCandidates();
+  return null;
 }

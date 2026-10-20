@@ -1,18 +1,146 @@
 # PingDom V2
 
-V2 is isolated from the legacy application and follows a feature-first structure.
+V2 is isolated from legacy implementation. The domain modules now follow the structure in [ADR 0001](../../docs/architecture/adr/0001-v2-domain-module-boundaries.md).
+
+Production entrypoint ownership and active composition bridges are documented in
+[`docs/v2-production-entrypoint-migration.md`](../../docs/v2-production-entrypoint-migration.md).
 
 ## Import boundaries
 
-- `app` composes providers and feature screens.
-- `features` may import from `shared` and `types`.
-- `shared` may import from `types`, but never from `features` or legacy code.
-- V2 code must not import legacy screens, stores, hooks, API clients, or styles.
-- V2 screens use `styled-components`; `StyleSheet.create` and screen-local design values are not allowed.
-- V2 application code reads environment values only through `shared/config/env.ts`.
+The target is `app → modules → shared`, with Place, Booking, User, Onboarding, Travel,
+Merchant and Voice Assistant modules. `features` contains only named V1/root compatibility
+exports for #362. See the ADR's [inventory and graph audit](../../docs/architecture/adr/0001-v2-boundary-audit.md)
+for all seven modules, exact compatibility consumers and the zero-SCC graph.
+
+- External callers use a feature/module or subfeature public `index.ts`; internal
+  screen/hook/API/model/service/store/style/component indexes are not public entrypoints.
+- Public APIs use named exports, not `export *`. Type-only imports obey the same rules.
+- Shared cannot import domains or app; domains cannot import app. Module-internal relative
+  imports are allowed subject to data flow, cycle and legacy restrictions.
+- V2 must not import legacy source or escape V2, except static `src/assets/v2` assets.
+- Screens access APIs through hooks; feature/module hooks access shared API through domain API/model.
+- Production import cycles (including types/dynamic imports) and production imports of tests are forbidden.
+- `src/application` owns production composition/runtime injection only. Existing bridges are
+  frozen individually; semantic domain ownership also requires review.
+- V2 uses styled-components, reads environment values via `shared/config/env.ts`, and
+  imports axios only in `shared/api`. Comments and strings are not syntax violations.
+
+`npm run check:v2` checks the graph and runs its fixture tests; `validate:pr` includes both.
+`npm run test:v2-boundaries` runs the fixtures separately. `npm run audit:v2-boundaries`
+prints current inventory, graph and SCCs without modifying the baseline.
+[Exact migration exceptions](../../scripts/v2-boundaries/exceptions.json) include source,
+target, specifier, type/test flags, maximum count, reason and removal issue. New violations,
+extra occurrences and stale exceptions fail. Tests are checked too; existing integration
+imports have explicit exceptions, not a blanket test bypass.
+
+`app/i18n` composes feature-owned resources and registers them with the shared instance.
+Production and development providers use that initializer; the app test provider consumes
+that same resource object. Shared owns language hydration, base copy and formatters.
+The shared test-provider path is a test-only compatibility entrypoint until #362 for the two frozen V1 tests.
+
+## 앱 확인창 및 지도 시트 경계
+
+- 안내·확인·취소·재시도는 `shared/components/AppDialogProvider`의 `useAppDialog()`를 사용합니다. 실제 production provider에도 연결되어 있습니다.
+- 사용자 정의 창은 `AppModal`과 공통 `Button` 및 테마 토큰을 사용합니다. 새 RN `Alert`, `ActionSheetIOS`, `ToastAndroid`, raw `Modal`은 `check:v2-design`이 차단합니다. OS 권한·사진 선택·공유 화면은 운영체제 소유입니다.
+- 장소·즐겨찾기·커뮤니티·예약의 배경과 콘텐츠 경계는 `MapSheetSurface`가 함께 소유합니다. 화면에서 배경과 clipping viewport를 따로 조립하지 않습니다. 내비게이션·FAB·메뉴는 surface 밖에 둡니다.
+- `npm run check:v2`에는 디자인 검사 및 해당 검사 회귀 테스트가 포함됩니다.
 
 ## Feature data flow
 
 Feature data flows from `Screen` to `Hook` to `API`. The reference implementation lives in
-`features/place-list` and is opt-in through
-`EXPO_PUBLIC_ENABLE_PLACE_LIST=true`.
+`modules/place/search`. Place list/search defaults on whenever `EXPO_PUBLIC_API_MODE=real` and can
+be overridden with `EXPO_PUBLIC_ENABLE_PLACE_LIST=true|false`.
+
+## OpenAPI types
+
+`docs/api/mvp.openapi.json` is the single source for MVP request, response, enum, and error types.
+
+```sh
+npm run generate:api-types
+npm run check:api-types
+```
+
+The generated file is `shared/api/generated/mvp.ts`. Do not edit it directly. Feature model aliases
+must point to `ApiSchema`, `OperationQuery`, `OperationRequestBody`, or `OperationResponse` from
+`shared/api/contract.ts`; change the OpenAPI document and regenerate when the wire model changes.
+
+The place exploration endpoints introduced for #161 are sourced from the currently deployed
+server's `/v3/api-docs`, not from the older MVP document. The scoped server snapshot keeps the seven
+relevant paths and all recursively referenced schemas without hand-written DTOs:
+
+```sh
+npm run sync:place-exploration-openapi -- https://server.example/v3/api-docs
+npm run generate:place-exploration-api-types
+npm run check:place-exploration-api-types
+```
+
+The snapshot is `docs/api/place-exploration.openapi.json`, and its generated types are
+`shared/api/generated/placeExploration.ts`. Feature aliases must use
+`placeExplorationContract.ts`; update the snapshot from the server before regenerating.
+
+Tourist place menus are a Place subfeature and use a dedicated scoped snapshot. This also
+avoids the deployed document's duplicate `list_5` operation ID for menus and availabilities:
+
+```sh
+npm run sync:place-menus-openapi -- https://www.typenull.xyz/v3/api-docs
+npm run generate:place-menus-api-types
+npm run check:place-menus-api-types
+```
+
+The snapshot is `docs/api/place-menus.openapi.json`; feature aliases use
+`placeMenusContract.ts`. The generated DTO remains optional where the upstream schema omits its
+`required` array.
+
+The stay-based visit verification endpoints use their own live-server scoped snapshot because
+their lifecycle and release cadence are independent from place exploration:
+
+```sh
+npm run sync:visit-verification-openapi -- https://www.typenull.xyz/v3/api-docs
+npm run generate:visit-verification-api-types
+npm run check:visit-verification-api-types
+```
+
+The snapshot is `docs/api/visit-verification.openapi.json`; feature aliases use
+`visitVerificationContract.ts`. A session-detail query must not be implemented until the GET 200
+response schema exists in that snapshot.
+
+
+## Place module (#361)
+
+Place implementations now live under `modules/place`, with `core`, `search`, `detail`,
+`exploration`, `home-feeds`, `claims`, `menus`, `check-ins`, `visit-verification`,
+`verification-reports`, and responsibility-specific `map` boundaries.
+Use the root public index for headless Place read queries and facts, subfeature indexes
+for domain UI, and `map/index.ts` for the Map route. `search/queries` exposes the active
+list/autocomplete/viewport queries; the separate example list remains unchanged.
+`data/index.ts` entries provide named, headless API/query access for integration consumers.
+Generated contracts and transport-only mock fixtures stay shared; Place contract tests live
+with Place and cross-domain integration tests live in `app/testing/integration`.
+
+`app/PlaceMapComposition.tsx` injects Booking's public reservation sheet implementation
+into the Place-owned sheet slot in both production and standalone providers. Booking's
+Place presentation imports use `map/sheet/index.ts`; #359 owns further separation of the
+Booking presentation contract. No business logic moved into `src/application`.
+
+Eight named compatibility files remain in `features/map`, `features/check-ins`, and
+`features/place-visit-verification` solely for frozen V1 callers. Remove them in #362 when
+those callers migrate, subject to #124/#139 parity; they contain no implementation.
+See [the #361 handoff](../../docs/architecture/adr/0001-place-migration-handoff.md)
+and [pre-move inventory](../../docs/architecture/adr/0001-place-migration-inventory.md).
+
+## User module (#358)
+
+`modules/user` owns account/auth, profile/My Page, settings, notifications and Scout contracts.
+Use its named public submodule indexes. My Page travel, verified-place and coupon folders own
+presentation; Place/Booking/Travel contracts remain with their domains. User sibling imports are
+checked as public boundaries too. Account/notification/Scout mocks are User-owned and registered
+by `app/configureDomainMocks` into shared transport.
+
+See the [User handoff](../../docs/architecture/adr/0001-user-migration-handoff.md) for the exact
+legacy compatibility paths, preserved contracts, tests and outstanding device QA.
+
+## Remaining domain migration (#360)
+
+Onboarding, Travel, Merchant and Voice Assistant now live under `modules/`; conversion transport/retry lives at `shared/analytics/conversion`, and Home is app-owned. Travel is the single owner of shared calendar/date calculations. App composes domain mock handlers and i18n. Flat `features` contains only the 29 named V1/root compatibility exports for #362. Never add implementation there.
+
+Community has no implementation or skeleton. Start real work at `modules/community/**` only when a server API and implementation issue exist; app and Place/User/Booking integrations consume named public APIs. The [#360 handoff](../../docs/architecture/adr/0001-remaining-migration-handoff.md) records contracts, tests and device limitations; [inventory](../../docs/architecture/adr/0001-remaining-migration-inventory.md) lists every public and compatibility boundary.
