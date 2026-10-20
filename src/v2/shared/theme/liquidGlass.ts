@@ -1,5 +1,5 @@
 const light = {
-  primaryCta: { tint: 'rgba(255, 25, 86, 0.56)', foreground: '#F6F6F7' },
+  primaryCta: { shadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.035)', tint: 'rgba(255, 25, 86, 0.56)', foreground: '#F6F6F7' },
   header: { radius: 30, tint: 'rgba(248, 248, 248, 0.56)', rim: 'rgba(255, 255, 255, 0.64)', highlightOpacity: 0.16, shadow: '0px 4px 20px 0px rgba(0, 0, 0, 0.15)' },
   search: { radius: 26, tint: 'rgba(228, 228, 229, 0.60)', rim: 'rgba(255, 255, 255, 0.24)', highlightOpacity: 0.12, shadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.10)' },
   category: { activeForeground: '#C91443', tint: 'rgba(255, 255, 255, 0.36)', activeTint: 'rgba(255, 201, 211, 0.24)', androidTint: 'rgba(255, 255, 255, 0.2582)', androidActiveTint: 'rgba(255, 146, 166, 0.1191)', border: 'transparent', activeBorder: 'rgba(255, 74, 117, 0.88)', shadow: '0px 4px 20px 0px rgba(0, 0, 0, 0.12)' },
@@ -9,7 +9,7 @@ const light = {
 } as const;
 
 export type LiquidGlassTheme = {
-  primaryCta: { tint: string; foreground: string };
+  primaryCta: { tint: string; foreground: string; shadow: string };
   header: { radius: number; tint: string; rim: string; highlightOpacity: number; shadow: string };
   search: { radius: number; tint: string; rim: string; highlightOpacity: number; shadow: string };
   category: { activeForeground: string; tint: string; activeTint: string; androidTint: string; androidActiveTint: string; border: string; activeBorder: string; shadow: string };
@@ -24,7 +24,7 @@ export type LiquidGlassTheme = {
 export const lightLiquidGlass = light;
 // Figma Glass/* variables; opaque fallback remains available without native blur.
 export const darkLiquidGlass = {
-  primaryCta: { tint: 'rgba(255, 25, 86, 0.72)', foreground: '#F6F6F7' },
+  primaryCta: { shadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.035)', tint: 'rgba(255, 25, 86, 0.72)', foreground: '#F6F6F7' },
   header: { radius: 30, tint: 'rgba(64, 64, 72, 0.82)', rim: 'rgba(255, 255, 255, 0.20)', highlightOpacity: 0.14, shadow: '0px 4px 20px 0px rgba(0, 0, 0, 0.40)' },
   search: { radius: 26, tint: 'rgba(255, 255, 255, 0.08)', rim: 'rgba(255, 255, 255, 0.10)', highlightOpacity: 0.07, shadow: 'inset 0px 2px 12px 0px rgba(0, 0, 0, 0.32)' },
   category: { activeForeground: '#FFFFFF', tint: 'rgba(72, 72, 82, 0.68)', activeTint: 'rgba(255, 74, 117, 0.30)', androidTint: 'rgba(72, 72, 82, 0.68)', androidActiveTint: 'rgba(255, 74, 117, 0.30)', border: 'rgba(255, 255, 255, 0.20)', activeBorder: 'rgba(255, 74, 117, 0.72)', shadow: '0px 4px 20px 0px rgba(0, 0, 0, 0.40)' },

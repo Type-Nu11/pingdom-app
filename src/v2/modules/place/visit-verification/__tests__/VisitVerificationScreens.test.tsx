@@ -90,7 +90,7 @@ test('floating CTA uses the Figma 120 by 48 pill without an Android drop shadow'
     height: 48,
     borderTopLeftRadius: 24,
     borderBottomRightRadius: 24,
-    boxShadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.10)',
+    boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.035)',
   });
   expect(view.getByTestId('visit-verification-map-cta')).not.toHaveStyle({ elevation: 3 });
 });
@@ -101,7 +101,7 @@ test.each(['LIGHT', 'DARK'] as const)('floating CTA keeps bright semibold text o
   expect(view.getByTestId('visit-verification-map-cta')).toHaveStyle({
     backgroundColor: '#FF1956',
     // Shadow/Inset light value is kept in dark mode (ReviewButton exception).
-    boxShadow: 'inset 0px 4px 20px 0px rgba(0, 0, 0, 0.10)',
+    boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.035)',
   });
   expect(view.getByTestId('visit-verification-map-cta-glass')).toBeOnTheScreen();
   expect(view.getByTestId('visit-verification-map-cta-glass')).toHaveStyle({

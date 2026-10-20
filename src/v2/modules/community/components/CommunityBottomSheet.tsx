@@ -310,7 +310,7 @@ export default function CommunityBottomSheet({
             accessibilityLabel={t('community.write')}
             accessibilityRole="button"
             onPress={() => onOpenWrite(selectedCategoryId ?? undefined)}
-            style={{ boxShadow: themedGlass.search.shadow }}
+            style={{ boxShadow: themedGlass.primaryCta.shadow }}
             testID="v2-community-sheet-write-fab"
           >
             <WriteFabSurface pointerEvents="none" tintColor={theme.colors.primary}>

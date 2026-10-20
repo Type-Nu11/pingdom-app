@@ -43,7 +43,7 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
         }, NAVIGATION_LOCK_MS);
         onPress();
       }}
-      style={[{ boxShadow: theme.liquidGlass.search.shadow }, style]}
+      style={[{ boxShadow: theme.liquidGlass.primaryCta.shadow }, style]}
       testID="visit-verification-map-cta"
     >
       <Surface
@@ -56,13 +56,13 @@ export default function VisitVerificationMapCta({ label, onPress, style }: Props
           <Defs>
             <RadialGradient id={`${gradientId}-inset`} cx="50%" cy="50%" rx="50%" ry="50%">
               <Stop offset="0.5" stopColor="#780026" stopOpacity={0} />
-              <Stop offset="1" stopColor="#780026" stopOpacity={0.3} />
+              <Stop offset="1" stopColor="#780026" stopOpacity={0.045} />
             </RadialGradient>
             <LinearGradient id={`${gradientId}-top`} x1="0%" y1="0%" x2="0%" y2="100%">
-              <Stop offset="0" stopColor="#780026" stopOpacity={0.22} />
+              <Stop offset="0" stopColor="#780026" stopOpacity={0.035} />
               <Stop offset="0.3" stopColor="#780026" stopOpacity={0} />
               <Stop offset="0.8" stopColor="#780026" stopOpacity={0} />
-              <Stop offset="1" stopColor="#780026" stopOpacity={0.1} />
+              <Stop offset="1" stopColor="#780026" stopOpacity={0.02} />
             </LinearGradient>
             <LinearGradient id={`${gradientId}-rim`} x1="0%" y1="0%" x2="0%" y2="100%">
               <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.35} />
