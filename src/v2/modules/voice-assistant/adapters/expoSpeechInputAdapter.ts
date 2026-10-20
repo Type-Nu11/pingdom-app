@@ -42,8 +42,13 @@ export function createExpoSpeechInputAdapter(deps: Dependencies): SpeechInputAda
   const available = () => {
     try { return module.isRecognitionAvailable(); } catch { return false; }
   };
+  const hasPcmVad = () => {
+    try { return platform === 'android' && continuous && (module as PcmVadModule).isPcmVadAvailable?.() === true; }
+    catch { return false; }
+  };
   return {
     get available() { return available(); },
+    get transcriptSilenceFallback() { return platform === 'ios'; },
     async getPermission() {
       const microphone = permissionState(await deps.getMicrophone());
       if (microphone !== 'granted' || platform !== 'ios') return microphone;
@@ -62,8 +67,7 @@ export function createExpoSpeechInputAdapter(deps: Dependencies): SpeechInputAda
       let closed = false;
       let started = false;
       let stopRequested = false;
-      let useVad = false;
-      try { useVad = platform === 'android' && continuous && (module as PcmVadModule).isPcmVadAvailable?.() === true; } catch { /* Older native builds retain legacy endpointing. */ }
+      const useVad = hasPcmVad();
       const activity = createAudioActivityDetector();
       const subscriptions: Array<{ remove(): void }> = [];
       const removeListeners = () => { for (const subscription of subscriptions.splice(0)) subscription.remove(); };

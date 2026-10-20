@@ -1,5 +1,6 @@
 import { createSilenceTimer } from '../speech-endpointing/silenceTimer';
 import type { CompletionContext } from '../speech-endpointing/completion';
+import { VOICE_SILENCE_MS } from '../speech-endpointing/completion';
 export { getVoiceSilenceMs, VOICE_SILENCE_MS, VOICE_COMPLETED_REQUEST_SILENCE_MS } from '../speech-endpointing/completion';
 
 export type VoiceInputPhase = 'idle' | 'permissionRequesting' | 'listening' | 'processing' | 'final' | 'canceled' | 'permissionDenied' | 'unavailable' | 'error';
@@ -17,6 +18,8 @@ export interface SpeechSession {
 }
 export interface SpeechInputAdapter {
   readonly available: boolean;
+  /** Legacy recognizers may omit quiet edges or report persistent background energy. */
+  readonly transcriptSilenceFallback?: boolean;
   getPermission(): Promise<MicrophonePermission>;
   requestPermission(): Promise<MicrophonePermission>;
   createSession(options: { locale: 'ko-KR' | 'en-US'; signal: AbortSignal; onEvent: (event: SpeechEvent) => void }): SpeechSession;
@@ -61,12 +64,23 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
   let abort: AbortController | undefined;
   let submittedText: string | undefined;
   let deadline: ReturnType<typeof setTimeout> | undefined;
+  let transcriptDeadline: ReturnType<typeof setTimeout> | undefined;
+  let lastRecognizedText = '';
   let completionContext: CompletionContext = {};
-  const endpoint = createSilenceTimer(() => {
+  const finishAtSilence = () => {
     if (!live(epoch) || snapshot.phase !== 'listening') return;
-    if (finalizedText && !snapshot.partial) submitFinalVoice();
-    else void stopCapture(epoch);
-  });
+    const text = snapshot.partial || finalizedText;
+    if (!text.trim()) { fail('noSpeech'); return; }
+    finalizedText = text;
+    submitFinalVoice();
+  };
+  const endpoint = createSilenceTimer(finishAtSilence);
+  const refreshTranscriptDeadline = (text: string) => {
+    if (!adapter.transcriptSilenceFallback || text === lastRecognizedText) return;
+    lastRecognizedText = text;
+    if (transcriptDeadline !== undefined) clearTimeout(transcriptDeadline);
+    transcriptDeadline = setTimeout(finishAtSilence, VOICE_SILENCE_MS);
+  };
   let finalizedText = '';
   let lastFinalSegment = '';
   let lastPartialSegment = '';
@@ -82,6 +96,9 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     epoch += 1;
     if (deadline) clearTimeout(deadline);
     deadline = undefined;
+    if (transcriptDeadline !== undefined) clearTimeout(transcriptDeadline);
+    transcriptDeadline = undefined;
+    lastRecognizedText = '';
     endpoint.reset();
     abort?.abort();
     abort = undefined;
@@ -137,6 +154,8 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     if (!live(id) || snapshot.phase !== 'listening') return;
     if (nativeEnded) { if (finalizedText && !snapshot.partial) submitFinalVoice(); else fail('noSpeech'); return; }
     awaitingFinal = true;
+    if (transcriptDeadline !== undefined) clearTimeout(transcriptDeadline);
+    transcriptDeadline = undefined;
     pendingPartialAtStop = !!snapshot.partial;
     endpoint.reset();
     update({ phase: 'processing', partial: '', speaking: false });
@@ -201,6 +220,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
               newPartialSinceFinal = true;
               update({ partial: [finalizedText, event.text].filter(Boolean).join(' ').slice(0, MAX_VOICE_INPUT_LENGTH) });
               endpoint.setText(snapshot.partial);
+              refreshTranscriptDeadline(snapshot.partial);
             }
             return;
           }
@@ -216,7 +236,7 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
           newPartialSinceFinal = false;
           update({ draft: finalizedText, partial: '', source: 'voice' });
           if (awaitingFinal) submitFinalVoice();
-          else endpoint.setText(finalizedText); // Recognition latency never resets acoustic quiet.
+          else { endpoint.setText(finalizedText); refreshTranscriptDeadline(finalizedText); }
         } });
         if (!live(id)) { owned.cancel(); return; }
         session = owned;

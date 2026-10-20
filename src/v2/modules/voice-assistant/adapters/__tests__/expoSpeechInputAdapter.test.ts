@@ -2,6 +2,25 @@ import { createVoiceInputController } from '../../model/voiceInput';
 import { createExpoSpeechInputAdapter } from '../expoSpeechInputAdapter';
 import { PermissionStatus } from 'expo-modules-core';
 
+test('iOS 인식문이 멈추면 지속적인 소음과 늦은 최종 결과에도 4초 뒤 한 번 전달한다', async () => {
+  jest.useFakeTimers(); const x = setup('ios'); const delivered = jest.fn(() => 'localOnly' as const);
+  const controller = createVoiceInputController(x.adapter, delivered);
+  try {
+    await controller.start('ko-KR');
+    x.emit('speechstart');
+    x.emit('result', { isFinal: false, results: [{ transcript: '두 명 예약' }] });
+    await jest.advanceTimersByTimeAsync(3000);
+    x.emit('volumechange', { value: 5 });
+    x.emit('result', { isFinal: true, results: [{ transcript: '두 명 예약' }] });
+    await jest.advanceTimersByTimeAsync(999);
+    expect(delivered).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+    expect(delivered).toHaveBeenCalledWith(expect.objectContaining({ text: '두 명 예약', source: 'voice' }));
+    expect(delivered).toHaveBeenCalledTimes(1);
+    expect(x.module.abort).toHaveBeenCalledTimes(1);
+  } finally { controller.dispose(); jest.useRealTimers(); }
+});
+
 const permission = (status: 'granted' | 'denied' | 'undetermined', canAskAgain = status === 'undetermined', restricted = false) =>
   ({ status: status as PermissionStatus, granted: status === 'granted', canAskAgain, restricted, expires: 'never' as const });
 
@@ -148,12 +167,12 @@ test('native audio edges prevent endpointing during speech and reset the quiet c
   await jest.advanceTimersByTimeAsync(2000);
   expect(x.module.stop).not.toHaveBeenCalled();
   x.emit('volumechange', { value: 0.5 });
-  await jest.advanceTimersByTimeAsync(999);
+  await jest.advanceTimersByTimeAsync(3999);
   expect(x.module.stop).not.toHaveBeenCalled();
   x.emit('volumechange', { value: 0.5 });
   await jest.advanceTimersByTimeAsync(1);
-  expect(x.module.stop).toHaveBeenCalledTimes(1);
-  expect(delivered).not.toHaveBeenCalled();
+  expect(x.module.abort).toHaveBeenCalledTimes(1);
+  expect(delivered).toHaveBeenCalledTimes(1);
   x.emit('result', { isFinal: true, results: [{ transcript: '문 열었나요' }] });
   expect(delivered).toHaveBeenCalledTimes(1);
   controller.dispose();
@@ -194,7 +213,7 @@ test('a final greeting cannot start a quiet handoff without acoustic evidence', 
     expect(x.module.stop).not.toHaveBeenCalled();
     expect(x.module.abort).not.toHaveBeenCalled();
     x.emit('speechend');
-    await jest.advanceTimersByTimeAsync(999);
+    await jest.advanceTimersByTimeAsync(3999);
     expect(delivered).not.toHaveBeenCalled();
     await jest.advanceTimersByTimeAsync(1);
     expect(x.module.abort).toHaveBeenCalledTimes(1);
@@ -232,7 +251,7 @@ test.each([['android', 33, true], ['android', 32, false], ['ios', 0, false]] as 
     controller.dispose();
   });
 
-test('PCM VAD owns acoustic edges; greeting ends at one second including native debounce', async () => {
+test('PCM VAD owns acoustic edges; greeting ends at four seconds including native debounce', async () => {
   jest.useFakeTimers();
   const x = setup('android', 33, true);
   const delivered = jest.fn(() => 'localOnly' as const);
@@ -246,7 +265,7 @@ test('PCM VAD owns acoustic edges; greeting ends at one second including native 
     await jest.advanceTimersByTimeAsync(5000);
     expect(delivered).not.toHaveBeenCalled();
     x.emit('vadactivity', { speaking: false, quietForMs: 200 });
-    await jest.advanceTimersByTimeAsync(799);
+    await jest.advanceTimersByTimeAsync(3799);
     expect(delivered).not.toHaveBeenCalled();
     await jest.advanceTimersByTimeAsync(1);
     expect(delivered).toHaveBeenCalledTimes(1);
@@ -254,7 +273,7 @@ test('PCM VAD owns acoustic edges; greeting ends at one second including native 
   } finally { controller.dispose(); jest.useRealTimers(); }
 });
 
-test('uncertain utterance waits three seconds and VAD resumption resets the clock', async () => {
+test('uncertain utterance waits four seconds and VAD resumption resets the clock', async () => {
   jest.useFakeTimers();
   const x = setup('android', 33, true);
   const delivered = jest.fn(() => 'localOnly' as const);
@@ -270,10 +289,10 @@ test('uncertain utterance waits three seconds and VAD resumption resets the cloc
     await jest.advanceTimersByTimeAsync(4000);
     expect(x.module.stop).not.toHaveBeenCalled();
     x.emit('vadactivity', { speaking: false, quietForMs: 200 });
-    await jest.advanceTimersByTimeAsync(2799);
+    await jest.advanceTimersByTimeAsync(3799);
     expect(x.module.stop).not.toHaveBeenCalled();
     await jest.advanceTimersByTimeAsync(1);
-    expect(x.module.stop).toHaveBeenCalledTimes(1);
+    expect(x.module.abort).toHaveBeenCalledTimes(1);
     x.emit('result', { isFinal: true, results: [{ transcript: '오후 두 시에' }] });
     expect(delivered).toHaveBeenCalledWith(expect.objectContaining({ text: '내일… 오후 두 시에' }));
     expect(delivered).toHaveBeenCalledTimes(1);

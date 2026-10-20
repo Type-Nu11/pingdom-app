@@ -135,7 +135,7 @@ test('partial speech stays on screen and final speech sends once after three sec
   expect(screen.getByLabelText('요청 내용')).toHaveDisplayValue('');
 }, 8000);
 
-test.each(['quantity', 'date'] as const)('short answer uses one second only for matching clarification context: %s', async field => {
+test.each(['quantity', 'date'] as const)('every clarification answer uses the same four-second cutoff: %s', async field => {
   const x = speech();
   const submit = jest.fn(() => 'localOnly' as const);
   await renderWithProviders(navigationWrapper(<VoiceAssistantScreen adapter={x.adapter} onFinalInput={submit}
@@ -144,11 +144,9 @@ test.each(['quantity', 'date'] as const)('short answer uses one second only for 
   await act(() => { x.emit({ type: 'activity', speaking: true }); x.emit({ type: 'partial', text: '두 명' }); });
   expect(x.session.stop).not.toHaveBeenCalled();
   await act(() => x.emit({ type: 'activity', speaking: false }));
-  await act(async () => { await new Promise(resolve => setTimeout(resolve, 1200)); });
-  expect(x.session.stop).toHaveBeenCalledTimes(field === 'quantity' ? 1 : 0);
-  if (field === 'date') await waitFor(() => expect(x.session.stop).toHaveBeenCalledTimes(1), { timeout: 2500 });
-  expect(x.session.stop).toHaveBeenCalledTimes(1);
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 3800)); });
   expect(submit).not.toHaveBeenCalled();
+  await waitFor(() => expect(x.session.cancel).toHaveBeenCalledTimes(1), { timeout: 1500 });
   await act(() => x.emit({ type: 'final', text: '두 명' }));
   expect(submit).toHaveBeenCalledTimes(1);
 });
