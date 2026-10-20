@@ -171,7 +171,7 @@ function diagnosticFailure(error: unknown) {
 }
 
 /** Stateless server chat; this adapter owns only bounded, account-scoped in-memory history. */
-export function createAiChatSessionApi(client: ApiClient = apiClient, context?: () => { language: string; selectedPlaceId?: number }): VoiceSessionApi & {
+export function createAiChatSessionApi(client: ApiClient = apiClient, context?: () => { language: string; selectedPlaceId?: number; timezone?: string }): VoiceSessionApi & {
   recordResult: (result: AppCommandResult) => void;
 } {
   let history: Message[] = [];
@@ -203,7 +203,13 @@ export function createAiChatSessionApi(client: ApiClient = apiClient, context?: 
     try {
       const wireMessages = nativeMessages(messages);
       const appContext = context?.();
-      const system = appContext ? `${AI_CHAT_SYSTEM_PROMPT}\nApp-selected language: ${appContext.language}. Respond in this language.\nVerified currently selected place ID: ${appContext.selectedPlaceId ?? 'none'}.` : AI_CHAT_SYSTEM_PROMPT;
+      const timezone = appContext?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const now = new Date(Date.now());
+      const dateParts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' })
+        .formatToParts(now).map(part => [part.type, part.value]));
+      const localDate = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+      const timeContext = `\nCurrent UTC instant: ${now.toISOString()}.\nApp timezone: ${timezone}.\nCurrent local date: ${localDate}.\nResolve today, tomorrow, and dates without a year from this app-provided clock. Never invent a year or silently use a past date.`;
+      const system = AI_CHAT_SYSTEM_PROMPT + timeContext + (appContext ? `\nApp-selected language: ${appContext.language}. Respond in this language.\nVerified currently selected place ID: ${appContext.selectedPlaceId ?? 'none'}.` : '');
       const request: Request = { model: AI_CHAT_MODEL, max_tokens: 2048, system,
         messages: wireMessages, tools: AI_CHAT_TOOLS.map(({ function: f }) => ({
           name: f.name, description: f.description, input_schema: f.parameters,

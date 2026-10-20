@@ -35,7 +35,7 @@ export function useVoiceCommands(context: VoiceCommandContext) {
     if (id && state?.status === 'success') {
       try { selectedPlaceId = projectVoicePlace(state.data, id).id; } catch { /* Unverified context is never supplied to AI. */ }
     }
-    return { language: language.current, ...(selectedPlaceId ? { selectedPlaceId } : {}) };
+    return { language: language.current, timezone: latest.current.timezone, ...(selectedPlaceId ? { selectedPlaceId } : {}) };
   }), [context.accountRevision, queryClient]);
   const sessionRef = useRef<VoiceSessionController | undefined>(undefined);
   const revision = useRef(0);

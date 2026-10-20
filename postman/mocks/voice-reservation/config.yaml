@@ -1,0 +1,9 @@
+version: 1
+name: Voice reservation availability
+slug: voice-reservation
+protocol: http
+port: 4907
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

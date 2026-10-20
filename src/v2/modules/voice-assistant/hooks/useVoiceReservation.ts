@@ -52,9 +52,10 @@ export function useVoiceReservation(accountId: string | null, timezone: string, 
     try {
       const data = await loadSlots(queryClient, next.id);
       if (!active.current || revision.current !== nextRevision || latestAccount.current !== capturedAccount || AppState.currentState !== 'active') return;
-      // Invalid/missing timezone metadata is never silently interpreted as the device's timezone.
+      // Availability terms are optional. Use the app's explicit timezone for
+      // calendar display when absent; prepare() still verifies server quote terms.
       const eligible = data.filter(slot => slot.placeId === next.id && isSelectableConfirmedSlot(slot, 1, Date.now())
-        && typeof slot.reservationTerms?.timezone === 'string' && slot.reservationTerms.timezone.length > 0 && (() => { try { reservationSlotDate(slot, slotTimezone(slot, timezone)); return true; } catch { return false; } })());
+        && (() => { try { reservationSlotDate(slot, slotTimezone(slot, timezone)); return true; } catch { return false; } })());
       setSlots(eligible);
       const selected = preferredId ? eligible.find(slot => slot.id === preferredId && isSelectableConfirmedSlot(slot, people, Date.now())) : undefined;
       setDate(selected ? reservationSlotDate(selected, slotTimezone(selected, timezone)) : requestedDate && eligible.some(slot => isSelectableConfirmedSlot(slot, people, Date.now()) && reservationSlotDate(slot, slotTimezone(slot, timezone)) === requestedDate) ? requestedDate : null);

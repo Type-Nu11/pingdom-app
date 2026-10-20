@@ -28,11 +28,13 @@ let requests: Record<string, unknown>[];
 let rows: Record<string, unknown>[];
 let loseFirstResponse = false;
 let quoteCalls: number;
+let availabilityRows: AvailabilityList;
 const originalState = AppState.currentState;
 beforeEach(() => {
   AppState.currentState = 'active';
   jest.spyOn(Date, 'now').mockReturnValue(now);
   stored = null; requests = []; rows = []; quoteCalls = 0; loseFirstResponse = false;
+  availabilityRows = [slot, { ...slot, id: 11, remainingCapacity: 1, startsAt: '2026-11-12T05:00:00Z', endsAt: '2026-11-12T06:00:00Z' }];
   jest.mocked(Keychain.getGenericPassword).mockImplementation(async () => stored ? { username: 'intent', password: stored, service: 'test', storage: 'test' } as never : false);
   jest.mocked(Keychain.setGenericPassword).mockImplementation(async (_user, raw) => { stored = raw; return { service: 'test', storage: 'test' } as never; });
   jest.mocked(Keychain.resetGenericPassword).mockImplementation(async () => { stored = null; return true; });
@@ -42,7 +44,7 @@ beforeEach(() => {
       return draftQuote({ startsAt: slot.startsAt, endsAt: slot.endsAt, cancellationDeadline: '2026-11-11T04:00:00Z', expiresAt: '2026-11-10T00:05:00Z' }) as never;
     }
     if (path === '/places/1') return place as never;
-    if (path === '/places/1/availabilities') return [slot, { ...slot, id: 11, remainingCapacity: 1, startsAt: '2026-11-12T05:00:00Z', endsAt: '2026-11-12T06:00:00Z' }] as never;
+    if (path === '/places/1/availabilities') return availabilityRows as never;
     return [] as never;
   });
   jest.spyOn(apiClient, 'post').mockImplementation(async (path, body) => {
@@ -59,6 +61,22 @@ beforeEach(() => {
   });
 });
 afterAll(() => { AppState.currentState = originalState; });
+
+test.each([null, undefined])('일정의 선택적 예약 조건이 %s여도 일반 예약과 동일하게 일정을 표시한다', async reservationTerms => {
+  availabilityRows = [{ ...slot, reservationTerms }];
+  await renderWithProviders(<Harness />);
+  await fireEvent.press(screen.getByTestId('voice-reserve-place-1'));
+  await waitFor(() => expect(screen.getByRole('button', { name: '선택 확인' })).toBeEnabled());
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  expect(screen.getByRole('button', { name: '2026-11-10' })).toBeEnabled();
+  expect(screen.queryByText('현재 인원으로 예약 가능한 일정이 없습니다.')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: '2026-11-10' }));
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  await fireEvent.press(screen.getByRole('button', { name: '선택 확인' }));
+  await waitFor(() => expect(screen.getByTestId('voice-reservation-confirm')).toBeTruthy());
+  expect(quoteCalls).toBeGreaterThan(0);
+  expect(requests).toHaveLength(0);
+});
 async function chooseSchedule() {
   await waitFor(() => expect(screen.getByTestId('voice-reserve-place-1')).toBeTruthy());
   await fireEvent.press(screen.getByTestId('voice-reserve-place-1'));
