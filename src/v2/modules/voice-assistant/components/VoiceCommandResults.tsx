@@ -17,7 +17,8 @@ const placeCardImage = require('../assets/place-card.png');
 type Props = {
   state: VoiceCommandViewState;
   onRetry?: () => void;
-  onShowMap?: () => void;
+  onShowMap?: (placeId: number) => void;
+  onOpenPlace?: (placeId: number) => void;
   retryDisabled?: boolean;
   historical?: boolean;
   onSelectReservationPlace?: (place: VoicePlaceFacts) => void;
@@ -46,7 +47,7 @@ function hasPlaceCards(state: VoiceCommandViewState): boolean {
       && state.result.outcome.data.places.length > 0);
 }
 
-function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = false, historical = false, onSelectReservationPlace }: Props) {
+function VoiceCommandResultBody({ state, onRetry, onShowMap, onOpenPlace, retryDisabled = false, historical = false, onSelectReservationPlace }: Props) {
   const { t } = useTranslation();
   const resultPlaces = state.phase === 'result' && state.result.outcome.status === 'succeeded'
     ? (state.result.command === 'searchNearbyPlaces' || state.result.command === 'searchNearbyReservablePlaces')
@@ -65,12 +66,12 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = fal
   </>;
   const places = (items: readonly VoicePlaceFacts[]) => <>
     <Cards horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-      {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} onReserve={!historical && state.phase === 'result' && state.result.command === 'searchNearbyReservablePlaces' && onSelectReservationPlace ? () => onSelectReservationPlace(item) : undefined} key={item.id} />)}
+      {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} onOpen={!historical && onOpenPlace ? () => onOpenPlace(item.id) : undefined} onReserve={!historical && state.phase === 'result' && state.result.command === 'searchNearbyReservablePlaces' && onSelectReservationPlace ? () => onSelectReservationPlace(item) : undefined} key={item.id} />)}
     </Cards>
     {state.phase === 'result' && state.text ? <AssistantMarkdown>{state.text}</AssistantMarkdown> : <Summary>{t(state.phase === 'result' && state.result.command === 'searchNearbyPlaces'
       ? 'voiceAssistant.command.nearbySummary' : 'voiceAssistant.command.resultSummary', { count: items.length, name: items[0]?.name ?? '' })}</Summary>}
     <Actions horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-      <PrimaryAction accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.showOnMap')} disabled={historical} accessibilityState={{ disabled: historical }} onPress={onShowMap}>
+      <PrimaryAction accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.showOnMap')} disabled={historical || !onShowMap} accessibilityState={{ disabled: historical || !onShowMap }} onPress={() => onShowMap?.(items[0].id)}>
         <PrimaryActionText>{t('voiceAssistant.command.showOnMap')}</PrimaryActionText>
       </PrimaryAction>
       <ActionChip accessibilityRole="button" accessibilityLabel={t('voiceAssistant.command.directions')} disabled>
@@ -126,9 +127,10 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, retryDisabled = fal
   return null;
 }
 
-function PlaceCard({ place, imageUrl, onReserve }: { place: VoicePlaceFacts; imageUrl?: string; onReserve?: () => void }) {
+function PlaceCard({ place, imageUrl, onReserve, onOpen }: { place: VoicePlaceFacts; imageUrl?: string; onReserve?: () => void; onOpen?: () => void }) {
   const { t } = useTranslation();
   return <CardWrap>
+    <CardLink accessibilityRole="button" accessibilityLabel={place.name} disabled={!onOpen} onPress={onOpen}>
     <CardImage testID={`voice-place-image-${place.id}`} source={imageUrl ? { uri: imageUrl } : placeCardImage} resizeMode="cover" accessibilityLabel={place.name}>
       {!imageUrl && <ImageNotice>{t('voiceAssistant.command.sampleImage')}</ImageNotice>}
       <CardShade pointerEvents="none">
@@ -145,6 +147,7 @@ function PlaceCard({ place, imageUrl, onReserve }: { place: VoicePlaceFacts; ima
       <Address numberOfLines={1}>{place.address || t(`voiceAssistant.command.operating.${place.operatingStatus}`)}</Address>
       {place.distanceMeters !== undefined && <Distance>{t('voiceAssistant.command.distance', { distance: (place.distanceMeters / 1000).toFixed(2) })}</Distance>}
     </CardDetails>
+    </CardLink>
     {onReserve && <RetryButton accessibilityRole="button" accessibilityLabel={t('voiceAssistant.reservation.choosePlace')} onPress={onReserve} testID={`voice-reserve-place-${place.id}`}><RetryText>{t('voiceAssistant.reservation.choosePlace')}</RetryText></RetryButton>}
   </CardWrap>;
 }
@@ -154,6 +157,7 @@ const Cards = styled.ScrollView`
   padding-horizontal: 16px;
 `;
 const CardWrap = styled.View`width: 164px; gap: 8px;`;
+const CardLink = styled.Pressable`gap: 8px;`;
 const CardImage = styled(ImageBackground)`width: 164px; height: 164px; border-radius: 16px; overflow: hidden; justify-content: flex-end;`;
 const ImageNotice = styled(Text)`position: absolute; top: 8px; left: 8px; color: #f8f8f8; background-color: rgba(0, 0, 0, 0.5); font-size: 10px; padding: 2px 4px; border-radius: 4px;`;
 const CardShade = styled.View`position: absolute; left: 0px; right: 0px; bottom: 0px; height: 106px;`;

@@ -1476,6 +1476,18 @@ export default function MapScreen({
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         placeListEnabled: env.featureFlags.placeList,
         navigateToPage: navigateAssistantPage,
+        showPlaceOnMap: placeId => {
+          if (!Number.isSafeInteger(placeId) || placeId <= 0) return false;
+          Keyboard.dismiss();
+          setMapSection('map');
+          setActiveCategory('all');
+          setIsFollowingUser(false);
+          setManualCameraCenter(null);
+          setDismissedMarkerCenter(null);
+          setContent({ type: 'place-preview', placeId });
+          snapTo('medium');
+          return true;
+        },
         selectedPlaceId: hasSelectedPlace ? selectedPlaceId : undefined,
       }} />
       </MapGlassBackdrop>

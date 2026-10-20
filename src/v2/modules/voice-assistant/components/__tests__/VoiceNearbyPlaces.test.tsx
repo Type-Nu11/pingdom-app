@@ -12,6 +12,18 @@ jest.mock('../../../place/exploration', () => ({
 }));
 beforeEach(() => jest.mocked(usePlaceExplorationMediaList).mockReturnValue({}));
 
+test('추천 장소 터치는 상세를 열고 지도로 보기는 첫 번째 추천 장소를 전달한다', async () => {
+  const onOpenPlace = jest.fn(); const onShowMap = jest.fn();
+  const result: AppCommandResult = { schemaVersion: 1, kind: 'command_result', source: 'app', id: 'navigation-result',
+    commandId: 'navigation', command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: { coverage: 'nearest_places',
+      places: [{ id: 42, name: '추천 카페', address: '서울', touristCategories: ['CAFE'], operatingStatus: 'OPERATING' }] } } };
+  await renderWithProviders(<VoiceCommandResults state={{ phase: 'result', result }} onOpenPlace={onOpenPlace} onShowMap={onShowMap} />);
+  await fireEvent.press(screen.getByRole('button', { name: '추천 카페' }));
+  expect(onOpenPlace).toHaveBeenCalledWith(42);
+  await fireEvent.press(screen.getByRole('button', { name: '지도에서 보기' }));
+  expect(onShowMap).toHaveBeenCalledWith(42);
+});
+
 test.each([0, 1, 3])('general discovery renders %s API result cards without reservation prompts', async count => {
   const result: AppCommandResult = { schemaVersion: 1, kind: 'command_result', source: 'app', id: 'app-result-general',
     commandId: 'general', command: 'searchNearbyPlaces', outcome: { status: 'succeeded', data: { coverage: 'nearest_places',

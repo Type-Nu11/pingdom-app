@@ -12,7 +12,9 @@ import type { OnFinalInput } from '../model/voiceInput';
 import { voiceSessionError, type VoiceSessionErrorCode } from '../model/voiceSessionError';
 import { serverInstant } from '../model/voiceCommandTime';
 
-export type VoiceCommandContext = Omit<VoiceCommandRuntime, 'session' | 'queryClient' | 'now' | 'monotonic' | 'contextRevision'>;
+export type VoiceCommandContext = Omit<VoiceCommandRuntime, 'session' | 'queryClient' | 'now' | 'monotonic' | 'contextRevision'> & {
+  showPlaceOnMap?: (placeId: number) => boolean;
+};
 export type VoiceCommandViewState =
   | { phase: 'idle' | 'processing' | 'canceled' | 'unrecognized' }
   | { phase: 'assistant'; text: string }

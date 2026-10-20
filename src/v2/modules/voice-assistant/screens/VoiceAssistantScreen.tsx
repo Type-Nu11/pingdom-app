@@ -38,6 +38,8 @@ export type VoiceAssistantScreenProps = {
   reservationFlow?: VoiceReservationFlow;
   sheetBackdrop?: React.ReactNode;
   onShowReservationPlace?: (placeId: number) => void;
+  onOpenPlace?: (placeId: number) => void;
+  onShowPlaceOnMap?: (placeId: number) => void;
   // Only informational text; never maps to success UI, execution or TTS.
   guidance?: { kind: 'assistant' | 'clarification' | 'invalidResponse'; text?: string };
 } & (
@@ -45,7 +47,7 @@ export type VoiceAssistantScreenProps = {
   | { serverSubmission: true; onFinalInput: OnFinalInput }
 );
 
-export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, animateEntrance = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul', reservationFlow, sheetBackdrop, onShowReservationPlace }: VoiceAssistantScreenProps) {
+export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInputAdapter, autoStart = false, animateEntrance = false, onFinalInput = retainInputLocally, serverSubmission = false, guidance, commandState, onCommandCancel, onCommandFeedbackDismiss, onCommandRetry, commandRetryDisabled, timezone = 'Asia/Seoul', reservationFlow, sheetBackdrop, onShowReservationPlace, onOpenPlace, onShowPlaceOnMap }: VoiceAssistantScreenProps) {
   const { t, i18n } = useTranslation();
   const entrance = useAssistantEntrance(animateEntrance);
   const reservationVisible = !!reservationFlow && (!!reservationFlow.place || ['unknown', 'submitting', 'checking', 'success'].includes(reservationFlow.state.phase) || (reservationFlow.state.phase === 'error' && reservationFlow.state.code === 'storage'));
@@ -267,7 +269,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
               conditions={conditionChips}
               onConfirm={selection => { void confirmSelection(selection); }} />}
             {selectionError && <Copy accessibilityRole="alert">{t('voiceAssistant.picker.tooLong')}</Copy>}
-            {commandState && !reservationVisible && !(pickerField && clarificationField) && <VoiceCommandResults state={commandState} onSelectReservationPlace={reservationFlow && !reservationVisible && !reservationLocked ? place => { controller.cancel(); void reservationFlow.selectPlace(place); } : undefined} retryDisabled={commandRetryDisabled} onShowMap={close} onRetry={() => {
+            {commandState && !reservationVisible && !(pickerField && clarificationField) && <VoiceCommandResults state={commandState} onSelectReservationPlace={reservationFlow && !reservationVisible && !reservationLocked ? place => { controller.cancel(); void reservationFlow.selectPlace(place); } : undefined} retryDisabled={commandRetryDisabled} onOpenPlace={onOpenPlace ? id => { controller.cancel(); onOpenPlace(id); } : undefined} onShowMap={onShowPlaceOnMap ? id => { controller.cancel(); onShowPlaceOnMap(id); } : undefined} onRetry={() => {
               if (onCommandRetry) onCommandRetry();
               else { const request = activeTurn.current?.request ?? state.draft; controller.cancel(); controller.edit(request); void controller.submit(); }
             }} />}

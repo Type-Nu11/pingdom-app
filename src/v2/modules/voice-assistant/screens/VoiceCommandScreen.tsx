@@ -13,6 +13,12 @@ export default function VoiceCommandScreen({ context, onClose, sheetBackdrop, an
   const reservation = useVoiceReservation(context.accountRevision, context.timezone, commands.commandState, JSON.stringify([context.selectedPlaceId, context.location?.latitude, context.location?.longitude, context.locationPermission, context.radiusKm, context.timezone, context.placeListEnabled]), commands.bookerUpdate);
   return <VoiceAssistantScreen onClose={onClose} animateEntrance={animateEntrance} autoStart onFinalInput={commands.onFinalInput}
     reservationFlow={reservation} sheetBackdrop={sheetBackdrop} serverSubmission commandState={commands.commandState}
+    onOpenPlace={context.navigateToPage ? id => {
+      if (context.navigateToPage?.({ page: 'placeDetail', placeId: id })) onClose();
+    } : undefined}
+    onShowPlaceOnMap={context.showPlaceOnMap ? id => {
+      if (context.showPlaceOnMap?.(id)) onClose();
+    } : undefined}
     onShowReservationPlace={context.navigateToPage ? id => {
       if (id !== reservation.place?.id) return;
       if (context.navigateToPage?.({ page: 'placeDetail', placeId: id })) onClose();
