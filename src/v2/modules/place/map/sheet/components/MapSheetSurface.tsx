@@ -36,8 +36,7 @@ function UiMapSheetSurface({ children, expandedTranslateY = 0, mediumTranslateY,
   }, {});
   const restorePosition = useSheetMotionStyle(position => {
     'worklet';
-    const inset = opaque ? 0 : clampSheetValue(position, [expandedTranslateY, end], [0, 8]);
-    return { transform: [{ translateX: -inset }, { translateY: position }] };
+    return { transform: [{ translateY: position }] };
   }, {});
   const contentPosition = useSheetMotionStyle(position => {
     'worklet';
@@ -57,7 +56,9 @@ function UiMapSheetSurface({ children, expandedTranslateY = 0, mediumTranslateY,
     borderBottomLeftRadius: 0, borderBottomRightRadius: 0 };
   return <>
     <Styles.SheetContentViewport pointerEvents="none" testID={`${testID}-background-viewport`} style={[clipBounds, viewportStyle]}>
-      <Styles.SheetChromeShadow testID={`${testID}-chrome`} style={[{ height, width, bottom: undefined,
+      {/* Fit decoration to the inset viewport instead of clipping a full-window
+          rounded surface. Content below retains its stable width during drag. */}
+      <Styles.SheetChromeShadow testID={`${testID}-chrome`} style={[{ height, width: '100%', bottom: undefined,
         ...topCorners, opacity: opaque ? 0 : 1, boxShadow: liquidGlass.sheet.shadow }, restorePosition]}>
         <Styles.SheetChrome $borderColor={liquidGlass.sheet.rim} style={topCorners}>
           <SheetMotionView pointerEvents="none" testID={`${testID}-background-glass`}
@@ -70,7 +71,10 @@ function UiMapSheetSurface({ children, expandedTranslateY = 0, mediumTranslateY,
         </Styles.SheetChrome>
       </Styles.SheetChromeShadow>
     </Styles.SheetContentViewport>
-    <Styles.SheetContentViewport style={[clipBounds, viewportStyle]} testID={`${testID}-content-viewport`}>
+    {/* The inverse translation makes this clip cover the map above the sheet.
+        Only its visible content may receive touches; the empty clip must pass
+        them through to search, profile, categories and map controls on iOS. */}
+    <Styles.SheetContentViewport pointerEvents="box-none" style={[clipBounds, viewportStyle]} testID={`${testID}-content-viewport`}>
       <SheetMotionView testID={`${testID}-content-position`} style={[{
         width, ...topCorners, overflow: 'hidden' }, contentPosition]}>
         <Styles.SheetInner $clipContent $inset={opaque ? 0 : contentInset} $opaque={opaque}

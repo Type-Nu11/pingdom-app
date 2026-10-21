@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated, View } from 'react-native';
+import { Animated, Platform, Pressable, Text, View } from 'react-native';
 import { screen, within } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
@@ -24,9 +24,45 @@ test('UI motion continuously sizes the viewport while retaining fixed-height gla
     expect(screen.getByTestId(id)).toHaveStyle({ bottom: 4, left: 4, right: 4, transform: [{ translateY: -150 }],
       borderBottomLeftRadius: 24, borderBottomRightRadius: 24 });
   }
-  expect(screen.getByTestId('sheet-chrome')).toHaveStyle({ height: 800, transform: [{ translateX: -4 }, { translateY: 150 }] });
+  expect(screen.getByTestId('sheet-chrome')).toHaveStyle({ height: 800, width: '100%', transform: [{ translateY: 150 }] });
   expect(screen.getByTestId('sheet-content-position')).toHaveStyle({ height: 646, transform: [{ translateX: -4 }, { translateY: 150 }] });
   expect(screen.getByTestId('sheet-expanded-fill')).toHaveStyle({ opacity: 0.5 });
+});
+
+test.each([130, 215, 300, 600])('sheet chrome fits both inset edges without cropping either corner at offset %s', async offset => {
+  function Sheet() {
+    const position = useSharedValue(offset);
+    return <SheetMotionProvider value={{ position, mediumTranslateY: 300, height: 800, restingTranslateY: offset }}>
+      <MapSheetSurface testID="sheet" expandedTranslateY={130} sheetChromeBottom={new Animated.Value(offset)} mediumTranslateY={300}>
+        <View />
+      </MapSheetSurface>
+    </SheetMotionProvider>;
+  }
+  await renderWithProviders(<Sheet />);
+  const inset = Math.min(1, Math.max(0, (offset - 130) / 170)) * 8;
+  expect(screen.getByTestId('sheet-background-viewport')).toHaveStyle({ left: inset, right: inset });
+  // A full-window width plus negative X translation cuts both rounded edges.
+  // Fit the decoration inside its actual parent; content retains stable width.
+  expect(screen.getByTestId('sheet-chrome')).toHaveStyle({ width: '100%', transform: [{ translateY: offset }] });
+  expect(screen.getByTestId('sheet-content-viewport').props.pointerEvents).toBe('box-none');
+});
+
+test.each(['ios', 'android'] as const)('%s: the full-screen clip passes empty-space touches through while sheet buttons remain active', async platform => {
+  jest.replaceProperty(Platform, 'OS', platform);
+  const onPress = jest.fn();
+  function Sheet() {
+    const position = useSharedValue(300);
+    return <SheetMotionProvider value={{ position, mediumTranslateY: 300, height: 800, restingTranslateY: 300 }}>
+      <MapSheetSurface testID="sheet" sheetChromeBottom={new Animated.Value(300)} mediumTranslateY={300}>
+        <Pressable accessibilityRole="button" onPress={onPress}><Text>시트 버튼</Text></Pressable>
+      </MapSheetSurface>
+    </SheetMotionProvider>;
+  }
+  const view = await renderWithProviders(<Sheet />);
+  expect(screen.getByTestId('sheet-content-viewport').props.pointerEvents).toBe('box-none');
+  expect(screen.getByTestId('sheet-background-viewport').props.pointerEvents).toBe('none');
+  await view.user.press(screen.getByRole('button', { name: '시트 버튼' }));
+  expect(onPress).toHaveBeenCalledTimes(1);
 });
 
 test('settled snap changes do not resize a sheet at the same finger position', async () => {
