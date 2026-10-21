@@ -20,6 +20,7 @@ const cleanups: (() => void)[] = [];
 function setup() {
   const calls: { path: string; params: unknown; signal?: AbortSignal }[] = [];
   let places: unknown = { places: [{ id: 1 }] };
+  let reservations: unknown = { reservations: [], totalElements: 0, hasNext: false };
   let detail: unknown = facts;
   let slots: unknown = [slot()];
   let quote: unknown = draftQuote();
@@ -31,7 +32,7 @@ function setup() {
     if (path.endsWith('/quote') && quoteFailure) throw quoteFailure;
     if (failure) throw failure;
     if (delay) return { data: await delay };
-    return { data: path === '/places' ? places : path.endsWith('/availabilities') ? slots : path.endsWith('/quote') ? quote : detail };
+    return { data: path === '/reservations' ? reservations : path === '/places' ? places : path.endsWith('/availabilities') ? slots : path.endsWith('/quote') ? quote : detail };
   } } as unknown as ApiTransport;
   const client = createApiClient(transport);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
@@ -48,6 +49,7 @@ function setup() {
       navigateToPage: navigation, timezone, now: () => now, monotonic: () => monotonic, session: controller.getIdentity(), placeListEnabled: true }),
     publish: result => results.push(result), stopSession: () => controller.close(),
     queries: { list: params => commands.voiceReadQueries.list(params, createPlaceExplorationApi(client)),
+      reservations: params => commands.voiceReadQueries.reservations(params, createReservationApi(client)),
       detail: id => commands.voiceReadQueries.detail(id, createPlaceDetailApi(client)),
       availability: id => commands.voiceReadQueries.availability(id, {}, createReservationApi(client)),
       quote: (placeId, availabilityId, quantity, account) => commands.voiceReadQueries.quote(placeId, availabilityId, quantity, account, createReservationApi(client)) },
@@ -64,6 +66,7 @@ function setup() {
     async send(value = search()) { next = value; await controller.send('input'); return results.at(-1); },
     setTransportDelay: (v: Promise<void>) => { transportDelay = v; },
     setPlaces: (v: unknown) => { places = v; }, setDetail: (v: unknown) => { detail = v; }, setSlots: (v: unknown) => { slots = v; },
+    setReservations: (v: unknown) => { reservations = v; },
     setQuote: (v: unknown) => { quote = v; },
     setQuoteFailure: (v: unknown) => { quoteFailure = v; },
     setFailure: (v: unknown) => { failure = v; }, setDelay: (v: Promise<unknown>) => { delay = v; },
@@ -74,6 +77,65 @@ function setup() {
   };
 }
 afterEach(() => { cleanups.splice(0).forEach(fn => fn()); jest.useRealTimers(); });
+
+const bookedPlace = (overrides = {}) => ({ id: 91, status: 'CONFIRMED',
+  reservationStartsAt: '2026-09-20T05:00:00Z', reservationEndsAt: '2026-09-20T06:00:00Z',
+  bookerName: 'PRIVATE_NAME', bookerPhone: 'PRIVATE_PHONE', requestNote: 'PRIVATE_NOTE',
+  confirmation: { placeId: 1, placeName: 'Cafe', startsAt: '2026-09-20T05:00:00Z', endsAt: '2026-09-20T06:00:00Z' },
+  ...overrides });
+
+test('my booking lookup reuses the authenticated list without GPS and opens directions to its verified place', async () => {
+  const x = setup(); x.setLocation(null); x.setPermission('denied');
+  x.setReservations({ reservations: [bookedPlace()], totalElements: 1, hasNext: false });
+  x.setDetail({ ...facts, latitude: 37.5, longitude: 127 });
+  await x.controller.start();
+  const result = await x.send(command('getMyReservations', {}));
+  expect(result?.outcome).toEqual({ status: 'succeeded', data: { hasMore: false, reservations: [{
+    reservationId: 91, placeId: 1, placeName: 'Cafe', startsAt: '2026-09-20T05:00:00Z', endsAt: '2026-09-20T06:00:00Z', status: 'CONFIRMED',
+  }] } });
+  expect(JSON.stringify(result)).not.toMatch(/PRIVATE_|booker|requestNote|touristUserId/);
+  expect(x.calls[0]).toMatchObject({ path: '/reservations', params: { page: 1, limit: 100 } });
+  expect(x.navigation).not.toHaveBeenCalled();
+  expect((await x.send(command('navigateToPage', { page: 'directions', placeId: 1 })))?.outcome.status).toBe('succeeded');
+  expect(x.navigation).toHaveBeenCalledWith({ page: 'directions', placeId: 1 });
+  expect(x.calls.map(call => call.path)).toEqual(['/reservations', '/places/1']);
+});
+
+test('multiple reserved places are returned for clarification without picking an arbitrary destination', async () => {
+  const x = setup();
+  x.setReservations({ reservations: [bookedPlace(), bookedPlace({ id: 92, confirmation: {
+    placeId: 2, placeName: 'Other', startsAt: '2026-09-20T07:00:00Z', endsAt: '2026-09-20T08:00:00Z',
+  } })], totalElements: 2, hasNext: false });
+  await x.controller.start();
+  const result = await x.send(command('getMyReservations', {}));
+  expect(result?.outcome).toMatchObject({ status: 'succeeded', data: { reservations: [{ placeId: 1 }, { placeId: 2 }] } });
+  expect(x.navigation).not.toHaveBeenCalled();
+});
+
+test('canceled, rejected, expired and unidentified bookings never supply a directions place ID', async () => {
+  const x = setup();
+  x.setReservations({ reservations: [bookedPlace({ status: 'CANCELED' }), bookedPlace({ id: 92, status: 'REJECTED' }),
+    bookedPlace({ id: 93, reservationStartsAt: '2026-09-19T05:00:00Z', reservationEndsAt: '2026-09-19T06:00:00Z' }),
+    bookedPlace({ id: 94, confirmation: null })], totalElements: 4 });
+  await x.controller.start();
+  expect((await x.send(command('getMyReservations', {})))?.outcome).toMatchObject({ status: 'succeeded', data: { reservations: [] } });
+  expect((await x.send(command('navigateToPage', { page: 'directions', placeId: 1 })))?.outcome)
+    .toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
+  expect(x.navigation).not.toHaveBeenCalled();
+});
+
+test('directions reject missing IDs, unknown places and missing coordinates', async () => {
+  const x = setup(); await x.controller.start();
+  expect((await x.send(command('navigateToPage', { page: 'directions' }, 'missing-route')))?.outcome)
+    .toEqual({ status: 'clarification_required', field: 'placeId' });
+  expect((await x.send(command('navigateToPage', { page: 'directions', placeId: 99 }, 'unknown-route')))?.outcome)
+    .toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
+  x.setReservations({ reservations: [bookedPlace()], totalElements: 1 });
+  await x.send(command('getMyReservations', {}));
+  expect((await x.send(command('navigateToPage', { page: 'directions', placeId: 1 }, 'no-coordinates')))?.outcome)
+    .toEqual({ status: 'rejected', code: 'NOT_FOUND' });
+  expect(x.navigation).not.toHaveBeenCalled();
+});
 test('registry consumes the sole policy with a draft-only handler', () => {
   expect(Object.keys(commands.VOICE_COMMAND_REGISTRY).sort()).toEqual(Object.keys(VOICE_COMMAND_POLICIES).sort());
   for (const [name, entry] of Object.entries(commands.VOICE_COMMAND_REGISTRY)) {

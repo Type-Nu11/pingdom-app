@@ -1,7 +1,7 @@
 import { apiClient, toApiError, type ApiClient } from '../../../shared/api';
 import { isProviderCredentialFailure } from '../../../shared/api/providerAuthentication';
 import type { components } from '../../../shared/api/generated/aiChat';
-import { AI_CHAT_SYSTEM_PROMPT, AI_CHAT_TOOLS } from '../model/aiChatTools';
+import { AI_CHAT_SYSTEM_PROMPT, AI_CHAT_TOOLS, requiresReservationDirectionsLookup } from '../model/aiChatTools';
 import { parseVoiceAssistantEnvelope } from '../model/voiceAssistantCommandParser';
 import type { AppCommandResult, ProviderEnvelope } from '../model/voiceAssistantCommand.types';
 import { VoiceSessionError, voiceSessionError } from '../model/voiceSessionError';
@@ -210,8 +210,13 @@ export function createAiChatSessionApi(client: ApiClient = apiClient, context?: 
       const localDate = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
       const timeContext = `\nCurrent UTC instant: ${now.toISOString()}.\nApp timezone: ${timezone}.\nCurrent local date: ${localDate}.\nResolve today, tomorrow, and dates without a year from this app-provided clock. Never invent a year or silently use a past date.`;
       const system = AI_CHAT_SYSTEM_PROMPT + timeContext + (appContext ? `\nApp-selected language: ${appContext.language}. Respond in this language.\nVerified currently selected place ID: ${appContext.selectedPlaceId ?? 'none'}.` : '');
+      const latest = messages.at(-1);
+      const lookupRequired = rounds === 1 && latest?.role === 'user' && typeof latest.content === 'string'
+        && requiresReservationDirectionsLookup(latest.content);
+      const tools = lookupRequired ? AI_CHAT_TOOLS.filter(tool => tool.function.name === 'getMyReservations'
+        || tool.function.name === 'cancelVoiceSession') : AI_CHAT_TOOLS;
       const request: Request = { model: AI_CHAT_MODEL, max_tokens: 2048, system,
-        messages: wireMessages, tools: AI_CHAT_TOOLS.map(({ function: f }) => ({
+        messages: wireMessages, tools: tools.map(({ function: f }) => ({
           name: f.name, description: f.description, input_schema: f.parameters,
         })) };
       chatLog('request', () => ({ requestId, route: '/ai/chat', model: AI_CHAT_MODEL, round: rounds,
@@ -254,7 +259,7 @@ export function createAiChatSessionApi(client: ApiClient = apiClient, context?: 
         if (typeof call.id !== 'string' || !call.id.trim() || call.id.length > 128 || used.has(call.id) || call.type !== 'function') return invalid();
         used.add(call.id);
         const fn = object(call.function); exact(fn, ['name', 'arguments']);
-        const tool = AI_CHAT_TOOLS.find(item => item.function.name === fn.name);
+        const tool = tools.find(item => item.function.name === fn.name);
         if (!tool) return invalid();
         let argumentsValue = fn.arguments;
         if (provider) {

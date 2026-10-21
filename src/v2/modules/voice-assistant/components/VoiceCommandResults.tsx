@@ -94,6 +94,11 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, onOpenPlace, retryD
   const result = state.result;
   if (result.outcome.status === 'rejected') return error(result.outcome.code);
   if (result.outcome.status === 'clarification_required') return clarification(result.outcome.field);
+  if (result.command === 'getMyReservations' && result.outcome.status === 'succeeded') return <>
+    {result.outcome.data.reservations.map(reservation => <Block key={reservation.reservationId}>
+      <Copy>{reservation.placeName}</Copy><Copy>{reservation.startsAt}</Copy>
+    </Block>)}
+  </>;
   if ((result.command === 'searchNearbyReservablePlaces' || result.command === 'searchNearbyPlaces') && result.outcome.status === 'succeeded') {
     return result.outcome.data.places.length ? places(result.outcome.data.places)
       : <Copy testID="voice-command-empty">{t('voiceAssistant.command.empty')}</Copy>;

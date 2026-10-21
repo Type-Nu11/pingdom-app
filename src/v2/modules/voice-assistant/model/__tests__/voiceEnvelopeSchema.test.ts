@@ -85,9 +85,17 @@ test.each([
   { page: 'accountManagement' }, { page: 'notificationSettings' }, { page: 'loginInformation' },
   { page: 'locationSettings' }, { page: 'privacySettings' }, { page: 'dataManagement' },
   { page: 'placeDetail' }, { page: 'placeDetail', placeId: 42 }, { page: 'createReservation' }, { page: 'createReservation', placeId: 42 },
+  { page: 'directions' }, { page: 'directions', placeId: 42 },
 ])('navigation app schema and parser accept %p without altering the server snapshot', args => {
   const fixture = { ...base, kind: 'command_request', command: 'navigateToPage', args };
   expect(validate(fixture)).toBe(true); expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(true);
+  expect(validateServer(fixture)).toBe(false);
+});
+
+test('my reservations is an app-owned read tool, not a change to the historical server snapshot', () => {
+  const fixture = { ...base, kind: 'command_request', command: 'getMyReservations', args: {} };
+  expect(validate(fixture)).toBe(true);
+  expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(true);
   expect(validateServer(fixture)).toBe(false);
 });
 

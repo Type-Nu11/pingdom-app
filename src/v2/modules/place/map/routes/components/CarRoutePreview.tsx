@@ -36,8 +36,8 @@ import MapPickerPin from '../assets/map_picker_pin.svg';
 const MAP_PICKER_PIN_WIDTH = 24;
 const MAP_PICKER_PIN_HEIGHT = 45.7139 * (24 / 40);
 
-type Props = { initialEndpointRole?: EndpointRole; destination: RouteDestination | null; location: LocationState; onClose: () => void; onRefreshLocation: () => void; recentSearchOwner?: RecentSearchOwner };
-export default function CarRoutePreview({ initialEndpointRole = 'destination', destination: initialDestination, location, onClose, onRefreshLocation, recentSearchOwner }: Props) {
+type Props = { initialEndpointRole?: EndpointRole; initialOriginSelection?: 'currentLocation' | 'manual'; destination: RouteDestination | null; location: LocationState; onClose: () => void; onRefreshLocation: () => void; recentSearchOwner?: RecentSearchOwner };
+export default function CarRoutePreview({ initialEndpointRole = 'destination', initialOriginSelection = 'currentLocation', destination: initialDestination, location, onClose, onRefreshLocation, recentSearchOwner }: Props) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -59,11 +59,12 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', d
   const currentSelection: RouteDestination = { placeId: 0, name: t('routes.currentLocation'), isCurrentLocation: true };
   // Departing from a place keeps it as the origin and leaves the destination for the user to pick.
   const departsFromPlace = !!initialDestination && initialEndpointRole === 'origin';
+  const asksForOrigin = !!initialDestination && !departsFromPlace && initialOriginSelection === 'manual';
   const [selections, setSelections] = useState<[RouteDestination | null, RouteDestination | null]>(() => !initialDestination
-    ? [null, null] : departsFromPlace ? [initialDestination, null] : [currentSelection, initialDestination]);
+    ? [null, null] : departsFromPlace ? [initialDestination, null] : [asksForOrigin ? null : currentSelection, initialDestination]);
   const [endpointRevision, setEndpointRevision] = useState(0);
   // Figma 8892:11110: the departure entry opens straight into the destination editor.
-  const [editing, setEditing] = useState<EndpointRole | null>(departsFromPlace ? 'destination' : null);
+  const [editing, setEditing] = useState<EndpointRole | null>(departsFromPlace ? 'destination' : asksForOrigin ? 'origin' : null);
   const [mapPicking, setMapPicking] = useState(false);
   const [camera, setCamera] = useState<{ center: { lat: number; lng: number }; zoom: number; revision: number; fit?: NaverMapCameraFit }>({ center: endpointCoordinate(initialDestination) ?? endpointCoordinate(currentPoint) ?? DEFAULT_MAP_CENTER, zoom: 14, revision: 0 });
   const [mapPoint, setMapPoint] = useState(camera.center);

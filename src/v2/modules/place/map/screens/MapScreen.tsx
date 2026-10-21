@@ -223,6 +223,8 @@ export default function MapScreen({
   const [routeEndpointRole, setRouteEndpointRole] = useState<'origin' | 'destination'>('destination');
   const [emptyRouteOpen, setEmptyRouteOpen] = useState(false);
   const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
+  const [routeOriginSelection, setRouteOriginSelection] = useState<'currentLocation' | 'manual'>('currentLocation');
+  const [assistantDirectionsPlaceId, setAssistantDirectionsPlaceId] = useState<number | null>(null);
   const [externalRouteRole, setExternalRouteRole] = useState<'origin' | 'destination' | null>(null);
   const [externalCardHeight, setExternalCardHeight] = useState(EXTERNAL_PLACE_CARD_ESTIMATED_HEIGHT);
   const center = location.coordinate;
@@ -621,6 +623,17 @@ export default function MapScreen({
   useEffect(() => {
     setRoutePreviewPlaceId(null);
   }, [selectedPlaceActionTarget?.placeId, isFocused]);
+  useEffect(() => {
+    if (assistantDirectionsPlaceId === null) return;
+    if (!isFocused || content.type !== 'place-preview' || content.placeId !== assistantDirectionsPlaceId) {
+      setAssistantDirectionsPlaceId(null);
+    } else if (selectedPlaceActionTarget?.placeId === assistantDirectionsPlaceId) {
+      setRouteEndpointRole('destination');
+      setRouteOriginSelection('manual');
+      setRoutePreviewPlaceId(assistantDirectionsPlaceId);
+      setAssistantDirectionsPlaceId(null);
+    }
+  }, [assistantDirectionsPlaceId, content, isFocused, selectedPlaceActionTarget?.placeId]);
   const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
     dialog.show(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
   }, [dialog, t]);
@@ -631,11 +644,13 @@ export default function MapScreen({
   const handleDirectionsPress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     setRouteEndpointRole('destination');
+    setRouteOriginSelection('currentLocation');
     setRoutePreviewPlaceId(place.id);
   }, [selectedPlaceActionTarget]);
   const handleDeparturePress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     setRouteEndpointRole('origin');
+    setRouteOriginSelection('currentLocation');
     setRoutePreviewPlaceId(place.id);
   }, [selectedPlaceActionTarget]);
   const handleSharePlace = useCallback((place: DecisionPlace) => {
@@ -931,7 +946,14 @@ export default function MapScreen({
     const key = JSON.stringify(target);
     if (assistantNavigationLock.current === key) return true;
     Keyboard.dismiss();
-    if (target.page === 'search') {
+    if (target.page === 'directions') {
+      setMapSection('map');
+      setActiveCategory('all');
+      setContent({ type: 'place-preview', placeId: target.placeId });
+      setAssistantDirectionsPlaceId(target.placeId);
+      jumpTo('medium');
+      assistant.close();
+    } else if (target.page === 'search') {
       // Reuse the touch entry; opening search does not require a GPS fix.
       handleSearchFocus();
       assistant.close();
@@ -943,7 +965,7 @@ export default function MapScreen({
     else if (!onNavigateAssistantPage?.(target)) return false;
     assistantNavigationLock.current = key;
     return true;
-  }, [assistant.close, handleSearchFocus, openMapSection, onNavigateAssistantPage, snapTo]);
+  }, [assistant.close, handleSearchFocus, jumpTo, openMapSection, onNavigateAssistantPage, snapTo]);
   const handleMapRefresh = useCallback(async () => {
     if (mapRefreshLock.current) return;
 
@@ -1130,8 +1152,8 @@ export default function MapScreen({
           onClose={() => setEmptyRouteOpen(false)} onRefreshLocation={() => { void location.refresh(); }} />
       )}
       {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
-        <CarRoutePreview key={`${routeEndpointRole}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
-          initialEndpointRole={routeEndpointRole} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
+        <CarRoutePreview key={`${routeEndpointRole}:${routeOriginSelection}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
+          initialEndpointRole={routeEndpointRole} initialOriginSelection={routeOriginSelection} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
           onClose={() => setRoutePreviewPlaceId(null)} onRefreshLocation={() => { void location.refresh(); }} />
       )}
       {isFocused && externalRouteRole !== null && externalRouteDestination && (

@@ -1,8 +1,10 @@
 import { parseVoiceAssistantEnvelope } from '../voiceAssistantCommandParser';
 import { VOICE_COMMAND_POLICIES } from '../voiceAssistantCommandPolicy';
+import { requiresReservationDirectionsLookup } from '../aiChatTools';
 import type { VoiceAssistantCommand, ProviderEnvelope, AppCommandResult } from '../voiceAssistantCommand.types';
 
 const commands = {
+  getMyReservations: { command: 'getMyReservations', args: {} },
   navigateToPage: { command: 'navigateToPage', args: { page: 'map' } },
   searchNearbyPlaces: { command: 'searchNearbyPlaces', args: { useCurrentLocation: true } },
   searchNearbyReservablePlaces: { command: 'searchNearbyReservablePlaces', args: {
@@ -19,6 +21,19 @@ const reject = (value: unknown, code?: string) => {
   const result = parseVoiceAssistantEnvelope(value);
   expect(result).toMatchObject({ ok: false, rejection: { code: code ?? expect.any(String), path: expect.any(String) }, userMessageKey: 'voiceAssistant.invalidResponse' });
 };
+
+test.each(['내가 예약한 곳 길찾기 해줘', '내 예약 경로 알려줘', '예약했던 식당 가는 길 안내해줘',
+  'directions to my booking', 'navigate to the restaurant I booked'])(
+  'reserved-place directions requires a fresh booking lookup: %s', text => {
+    expect(requiresReservationDirectionsLookup(text)).toBe(true);
+  },
+);
+test.each(['내 예약 목록 열어줘', '이 식당 예약 페이지로 보내줘', '근처 식당 길찾기',
+  '예약한 곳 길찾기 하지 마', 'do not navigate to my booking'])(
+  'ordinary page, place directions or negated requests keep their existing tool scope: %s', text => {
+    expect(requiresReservationDirectionsLookup(text)).toBe(false);
+  },
+);
 
 describe('provider trust boundary', () => {
   it('keeps general category and tourism tag as independent command fields', () => {

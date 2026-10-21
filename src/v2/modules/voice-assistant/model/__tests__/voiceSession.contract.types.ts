@@ -5,7 +5,7 @@ type Assert<T extends true> = T;
 type WireEnvelope = components['schemas']['ProviderEnvelopeV1'];
 // App-owned chat tools extend the historical /voice-ai envelope; retain its fetched server snapshot.
 // Keep the fetched server types intact until deployment; all existing envelopes must still match exactly.
-type PendingAppCommands = Extract<ProviderEnvelope, { command: 'searchNearbyPlaces' | 'navigateToPage' | 'updateReservationBooker' }>;
+type PendingAppCommands = Extract<ProviderEnvelope, { command: 'searchNearbyPlaces' | 'navigateToPage' | 'updateReservationBooker' | 'getMyReservations' }>;
 type DeployedAppEnvelope = Exclude<ProviderEnvelope, PendingAppCommands>;
 // Runtime remains the trust boundary; these catch structural drift in either direction.
 export type AppEnvelopeMatchesServer = Assert<DeployedAppEnvelope extends WireEnvelope ? true : false>;

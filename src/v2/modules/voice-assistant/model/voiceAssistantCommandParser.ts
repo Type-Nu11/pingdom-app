@@ -84,6 +84,10 @@ function text(value: unknown): string {
 function command(name: unknown, input: unknown): VoiceAssistantCommand {
   // 객체에서 임의 이름으로 함수를 찾지 않습니다. allowlist 분기만 실행 가능한 명령을 만듭니다.
   switch (name) {
+    case 'getMyReservations': {
+      const args = record(input, '$.args'); exact(args, [], [], '$.args');
+      return { command: name, args: Object.freeze({}) };
+    }
     case 'searchNearbyPlaces': {
       const args = record(input, '$.args');
       exact(args, ['useCurrentLocation'], ['category', 'touristCategory', 'keyword', 'limit'], '$.args');
@@ -125,7 +129,7 @@ function command(name: unknown, input: unknown): VoiceAssistantCommand {
     case 'navigateToPage': {
       const args = record(input, '$.args'); exact(args, ['page'], ['placeId'], '$.args');
       const page = member(args.page, VOICE_PAGE_IDS, '$.args.page');
-      if (page !== 'placeDetail' && page !== 'createReservation' && Object.hasOwn(args, 'placeId')) fail('UNEXPECTED_FIELD', '$.args.placeId');
+      if (page !== 'placeDetail' && page !== 'createReservation' && page !== 'directions' && Object.hasOwn(args, 'placeId')) fail('UNEXPECTED_FIELD', '$.args.placeId');
       return { command: name, args: Object.freeze({ page,
         ...(Object.hasOwn(args, 'placeId') ? { placeId: integerId(args.placeId, '$.args.placeId') } : {}) }) };
     }

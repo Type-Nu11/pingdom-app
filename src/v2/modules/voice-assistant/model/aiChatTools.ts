@@ -1,6 +1,15 @@
 import type { components } from '../../../shared/api/generated/aiChat';
 import { VOICE_PAGE_IDS, VOICE_PLACE_CATEGORIES } from './voiceAssistantCommand.types';
 
+/** Narrow known intent: a reservation reference must not become list navigation. */
+export function requiresReservationDirectionsLookup(text: string): boolean {
+  const value = text.normalize('NFKC').toLowerCase();
+  if (/하지\s*마|하지\s*말|don['’]t|do\s+not/.test(value)) return false;
+  return (/예약\s*(?:한|했던)|내\s*예약/.test(value) && /길\s*찾기|길\s*안내|가는\s*길|경로|안내해/.test(value))
+    || (/\b(?:my\s+(?:reservation|booking)|(?:restaurant|place)\s+i\s+(?:have\s+)?(?:booked|reserved))\b/.test(value)
+      && /\b(?:directions?|navigate|route|way\s+to)\b/.test(value));
+}
+
 export const AI_CHAT_SYSTEM_PROMPT = `You are Pingdy, a mobile place discovery assistant.
 
 ## Response Formatting Rules
@@ -25,6 +34,8 @@ export const AI_CHAT_SYSTEM_PROMPT = `You are Pingdy, a mobile place discovery a
 - Opening a reservation page/form is NAVIGATION, not reservation preparation. Requests such as "용짬뽕 예약페이지로 보내줘", "예약 화면 열어줘", "이 식당 예약 페이지로 가줘", or "open the booking form for this restaurant" use navigateToPage(page=createReservation, placeId=verified ID). Do NOT ask for date, time or party size, call searchNearbyReservablePlaces, getAvailabilities, requestReservationDetails or prepareReservation just to open a page.
 - For a named restaurant's booking page, use searchNearbyPlaces(keyword=the restaurant name) first if its ID is not already verified. After successful search, if exactly one place name clearly matches the user's requested place, call navigateToPage(page=createReservation, placeId=that ID). If multiple places match, ask the user to choose; do not guess a branch. If no matching place is returned, report the search limitation and do not navigate to another place.
 - "내 예약", "예약 목록", "예약함" use page=reservations; an individual restaurant's "예약페이지", "예약 화면", "예약 작성" use page=createReservation. These are different destinations.
+- "내가 예약한 곳 길찾기 해줘", "예약한 식당으로 안내해줘", and "directions to my booking" are DIRECTIONS requests, NOT requests to open the reservations list. First call getMyReservations. Use only the returned actual place IDs. If all matching upcoming reservations point to one place and hasMore=false, call navigateToPage(page=directions, placeId=that ID). If multiple places match, ask which place using the returned names; never guess the first or nearest. PENDING means requested, not approved. Canceled, rejected, expired, or missing-place reservations must not be used. An empty or partial result does not prove the account has no reservations. Never substitute page=reservations for a directions request.
+- For directions to a named or previously selected verified place, call navigateToPage(page=directions, placeId=verified ID). If no verified ID exists, search the named place first. Directions open the existing route planner; they do not automatically start navigation or grant location permission.
 - Only begin reservation preparation when the user explicitly asks to reserve. Recommendations and place information are not reservation requests.
 - When an explicit request to prepare a reservation (excluding page-opening requests) is missing a date or party size, call requestReservationDetails with one missing field instead of asking for all conditions in plain text. Send this UI tool last and only once in a batch, then wait for the user's selection.
 - For a named place, first search or retrieve it to establish its actual ID. Once its date and party size are known, call getAvailabilities; the app lets the user choose an actual published slot. Never ask the user to enter arbitrary reservation times. Display actual published slots through getAvailabilities; do not require or invent an end time for that flow.
@@ -32,7 +43,7 @@ export const AI_CHAT_SYSTEM_PROMPT = `You are Pingdy, a mobile place discovery a
 - Place/menu searches such as "근처 짬뽕집" use keyword="짬뽕". Unrestricted nearby discovery uses no keyword or category.
 - category and touristCategory are independent classifications. Never substitute FOOD for RESTAURANT or automatically translate between them.
 - touristCategory=FOOD selects a tourism tag, not all restaurants. Use tourism tags only for explicitly requested tourism classifications.
-- For explicit page opening requests use navigateToPage. Allowed pages: map, search, favorites, reservations, myPage, settings, placeDetail, createReservation, community, communityPost, recommendations, coupons, verifiedPlaces, accountManagement, notificationSettings, loginInformation, locationSettings, privacySettings, dataManagement. Never accept URLs or arbitrary routes. For placeDetail and createReservation use only a retrieved or currently selected verified place ID; if the target is ambiguous or unknown, omit placeId so the app asks the user to choose. Do not infer which place "the second one" means without clear current results.
+- For explicit page opening requests use navigateToPage. Allowed pages: map, search, favorites, reservations, myPage, settings, placeDetail, createReservation, directions, community, communityPost, recommendations, coupons, verifiedPlaces, accountManagement, notificationSettings, loginInformation, locationSettings, privacySettings, dataManagement. Never accept URLs or arbitrary routes. For placeDetail, createReservation and directions use only a retrieved or currently selected verified place ID; if the target is ambiguous or unknown, omit placeId so the app asks the user to choose. Do not infer which place "the second one" means without clear current results.
 - Requests such as "검색 페이지로 가줘", "검색 화면 열어줘", "검색창으로 이동해줘", or "open the search page" open the existing search screen with navigateToPage(page=search). Opening the search screen does not require a keyword and must not run a nearby place lookup. Requests to actually find places still use the search tools.
 - "커뮤니티" opens community; "커뮤니티 아무 글이나 열어줘", "게시글 하나 열어줘", "open any community post" use communityPost with NO postId. The app selects the first post from a fresh accessible feed and verifies its detail. Never invent a post ID or claim to select a specific post.
 - "추천 장소 목록"/"추천 장소 페이지" opens recommendations (the existing list), without running a nearby search. "쿠폰함"/"내 쿠폰" opens coupons; "방문 인증한 장소"/"인증한 장소 목록" opens verifiedPlaces. These open existing screens without issuing, using, or creating coupons or visit verification.
@@ -47,6 +58,10 @@ export const AI_CHAT_SYSTEM_PROMPT = `You are Pingdy, a mobile place discovery a
 // General search uses app-owned location permission, never provider-supplied coordinates.
 export const AI_CHAT_TOOLS = [
   { type: 'function', function: {
+    name: 'getMyReservations', description: '로그인한 사용자의 앞으로 방문할 예약을 실제 조회합니다. 예약한 곳 길찾기에는 이 조회 후 검증된 placeId로 navigateToPage(page=directions)를 호출합니다. 여러 장소이면 사용자에게 고르게 하며 첫 예약을 임의로 고르지 않습니다. 예약자 이름·전화·요청 사항은 반환하지 않습니다.',
+    parameters: { type: 'object', additionalProperties: false, required: [], properties: {} },
+  } },
+  { type: 'function', function: {
     name: 'updateReservationBooker', description: '현재 예약 초안에 사용자가 알려준 이름·연락처·요청 사항을 반영합니다. 제공된 값만 전달하며 생략한 필드는 유지합니다. 일정·인원은 변경하지 않고 예약을 생성하지 않습니다.',
     parameters: { type: 'object', additionalProperties: false, required: ['placeId'], properties: {
       placeId: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
@@ -58,7 +73,7 @@ export const AI_CHAT_TOOLS = [
   { type: 'function', function: {
     name: 'navigateToPage', description: '앱 화면을 엽니다. 커뮤니티 목록은 community, 아무 커뮤니티 글은 communityPost(앱이 조회 가능한 글을 고르므로 ID를 넣지 않음), 추천 장소 목록은 recommendations, 쿠폰함은 coupons, 방문 인증한 장소는 verifiedPlaces, 계정 관리는 accountManagement, 알림 설정은 notificationSettings, 로그인 정보는 loginInformation, 위치 설정은 locationSettings, 개인정보 설정은 privacySettings, 데이터 관리는 dataManagement입니다. 화면만 열며 설정 변경·데이터 내보내기·방문 인증·쿠폰 사용은 실행하지 않습니다. 검색 페이지·화면·검색창으로 이동은 search이며 검색어나 장소를 묻지 않고 검색 화면을 엽니다. 내 예약 목록은 reservations, 특정 식당 예약 작성 화면은 createReservation입니다. 예약페이지로 보내줘는 createReservation 이동이며 날짜·시간·인원을 묻거나 예약 가능 여부를 조회하지 않습니다. 장소 상세와 예약 작성은 검증된 실제 장소 ID만 사용하며 대상이 모호하면 placeId를 생략하여 선택을 요청합니다. 예약 확정·취소·결제·삭제는 하지 않습니다.',
     parameters: { type: 'object', additionalProperties: false, required: ['page'], properties: {
-      page: { type: 'string', enum: [...VOICE_PAGE_IDS] },
+      page: { type: 'string', enum: [...VOICE_PAGE_IDS], description: '길찾기는 directions와 검증된 placeId를 사용합니다. reservations는 예약 목록을 열어 달라는 요청에만 사용합니다.' },
       placeId: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
     } },
   } },

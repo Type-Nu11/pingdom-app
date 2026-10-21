@@ -39,6 +39,23 @@ const location = { status: 'granted' as const, canAskAgain: true as const, coord
 const route = { path: [{ lat: 37.501, lng: 127.001 }, { lat: 37.8, lng: 127.3 }, { lat: 37.601, lng: 127.101 }], distanceMeters: 12500, durationSeconds: 1800 };
 const props = { destination, location, onClose: jest.fn(), onRefreshLocation: jest.fn() };
 
+test.each(['ko', 'en'] as const)('assistant directions keeps the booked destination and asks for an origin in %s', async language => {
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} initialOriginSelection="manual" />, { language });
+  expect(screen.getByTestId('route-endpoint-editor')).toBeVisible();
+  expect(screen.getByLabelText(language === 'ko' ? '장소 검색' : 'Search places')).toBeVisible();
+  expect(screen.getByRole('button', {
+    name: language === 'ko' ? `도착 장소 편집, ${destination.name}` : `Edit Destination, ${destination.name}`,
+  })).toBeVisible();
+  expect(findCarRoute).not.toHaveBeenCalled();
+  expect(mockMapProps.markers.map(marker => marker.id)).toEqual(['route-destination']);
+  await user.type(screen.getByTestId('route-endpoint-search'), 'New place');
+  await user.press(await screen.findByText('New place'));
+  expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
+  expect(findCarRoute).toHaveBeenLastCalledWith(
+    expect.objectContaining({ latitude: 37.9, longitude: 127.4 }), destination, expect.anything(),
+  );
+});
+
 const transit: TransitRoute = jest.requireActual('../api/transitRoutesApi').mapTransitRouteResponse(transitResponse);
 const walking = { path: [{ lat: 37.5, lng: 127 }, { lat: 37.52, lng: 127.02 }, { lat: 37.6, lng: 127.1 }], distanceMeters: 800, durationSeconds: 600, steps: [{ instruction: 'Cross the bridge', path: [] }] };
 beforeEach(() => { jest.mocked(findWalkingRoute).mockReset().mockResolvedValue(walking); });
