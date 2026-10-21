@@ -6,7 +6,9 @@ export { getVoiceSilenceMs, VOICE_SILENCE_MS, VOICE_COMPLETED_REQUEST_SILENCE_MS
 export type VoiceInputPhase = 'idle' | 'permissionRequesting' | 'listening' | 'processing' | 'final' | 'canceled' | 'permissionDenied' | 'unavailable' | 'error';
 export type MicrophonePermission = 'undetermined' | 'granted' | 'denied' | 'blocked' | 'restricted';
 export type SpeechFailure = 'interrupted' | 'noSpeech' | 'unavailable' | 'network' | 'failed';
-export type SpeechEvent = { type: 'partial' | 'final'; text: string } | { type: 'activity'; speaking: boolean; quietForMs?: number } | { type: 'processing' } | { type: 'ended'; premature?: boolean } | { type: 'error'; reason: SpeechFailure };
+export type SpeechEvent = { type: 'partial' | 'final'; text: string; segmentId?: number; speechProgressMs?: number } | { type: 'activity'; speaking: boolean; quietForMs?: number } | { type: 'processing' } | { type: 'ended'; premature?: boolean } | { type: 'error'; reason: SpeechFailure };
+export const VOICE_NO_INPUT_MS = 8000;
+export const VOICE_MAX_CAPTURE_MS = 30000;
 /** A session owns its listeners and native buffers. cancel must synchronously detach
  * listeners, abort pending startup and stop capture; it is idempotent. No disk/log storage.
  * Implementations must normalize OS microphone AND speech authorization, emit a terminal
@@ -65,7 +67,11 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
   let submittedText: string | undefined;
   let deadline: ReturnType<typeof setTimeout> | undefined;
   let transcriptDeadline: ReturnType<typeof setTimeout> | undefined;
+  let noInputDeadline: ReturnType<typeof setTimeout> | undefined;
   let lastRecognizedText = '';
+  let lastSpeechProgressMs: number | undefined;
+  let lastFinalSegmentId: number | undefined;
+  let finalPrefix = '';
   let completionContext: CompletionContext = {};
   const finishAtSilence = () => {
     if (!live(epoch) || snapshot.phase !== 'listening') return;
@@ -75,10 +81,21 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     submitFinalVoice();
   };
   const endpoint = createSilenceTimer(finishAtSilence);
-  const refreshTranscriptDeadline = (text: string) => {
-    if (!adapter.transcriptSilenceFallback || text === lastRecognizedText) return;
-    lastRecognizedText = text;
+  const refreshTranscriptDeadline = (text: string, speechProgressMs?: number) => {
+    if (noInputDeadline !== undefined) clearTimeout(noInputDeadline);
+    noInputDeadline = undefined;
+    if (!adapter.transcriptSilenceFallback) return;
+    const key = text.normalize('NFKC').replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
+    // iOS keeps correcting a previous audio span after the user stops talking.
+    // Formatting/corrections are not evidence that more speech was captured.
+    const unchanged = speechProgressMs !== undefined && lastSpeechProgressMs !== undefined
+      ? speechProgressMs === lastSpeechProgressMs : key === lastRecognizedText;
+    if (unchanged) return;
+    lastRecognizedText = key;
+    lastSpeechProgressMs = speechProgressMs;
     if (transcriptDeadline !== undefined) clearTimeout(transcriptDeadline);
+    if (noInputDeadline !== undefined) clearTimeout(noInputDeadline);
+    noInputDeadline = undefined;
     transcriptDeadline = setTimeout(finishAtSilence, VOICE_SILENCE_MS);
   };
   let finalizedText = '';
@@ -99,6 +116,9 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     if (transcriptDeadline !== undefined) clearTimeout(transcriptDeadline);
     transcriptDeadline = undefined;
     lastRecognizedText = '';
+    lastSpeechProgressMs = undefined;
+    lastFinalSegmentId = undefined;
+    finalPrefix = '';
     endpoint.reset();
     abort?.abort();
     abort = undefined;
@@ -157,6 +177,8 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     if (transcriptDeadline !== undefined) clearTimeout(transcriptDeadline);
     transcriptDeadline = undefined;
     pendingPartialAtStop = !!snapshot.partial;
+    if (noInputDeadline !== undefined) clearTimeout(noInputDeadline);
+    noInputDeadline = undefined;
     endpoint.reset();
     update({ phase: 'processing', partial: '', speaking: false });
     if (deadline) clearTimeout(deadline);
@@ -215,33 +237,43 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
             return;
           }
           if (event.type === 'partial') {
-            if (snapshot.phase === 'listening' && event.text.trim() && event.text !== lastPartialSegment) {
+            if (snapshot.phase === 'listening' && event.text.trim()
+              && (event.text !== lastPartialSegment || (event.speechProgressMs !== undefined && event.speechProgressMs !== lastSpeechProgressMs))) {
               lastPartialSegment = event.text;
               newPartialSinceFinal = true;
-              update({ partial: [finalizedText, event.text].filter(Boolean).join(' ').slice(0, MAX_VOICE_INPUT_LENGTH) });
+              const prefix = event.segmentId !== undefined && event.segmentId === lastFinalSegmentId ? finalPrefix : finalizedText;
+              update({ partial: [prefix, event.text].filter(Boolean).join(' ').slice(0, MAX_VOICE_INPUT_LENGTH) });
               endpoint.setText(snapshot.partial);
-              refreshTranscriptDeadline(snapshot.partial);
+              refreshTranscriptDeadline(snapshot.partial, event.speechProgressMs);
             }
             return;
           }
           const result = validateVoiceInput(event.text);
           if (result.error === 'empty') return;
           if (result.error) { release(); update({ phase: 'error', error: result.error, partial: '', speaking: false }); return; }
-          if (lastFinalSegment === result.text && !newPartialSinceFinal) return;
-          const combined = validateVoiceInput([finalizedText, result.text].filter(Boolean).join(' '));
+          if (lastFinalSegment === result.text && !newPartialSinceFinal
+            && (event.segmentId === undefined || event.segmentId === lastFinalSegmentId)) {
+            refreshTranscriptDeadline(finalizedText, event.speechProgressMs);
+            return;
+          }
+          const prefix = event.segmentId !== undefined && event.segmentId === lastFinalSegmentId ? finalPrefix : finalizedText;
+          const combined = validateVoiceInput([prefix, result.text].filter(Boolean).join(' '));
           if (combined.error) { release(); update({ phase: 'error', error: combined.error, partial: '', speaking: false }); return; }
           finalizedText = combined.text;
+          finalPrefix = prefix;
+          lastFinalSegmentId = event.segmentId;
           lastFinalSegment = result.text;
           lastPartialSegment = '';
           newPartialSinceFinal = false;
           update({ draft: finalizedText, partial: '', source: 'voice' });
           if (awaitingFinal) submitFinalVoice();
-          else { endpoint.setText(finalizedText); refreshTranscriptDeadline(finalizedText); }
+          else { endpoint.setText(finalizedText); refreshTranscriptDeadline(finalizedText, event.speechProgressMs); }
         } });
         if (!live(id)) { owned.cancel(); return; }
         session = owned;
         update({ phase: 'listening' });
-        deadline = setTimeout(() => { if (live(id)) fail('noSpeech'); }, 60000);
+        noInputDeadline = setTimeout(() => { if (live(id)) fail('noSpeech'); }, VOICE_NO_INPUT_MS);
+        deadline = setTimeout(() => { if (live(id)) fail('noSpeech'); }, VOICE_MAX_CAPTURE_MS);
         await owned.start();
       } catch { if (live(id)) fail('failed'); }
     },

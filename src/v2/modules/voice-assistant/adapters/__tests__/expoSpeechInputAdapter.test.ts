@@ -335,6 +335,26 @@ test('ongoing VAD activity cannot leave microphone open indefinitely', async () 
   } finally { controller.dispose(); jest.useRealTimers(); }
 });
 
+test('iOS repeated corrections for the same native audio span do not postpone speech delivery', async () => {
+  jest.useFakeTimers();
+  const x = setup('ios');
+  const delivered = jest.fn(() => 'localOnly' as const);
+  const controller = createVoiceInputController(x.adapter, delivered);
+  const segments = [{ startTimeMillis: 0, endTimeMillis: 1500, segment: '예약한 곳', confidence: 1 }];
+  try {
+    await controller.start('ko-KR');
+    x.emit('speechstart');
+    x.emit('result', { isFinal: true, results: [{ transcript: '예약한 곳 길찾기', segments }] });
+    await jest.advanceTimersByTimeAsync(3000);
+    x.emit('volumechange', { value: 5 });
+    x.emit('result', { isFinal: true, results: [{ transcript: '예약한 곳 길찾기.', segments }] });
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(delivered).toHaveBeenCalledTimes(1);
+    expect(delivered).toHaveBeenCalledWith(expect.objectContaining({ text: '예약한 곳 길찾기.' }));
+    expect(x.module.abort).toHaveBeenCalledTimes(1);
+  } finally { controller.dispose(); jest.useRealTimers(); }
+});
+
 test('VAD background teardown rejects late acoustic and transcript events', async () => {
   const x = setup('android', 33, true);
   const delivered = jest.fn(() => 'localOnly' as const);

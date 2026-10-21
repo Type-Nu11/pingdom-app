@@ -54,6 +54,56 @@ test('iOS 무음 신호가 누락돼도 인식문 갱신이 4초 멈추면 전�
   controller.dispose(); x.controller.dispose();
 });
 
+test('iOS same audio corrections do not duplicate text or extend the four-second endpoint', async () => {
+  jest.useFakeTimers(); const x = setup();
+  const controller = createVoiceInputController({ ...x.adapter, transcriptSilenceFallback: true }, x.callback);
+  await controller.start('ko-KR');
+  x.emit({ type: 'activity', speaking: true });
+  x.emit({ type: 'final', text: '예약한 곳 길찾기', segmentId: 0, speechProgressMs: 1800 });
+  await jest.advanceTimersByTimeAsync(2000);
+  x.emit({ type: 'partial', text: '예약한 곳 길찾기 해줘', segmentId: 0, speechProgressMs: 1800 });
+  x.emit({ type: 'final', text: '예약한 곳 길찾기 해 줘.', segmentId: 0, speechProgressMs: 1800 });
+  await jest.advanceTimersByTimeAsync(2000);
+  expect(x.callback).toHaveBeenCalledTimes(1);
+  expect(x.callback).toHaveBeenCalledWith(expect.objectContaining({ text: '예약한 곳 길찾기 해 줘.' }));
+  controller.dispose(); x.controller.dispose();
+});
+
+test('iOS later audio spans extend capture and append without losing the previous phrase', async () => {
+  jest.useFakeTimers(); const x = setup();
+  const controller = createVoiceInputController({ ...x.adapter, transcriptSilenceFallback: true }, x.callback);
+  await controller.start('ko-KR');
+  x.emit({ type: 'activity', speaking: true });
+  x.emit({ type: 'final', text: '예약한 곳', segmentId: 0, speechProgressMs: 1500 });
+  await jest.advanceTimersByTimeAsync(3000);
+  x.emit({ type: 'final', text: '길찾기 해줘', segmentId: 2000, speechProgressMs: 3500 });
+  await jest.advanceTimersByTimeAsync(3999);
+  expect(x.callback).not.toHaveBeenCalled();
+  await jest.advanceTimersByTimeAsync(1);
+  expect(x.callback).toHaveBeenCalledWith(expect.objectContaining({ text: '예약한 곳 길찾기 해줘' }));
+  controller.dispose(); x.controller.dispose();
+});
+
+test('no recognized input closes the microphone after eight seconds', async () => {
+  jest.useFakeTimers(); const x = setup(); await x.controller.start('ko-KR');
+  await jest.advanceTimersByTimeAsync(8000);
+  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'error', error: 'noSpeech' });
+  expect(x.session.cancel).toHaveBeenCalledTimes(1);
+  expect(x.callback).not.toHaveBeenCalled();
+});
+
+test('continuous activity and transcript churn cannot keep a microphone open beyond thirty seconds', async () => {
+  jest.useFakeTimers(); const x = setup(); await x.controller.start('ko-KR');
+  x.emit({ type: 'activity', speaking: true });
+  for (let i = 0; i < 10; i++) {
+    x.emit({ type: 'partial', text: `요청 ${i}` });
+    await jest.advanceTimersByTimeAsync(3000);
+  }
+  expect(x.callback).not.toHaveBeenCalled();
+  expect(x.controller.getSnapshot()).toMatchObject({ phase: 'error', error: 'noSpeech' });
+  expect(x.session.cancel).toHaveBeenCalledTimes(1);
+});
+
 test.each(['근처 카페 찾아줘', '예약해줘', '메뉴 보여 주세요!', '가격 알려줄래요?', '추천해 주시겠어요?', '검색해주세요.'])('completed request uses a four-second wait: %s', text => {
   expect(getVoiceSilenceMs(text)).toBe(4000);
 });

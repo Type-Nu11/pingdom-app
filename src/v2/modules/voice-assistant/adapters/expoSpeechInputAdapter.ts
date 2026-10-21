@@ -87,9 +87,14 @@ export function createExpoSpeechInputAdapter(deps: Dependencies): SpeechInputAda
           current = session;
           subscriptions.push(module.addListener('result', event => {
             const text = event.results[0]?.transcript ?? '';
+            const segments = platform === 'ios' ? event.results[0]?.segments : undefined;
+            const first = segments?.[0]?.startTimeMillis;
+            const end = segments?.at(-1)?.endTimeMillis;
+            const timing = first !== undefined && end !== undefined && Number.isFinite(first) && Number.isFinite(end)
+              && first >= 0 && end >= first ? { segmentId: first, speechProgressMs: end } : {};
             // Final means this recognition segment is stable, not that acoustic speech stopped.
-            if (event.isFinal) emit({ type: 'final', text });
-            else if (text) emit({ type: 'partial', text });
+            if (event.isFinal) emit({ type: 'final', text, ...timing });
+            else if (text) emit({ type: 'partial', text, ...timing });
           }));
           subscriptions.push(module.addListener('error', event => {
             if (event.error !== 'aborted') {
