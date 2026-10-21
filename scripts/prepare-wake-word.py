@@ -6,6 +6,7 @@ The app never downloads wake-word models at runtime. --check is network-free.
 import argparse
 import hashlib
 import json
+import plistlib
 from pathlib import Path
 
 FULL_PHRASE_KEYWORDS = [
@@ -58,6 +59,8 @@ def prepare(root, platform, check=False):
                 path = Path(name)
                 valid = valid and not path.is_absolute() and '..' not in path.parts
                 valid = valid and (vendor / name).is_file() and sha256(vendor / name) == digest
+            if target == 'ios':
+                valid = valid and ios_architectures_valid(vendor)
         if valid:
             continue
         if check:
@@ -67,6 +70,20 @@ def prepare(root, platform, check=False):
         subprocess.run([sys.executable, str(Path(__file__).with_name('build-wake-word-engines.py')),
                         '--platform', target], check=True)
         prepare(root, target, check=True)
+
+
+def ios_architectures_valid(vendor):
+    info = vendor / 'SherpaOnnxC.xcframework/Info.plist'
+    if not info.is_file():
+        return False
+    libraries = plistlib.loads(info.read_bytes()).get('AvailableLibraries', [])
+    required = {None: {'arm64'}, 'simulator': {'arm64', 'x86_64'}}
+    return all(any(
+        library.get('SupportedPlatform') == 'ios'
+        and library.get('SupportedPlatformVariant') == variant
+        and architectures <= set(library.get('SupportedArchitectures', []))
+        for library in libraries
+    ) for variant, architectures in required.items())
 
 
 if __name__ == '__main__':

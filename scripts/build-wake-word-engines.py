@@ -98,8 +98,12 @@ def android(source):
 
 def ios(source, repackage=False):
     ort = unzip('onnxIOS') / 'onnxruntime.xcframework'
-    framework_args = []
-    for platform, slice_name, variant in [('OS64', 'ios-arm64', None), ('SIMULATORARM64', 'ios-arm64_x86_64-simulator', 'simulator')]:
+    frameworks = []
+    for platform, slice_name, variant, arch in [
+        ('OS64', 'ios-arm64', None, 'arm64'),
+        ('SIMULATORARM64', 'ios-arm64_x86_64-simulator', 'simulator', 'arm64'),
+        ('SIMULATOR64', 'ios-arm64_x86_64-simulator', 'simulator', 'x86_64'),
+    ]:
         build = CACHE / ('build-ios-' + platform)
         env = dict(os.environ, SHERPA_ONNXRUNTIME_LIB_DIR=str(ort / slice_name),
                    SHERPA_ONNXRUNTIME_INCLUDE_DIR=str(ort / slice_name / 'onnxruntime.framework/Headers'))
@@ -114,14 +118,20 @@ def ios(source, repackage=False):
         shutil.copy2(source / 'sherpa-onnx/c-api/c-api.h', framework / 'Headers/sherpa-onnx/c-api/c-api.h')
         libraries = sorted((build / 'install/lib').glob('*.a'))
         libraries += [ort / slice_name / 'onnxruntime.framework/onnxruntime']
-        run(['xcrun', 'libtool', '-static', '-arch_only', 'arm64', '-o', framework / 'SherpaOnnxC', *libraries])
+        run(['xcrun', 'libtool', '-static', '-arch_only', arch, '-o', framework / 'SherpaOnnxC', *libraries])
         (framework / 'Modules/module.modulemap').write_text('framework module SherpaOnnxC {\n  header "sherpa-onnx/c-api/c-api.h"\n  export *\n}\n')
         info = {'CFBundleExecutable': 'SherpaOnnxC', 'CFBundleIdentifier': 'com.pingdom.sherpa-onnx.kws',
                 'CFBundleName': 'SherpaOnnxC', 'CFBundlePackageType': 'FMWK',
                 'CFBundleShortVersionString': '1.13.8', 'CFBundleVersion': '1',
                 'MinimumOSVersion': '15.5', 'CFBundleSupportedPlatforms': ['iPhoneSimulator' if variant else 'iPhoneOS']}
         (framework / 'Info.plist').write_bytes(plistlib.dumps(info))
-        framework_args += ['-framework', str(framework)]
+        frameworks.append(framework)
+    # Xcode requires one combined slice per platform variant.
+    simulator = CACHE / 'build-ios-SIMULATORUNIVERSAL/SherpaOnnxC.framework'
+    shutil.copytree(frameworks[1], simulator, dirs_exist_ok=True)
+    run(['xcrun', 'lipo', '-create', frameworks[1] / 'SherpaOnnxC',
+         frameworks[2] / 'SherpaOnnxC', '-output', simulator / 'SherpaOnnxC'])
+    framework_args = ['-framework', str(frameworks[0]), '-framework', str(simulator)]
     output = VENDOR / 'SherpaOnnxC.xcframework'
     if output.exists():
         shutil.rmtree(output)

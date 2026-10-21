@@ -18,7 +18,7 @@ Python 3.12+, CMake, Android NDK 27.1.12297006 및 iOS 빌드용 Xcode가 필요
 
 첫 준비는 고정한 소스를 컴파일합니다. 다운로드와 중간 결과는 ~/.cache/pingdom-wake-word/1.13.8에 캐시하며 PINGDOM_KWS_CACHE로 변경할 수 있습니다. 엔진과 빌드 영수증은 Git에서 제외한 vendor 디렉터리에 생성합니다. --check는 네트워크와 컴파일 없이 파일을 검사합니다. Android preBuild와 pod install에는 검사를 통과한 결과가 필요합니다.
 
-Android AAR은 원본의 Apache Java/Kotlin 래퍼와 새로 빌드한 JNI/ONNX Runtime 라이브러리를 포함합니다. 원본 통합 네이티브/TTS 바이너리는 복사하지 않습니다. 지원 엔진은 Android arm64-v8a, iOS 기기 arm64 및 iOS Simulator arm64입니다. 소스와 ONNX Runtime 다운로드 SHA-256은 artifacts.lock.json에, 하위 소스의 버전과 해시는 고정한 sherpa-onnx CMake 파일에 명시돼 있습니다.
+Android AAR은 원본의 Apache Java/Kotlin 래퍼와 새로 빌드한 JNI/ONNX Runtime 라이브러리를 포함합니다. 원본 통합 네이티브/TTS 바이너리는 복사하지 않습니다. 지원 엔진은 Android arm64-v8a, iOS 기기 arm64 및 iOS Simulator arm64·x86_64입니다. 시뮬레이터 프레임워크는 두 아키텍처를 합친 universal slice로 생성하며, ML Kit을 사용하는 앱은 x86_64 빌드와 universal 시뮬레이터 런타임이 필요합니다. 소스와 ONNX Runtime 다운로드 SHA-256은 artifacts.lock.json에, 하위 소스의 버전과 해시는 고정한 sherpa-onnx CMake 파일에 명시돼 있습니다.
 
 ## 앱 주입과 오디오
 
