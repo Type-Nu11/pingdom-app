@@ -1,5 +1,6 @@
 import { SheetMotionView, clampSheetValue, useExpandedSheetOpacity, useSheetMotion, useSheetMotionStyle } from '../hooks/useSheetMotionStyle';
 import { useMapSheetScrollToTop } from '../hooks/useMapSheetScrollToTop';
+import { useSheetScrollHandoff } from '../hooks/useSheetScrollHandoff';
 import { useContentDeletion } from '../../../../../shared/components/useContentDeletion';
 import { useDeletePlaceReview } from '../../../visit-verification';
 import { ReviewReasonIcon } from '../../../../../shared/components/ReviewReasonIcon';
@@ -2129,15 +2130,20 @@ const ExpandedPlaceContent = ({
         ? t('placeReviewSummary.partialBasis', { count: fallbackContent.reviewSampleSize }) : null,
     ].filter(Boolean).join(' · ')
     : fallbackContent?.statusDescription || fallbackContent?.englishName;
+  const scrollHandoff = useSheetScrollHandoff(sheetPanHandlers);
 
   return (
-    <>
+    <View {...scrollHandoff.panHandlers} style={styles.sheetContent} testID="map-expanded-place-drag">
     <GlassStyles.ExpandedPlaceScroll
+      bounces={false}
       contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
+      onScroll={scrollHandoff.onScroll}
+      overScrollMode="never"
+      scrollEventThrottle={16}
       showsVerticalScrollIndicator={false}
       testID="map-expanded-place-scroll"
     >
-      <View {...sheetPanHandlers} style={styles.detailTopBar} testID="map-detail-top-bar">
+      <View style={styles.detailTopBar} testID="map-detail-top-bar">
         <Pressable
           accessibilityLabel={t('map.detail.back')}
           accessibilityRole="button"
@@ -2161,7 +2167,7 @@ const ExpandedPlaceContent = ({
         </Pressable>
       </View>
 
-      <View {...sheetPanHandlers} style={styles.detailHeading} testID="place-detail-drag-heading">
+      <View style={styles.detailHeading} testID="place-detail-drag-heading">
         <PlaceNameTranslation
             attributionPlacement="photos"
             onTranslationChange={translationAttribution.onTranslationChange}
@@ -2476,7 +2482,7 @@ const ExpandedPlaceContent = ({
         </View>
       )}
     </GlassStyles.ExpandedPlaceScroll>
-    </>
+    </View>
   );
 };
 

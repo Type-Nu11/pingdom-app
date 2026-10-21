@@ -257,6 +257,47 @@ describe('MapBottomSheet recommendations', () => {
     );
   });
 
+  test.each(['ios', 'android'] as const)('%s 상세는 맨 위 아래 당김만 시트에 전달하고 뒤로가기 버튼은 눌린다', async (os) => {
+    const originalOS = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: os });
+    try {
+      const onBackHome = jest.fn();
+      const capture = jest.fn(() => true);
+      const { user } = await renderWithProviders(<MapBottomSheet
+        activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: places[0].id }}
+        height={700} mediumTranslateY={300} onBackHome={onBackHome}
+        onDetailPress={jest.fn()} onFilterPress={jest.fn()} onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()} onPlacePress={jest.fn()} onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()} onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{ onMoveShouldSetResponderCapture: capture }}
+        places={places} recommendationPlaces={[]} recommendationsState="ready" selectedPlace={places[0]}
+        sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint="expanded"
+      />);
+      const drag = screen.getByTestId('map-expanded-place-drag');
+      const scroll = screen.getByTestId('map-expanded-place-scroll');
+      // Native overscroll must not retain the downward gesture before handoff.
+      expect(scroll.props.bounces).toBe(false);
+      expect(scroll.props.overScrollMode).toBe('never');
+      const start = { nativeEvent: { pageX: 100, pageY: 150, touches: [{}] } };
+      const down = { nativeEvent: { pageX: 102, pageY: 180, touches: [{}] } };
+      expect(drag.props.onStartShouldSetResponderCapture(start)).toBe(false);
+      expect(drag.props.onMoveShouldSetResponderCapture(down)).toBe(true);
+      expect(capture).toHaveBeenCalledTimes(1);
+      await fireEvent.scroll(scroll, { nativeEvent: { contentOffset: { x: 0, y: 200 } } });
+      drag.props.onStartShouldSetResponderCapture(start);
+      expect(drag.props.onMoveShouldSetResponderCapture(down)).toBe(false);
+      expect(capture).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('map-detail-top-bar').props.onMoveShouldSetResponderCapture).toBeUndefined();
+      expect(screen.getByTestId('place-detail-drag-heading').props.onMoveShouldSetResponderCapture).toBeUndefined();
+      await user.press(screen.getByTestId('map-detail-back'));
+      expect(onBackHome).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalOS });
+    }
+  });
+
   test('장소 상세 영업 상태를 한 줄 요약으로 한국어·영어·fallback 렌더링한다', async () => {
     const selectedPlace = places[0];
     const commonProps = {
