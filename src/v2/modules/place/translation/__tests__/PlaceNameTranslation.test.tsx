@@ -65,6 +65,23 @@ test('late results from the previous original cannot replace the next place', as
   expect(translate).toHaveBeenLastCalledWith('다른 서버 장소명', 'en');
 });
 
+test('상품 설명만 바뀌어도 이전 설명 번역을 버리고 새 이름·설명을 한 쌍으로 표시한다', async () => {
+  let resolve!: (value: string) => void;
+  translate.mockImplementation(async (text: string) => text === '이전 설명'
+    ? new Promise<string>(done => { resolve = done; }) : `번역: ${text}`);
+  const content = ({ name, description }: { name: string; description: string | null }) => <>
+    <Text>{name}</Text><Text>{description}</Text>
+  </>;
+  const view = await renderWithProviders(<PlaceNameTranslation original="같은 상품" description="이전 설명" renderContent={content} />);
+  await waitFor(() => expect(translate).toHaveBeenCalledWith('이전 설명', 'en'));
+  await view.rerender(<PlaceNameTranslation original="같은 상품" description="새 설명" renderContent={content} />);
+  expect(await screen.findByText('번역: 새 설명')).toBeTruthy();
+  await act(async () => resolve('폐기할 이전 번역'));
+  expect(screen.getByText('번역: 같은 상품')).toBeTruthy();
+  expect(screen.queryByText('폐기할 이전 번역')).toBeNull();
+  translate.mockResolvedValue('Translated server name');
+});
+
 test('missing models require explicit download, then only the current title translates automatically', async () => {
   models.mockResolvedValue([]);
   await renderWithProviders(<PlaceNameTranslation original="서버 장소명" />, { language: 'en' });

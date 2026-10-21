@@ -11,10 +11,14 @@ import { useProfile } from '../../user/profile';
 import { isTranslationLanguage, missingModels, recommendedTranslationLanguage, translationLanguages, type TranslationLanguage } from './languages';
 import { offlineTranslation } from './service';
 import { getTranslationCopy, getTranslationManageHint } from './copy';
+import { notifyTranslationChange, subscribeTranslationChanges } from './changes';
 
 type Phase = 'idle' | 'checking' | 'downloading' | 'ready' | 'translating' | 'failed';
 type Props = {
   original: string;
+  description?: string | null;
+  managementHint?: string;
+  renderContent?: (content: { name: string; description: string | null; onManage: () => void; hint: string }) => React.ReactNode;
   nameStyle?: StyleProp<TextStyle>;
   maxNameLength?: number;
   onNamePress?: () => void;
@@ -23,7 +27,7 @@ type Props = {
   attributionPlacement?: 'title' | 'photos';
   onTranslationChange?: (state: TranslationDisplayState) => void;
 };
-export default function PlaceNameTranslation({ original, nameStyle, maxNameLength, onNamePress, category, inlineCategory = false, attributionPlacement = 'title', onTranslationChange }: Props) {
+export default function PlaceNameTranslation({ original, description = null, managementHint, renderContent, nameStyle, maxNameLength, onNamePress, category, inlineCategory = false, attributionPlacement = 'title', onTranslationChange }: Props) {
   const { profile } = useProfile();
   const { i18n } = useTranslation();
   const { colors, typography } = useTheme();
@@ -33,7 +37,7 @@ export default function PlaceNameTranslation({ original, nameStyle, maxNameLengt
   const [hydrated, setHydrated] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [models, setModels] = useState<string[]>([]);
-  const [result, setResult] = useState<{ original: string; target: TranslationLanguage; text: string } | null>(null);
+  const [result, setResult] = useState<{ original: string; originalDescription: string | null; target: TranslationLanguage; text: string; description: string | null } | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [open, setOpen] = useState(false);
   const [refresh, setRefresh] = useState(0);
@@ -43,7 +47,7 @@ export default function PlaceNameTranslation({ original, nameStyle, maxNameLengt
   const busy = phase === 'checking' || phase === 'downloading' || phase === 'translating';
   const missing = target ? missingModels(models, target) : [];
   const modelName = (code: string) => code === 'ko' ? '한국어' : translationLanguages.find((item) => item.code === code)?.name ?? code;
-  const validResult = result?.original === original && result?.target === target ? result : null;
+  const validResult = result?.original === original && result?.originalDescription === description && result?.target === target ? result : null;
   const isTranslated = Boolean(showResult && validResult);
   const fullName = showResult && validResult ? validResult.text : original;
   const characters = Array.from(fullName);
@@ -53,13 +57,18 @@ export default function PlaceNameTranslation({ original, nameStyle, maxNameLengt
 
   useEffect(() => {
     let active = true;
+    let changed = false;
+    const unsubscribe = subscribeTranslationChanges(change => {
+      if (change.kind === 'models') setRefresh(value => value + 1);
+      else if (change.storageKey === storageKey) { changed = true; setTarget(change.target); }
+    });
     setHydrated(false);
     setTarget(null);
     void AsyncStorage.getItem(storageKey).then((stored) => {
-      if (active) setTarget(isTranslationLanguage(stored) ? stored : recommendedTranslationLanguage(profile?.country));
-    }).catch(() => { if (active) setTarget(recommendedTranslationLanguage(profile?.country)); })
+      if (active && !changed) setTarget(isTranslationLanguage(stored) ? stored : recommendedTranslationLanguage(profile?.country));
+    }).catch(() => { if (active && !changed) setTarget(recommendedTranslationLanguage(profile?.country)); })
       .finally(() => { if (active) setHydrated(true); });
-    return () => { active = false; };
+    return () => { active = false; unsubscribe(); };
   }, [storageKey, profile?.country]);
 
   useEffect(() => {
@@ -75,14 +84,17 @@ export default function PlaceNameTranslation({ original, nameStyle, maxNameLengt
         setModels(installed);
         if (missingModels(installed, target).length) { setPhase('idle'); return; }
         setPhase('translating');
-        const text = await offlineTranslation.translate(original, target);
+        const [text, translatedDescription] = await Promise.all([
+          offlineTranslation.translate(original, target),
+          description?.trim() ? offlineTranslation.translate(description, target) : Promise.resolve(null),
+        ]);
         if (token !== generation.current) return;
-        setResult({ original, target, text }); setShowResult(true); setPhase('ready');
+        setResult({ original, originalDescription: description, target, text, description: translatedDescription }); setShowResult(true); setPhase('ready');
       })().catch(() => { if (token === generation.current) setPhase('failed'); })
         .finally(() => { if (token === generation.current) locked.current = false; });
     }
     return () => { ++generation.current; };
-  }, [original, target, hydrated, refresh]);
+  }, [original, description, target, hydrated, refresh]);
 
   const run = async (operation: 'download' | 'delete' | 'check', model?: string) => {
     if (!target || locked.current) return;
@@ -96,9 +108,10 @@ export default function PlaceNameTranslation({ original, nameStyle, maxNameLengt
         await offlineTranslation.delete(model);
       }
       const installed = await offlineTranslation.models();
+      if (operation !== 'check') notifyTranslationChange({ kind: 'models' });
       if (token !== generation.current) return;
       setModels(installed);
-      setRefresh(value => value + 1);
+      if (operation === 'check') setRefresh(value => value + 1);
     } catch {
       if (token === generation.current) { setShowResult(false); setPhase('failed'); }
     } finally {
@@ -108,7 +121,10 @@ export default function PlaceNameTranslation({ original, nameStyle, maxNameLengt
   const select = async (value: TranslationLanguage) => {
     if (locked.current && value !== 'ko') return;
     setTarget(value);
-    try { await AsyncStorage.setItem(storageKey, value); } catch { setPhase('failed'); }
+    try {
+      await AsyncStorage.setItem(storageKey, value);
+      notifyTranslationChange({ kind: 'language', storageKey, target: value });
+    } catch { setPhase('failed'); }
   };
   const textStyle = { color: colors.textMuted, fontSize: 12 };
   const buttonStyle = { minHeight: 44, minWidth: 44, flexShrink: 1, justifyContent: 'center' as const, paddingHorizontal: 8 };
@@ -117,13 +133,17 @@ export default function PlaceNameTranslation({ original, nameStyle, maxNameLengt
       fullWidth shape="pill" size="medium" variant={label === copy.close ? 'ghost' : 'secondary'} />
   );
   if (!original.trim()) return null;
+  const hint = managementHint ?? getTranslationManageHint(i18n.language);
   return (
     <View testID="place-name-translation" style={{ minWidth: 0 }}>
-      <View testID="place-name-translation-header" style={{ flexDirection: 'row', alignItems: 'center', minHeight: 62 * fontScale }}>
-        <Text
+      <View testID="place-name-translation-header" style={{ flexDirection: 'row', alignItems: 'center', minHeight: renderContent ? undefined : 62 * fontScale }}>
+        {renderContent ? <View style={{ flex: 1, minWidth: 0 }}>{renderContent({
+          name: fullName, description: isTranslated && validResult ? validResult.description : description,
+          onManage: () => setOpen(true), hint,
+        })}</View> : <Text
           testID="place-name-translation-title"
           accessibilityLabel={showResult && validResult ? validResult.text : original}
-          accessibilityHint={`${getTranslationManageHint(i18n.language)}${showResult && validResult ? ` ${copy.notice} ${original}` : ''}`}
+          accessibilityHint={`${hint}${showResult && validResult ? ` ${copy.notice} ${original}` : ''}`}
           accessibilityActions={[{ name: 'longpress', label: copy.language }]}
           onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'longpress') setOpen(true); }}
           onLongPress={() => setOpen(true)}
@@ -135,7 +155,7 @@ export default function PlaceNameTranslation({ original, nameStyle, maxNameLengt
         >
           {displayName}
           {inlineCategory && category ? <> {category}</> : null}
-        </Text>
+        </Text>}
         {busy ? <ActivityIndicator accessibilityLabel={phase === 'downloading' ? copy.downloading : phase === 'translating' ? copy.translating : copy.checking} size="small" color={colors.primary} />
           : hydrated && offlineTranslation.available() && (!target || missing.length > 0 || phase === 'failed') ? (
             <Pressable accessibilityRole="button" accessibilityLabel={!target ? copy.choose : phase === 'failed' ? copy.retry : copy.needsDownload}
@@ -151,6 +171,7 @@ export default function PlaceNameTranslation({ original, nameStyle, maxNameLengt
       <AppModal visible={open} onClose={() => setOpen(false)} dismissLabel={copy.close} testID="place-translation-dialog">
             <Text style={{ ...typography.title, color: colors.textStrong }} accessibilityRole="header">{copy.language}</Text>
             <Text style={textStyle}>{original}</Text>
+            {description ? <Text style={textStyle}>{description}</Text> : null}
             <Text style={textStyle}>{copy.notice}</Text>
             <ScrollView style={{ flexShrink: 1 }}>
               {translationLanguages.map((item) => <Pressable key={item.code} accessibilityRole="radio" accessibilityState={{ checked: target === item.code, disabled: busy && item.code !== 'ko' }} disabled={busy && item.code !== 'ko'} onPress={() => { void select(item.code); }} style={buttonStyle}>

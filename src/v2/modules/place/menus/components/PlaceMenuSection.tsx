@@ -15,6 +15,7 @@ import type { MenuExchangeRate } from '../api/menuExchangeRateApi';
 import { useProfile } from '../../../user/profile';
 import { getMenuExchangeCurrency } from '../model/menuExchangeCurrency';
 import { formatCurrency } from '../../../../shared/i18n/formatters';
+import PlaceNameTranslation from '../../translation/PlaceNameTranslation';
 
 const API_ERROR_DESCRIPTION_KEYS = {
   canceled: 'common.apiError.generic.description',
@@ -82,10 +83,17 @@ function MenuRow({ item, exchange, loading, failed, onRetry, expanded = false, o
   return (
     <Row $expanded={expanded} testID={`place-menu-${item.id}`}>
       <MenuBody>
-        <MenuName $expanded={expanded} numberOfLines={2}>{item.name}</MenuName>
-        {item.description ? (
-          <MenuDescription $expanded={expanded} numberOfLines={3}>{item.description}</MenuDescription>
-        ) : null}
+        <PlaceNameTranslation original={item.name} description={item.description}
+          managementHint={t('placeProduct.translationHint')}
+          renderContent={({ name, description, onManage, hint }) => <>
+            <MenuName $expanded={expanded} numberOfLines={2}
+              accessibilityRole="button" accessibilityHint={hint} onPress={onManage} onLongPress={onManage}
+            >{name}</MenuName>
+            {description ? <MenuDescription $expanded={expanded} numberOfLines={3}
+              accessibilityRole="button" accessibilityHint={hint} onPress={onManage} onLongPress={onManage}
+            >{description}</MenuDescription> : null}
+          </>}
+        />
         <MenuPrice $expanded={expanded}
           accessibilityLabel={t('placeMenu.accessibility.price', { price: priceText })}
           adjustsFontSizeToFit
