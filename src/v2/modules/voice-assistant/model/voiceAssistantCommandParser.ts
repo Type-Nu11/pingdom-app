@@ -1,5 +1,5 @@
 import { BOOKER_NAME_MAX_LENGTH, BOOKER_PHONE_MAX_LENGTH, REQUEST_NOTE_MAX_LENGTH, BOOKER_PHONE_PATTERN } from '../../booking';
-import { VOICE_PAGE_IDS, VOICE_PLACE_CATEGORIES, VOICE_QUANTITY_LIMITS, VOICE_SCHEMA_VERSION } from './voiceAssistantCommand.types';
+import { VOICE_PAGE_IDS, VOICE_PLACE_CATEGORIES, VOICE_QUANTITY_LIMITS, VOICE_SCHEMA_VERSION, VOICE_SEARCH_MATCH_SOURCES } from './voiceAssistantCommand.types';
 import type {
   ClarificationField, ProtocolErrorCode, ProviderEnvelope, VoiceAssistantCommand,
   VoiceEnvelopeParseResult, VoiceParserRejectionCode, VoiceTouristCategory,
@@ -90,7 +90,7 @@ function command(name: unknown, input: unknown): VoiceAssistantCommand {
     }
     case 'searchNearbyPlaces': {
       const args = record(input, '$.args');
-      exact(args, ['useCurrentLocation'], ['category', 'touristCategory', 'keyword', 'limit'], '$.args');
+      exact(args, ['useCurrentLocation'], ['category', 'touristCategory', 'keyword', 'limit', 'relatedKeywords', 'matchTerms', 'matchSource'], '$.args');
       if (typeof args.useCurrentLocation !== 'boolean') fail('INVALID_FIELD', '$.args.useCurrentLocation');
       let keyword: string | undefined;
       if (Object.hasOwn(args, 'keyword')) {
@@ -98,6 +98,23 @@ function command(name: unknown, input: unknown): VoiceAssistantCommand {
         // Preserve the provider payload for the session replay fingerprint; trim only at the API boundary.
         keyword = args.keyword;
       }
+      const terms = (key: 'relatedKeywords' | 'matchTerms', max: number) => {
+        if (!Object.hasOwn(args, key)) return undefined;
+        const value = args[key];
+        if (!keyword || !Array.isArray(value) || value.length < 1 || value.length > max) fail('INVALID_FIELD', `$.args.${key}`);
+        const items: string[] = [];
+        for (let index = 0; index < value.length; index++) {
+          const item = Object.getOwnPropertyDescriptor(value, String(index));
+          if (!item || !Object.hasOwn(item, 'value') || typeof item.value !== 'string' || !item.value.trim() || item.value.length > 100) fail('INVALID_FIELD', `$.args.${key}`);
+          items.push(item.value);
+        }
+        return Object.freeze(items);
+      };
+      const relatedKeywords = terms('relatedKeywords', 3);
+      const matchTerms = terms('matchTerms', 4);
+      const matchSource = Object.hasOwn(args, 'matchSource')
+        ? member(args.matchSource, VOICE_SEARCH_MATCH_SOURCES, '$.args.matchSource') : undefined;
+      if (matchSource && !keyword) fail('INVALID_FIELD', '$.args.matchSource');
       let limit: number | undefined;
       if (Object.hasOwn(args, 'limit')) {
         if (typeof args.limit !== 'number' || !Number.isInteger(args.limit) || args.limit < 1 || args.limit > 3) fail('INVALID_FIELD', '$.args.limit');
@@ -110,6 +127,7 @@ function command(name: unknown, input: unknown): VoiceAssistantCommand {
       return { command: name, args: Object.freeze({ useCurrentLocation: args.useCurrentLocation,
         ...(category ? { category } : {}),
         ...(keyword !== undefined ? { keyword } : {}), ...(limit !== undefined ? { limit } : {}),
+        ...(relatedKeywords ? { relatedKeywords } : {}), ...(matchTerms ? { matchTerms } : {}), ...(matchSource ? { matchSource } : {}),
         ...(touristCategory ? { touristCategory } : {}) }) };
     }
     case 'searchNearbyReservablePlaces': {

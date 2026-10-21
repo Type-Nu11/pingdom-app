@@ -11,6 +11,9 @@ export type VoiceTouristCategory = PlaceDetail['touristCategories'][number];
 // against actual production place data, independently of tourism tags.
 export const VOICE_PLACE_CATEGORIES = ['RESTAURANT'] as const;
 export type VoicePlaceCategory = typeof VOICE_PLACE_CATEGORIES[number];
+export const VOICE_SEARCH_MATCH_SOURCES = ['name', 'place', 'menu', 'any'] as const;
+export type VoiceSearchMatchSource = typeof VOICE_SEARCH_MATCH_SOURCES[number];
+export type VoiceSearchEvidence = Readonly<{ placeId: number; source: Exclude<VoiceSearchMatchSource, 'any'>; text: string }>;
 /** YYYY-MM-DD(0001~9999년). string 타입만으로는 날짜를 보장하지 않으므로 parser 검증이 필요합니다. */
 export type VoiceLocalDate = string;
 /** 앱 세션 timezone 기준 HH:mm. 같은 날의 시작 < 종료 조건은 parser가 검사합니다. */
@@ -35,6 +38,10 @@ export type VoiceAssistantCommand =
   | Readonly<{ command: 'searchNearbyPlaces'; args: Readonly<{
     category?: VoicePlaceCategory;
     keyword?: string;
+    /** App-owned discovery plan; these fields never become backend query parameters. */
+    relatedKeywords?: readonly string[];
+    matchTerms?: readonly string[];
+    matchSource?: VoiceSearchMatchSource;
     limit?: number;
     touristCategory?: VoiceTouristCategory;
     useCurrentLocation: boolean;
@@ -101,7 +108,9 @@ export type VoiceCommandOutput = {
   getMyReservations: Readonly<{ reservations: readonly Readonly<{
     reservationId: number; placeId: number; placeName: string; startsAt: string; endsAt: string; status: 'PENDING' | 'CONFIRMED';
   }>[]; hasMore: boolean }>;
-  searchNearbyPlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'nearest_places' }>;
+  searchNearbyPlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'nearest_places' | 'bounded_candidates';
+    search?: Readonly<{ radiusKm: number; keywords: readonly string[]; matchedBy: 'place_or_menu'; candidateLimit: number;
+      evidence: readonly VoiceSearchEvidence[] }> }>;
   searchNearbyReservablePlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'bounded_candidates' }>;
   getPlaceDetails: Readonly<{ place: VoicePlaceFacts }>;
   getAvailabilities: Readonly<{ placeId: number; date: VoiceLocalDate; quantity: number; availabilities: readonly VoiceAvailabilityFacts[] }>;

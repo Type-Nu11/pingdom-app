@@ -55,6 +55,24 @@ test('general discovery extension matches the prepared server schema, not the de
   expect(validateServer(fixture)).toBe(false);
 });
 
+test.each([
+  { keyword: '갈비탕', category: 'RESTAURANT', matchSource: 'menu', matchTerms: ['갈비탕'], relatedKeywords: ['한식'] },
+  { keyword: '암벽등반', matchSource: 'place', matchTerms: ['암벽등반', '클라이밍'] },
+])('generic discovery plan is accepted by schema and runtime: %p', args => {
+  const fixture = { ...base, kind: 'command_request', command: 'searchNearbyPlaces', args: { useCurrentLocation: true, ...args } };
+  expect(validate(fixture)).toBe(true);
+  expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(true);
+});
+
+test.each([
+  { matchSource: 'menu' }, { keyword: '호텔', relatedKeywords: [] },
+  { keyword: '호텔', relatedKeywords: ['a', 'b', 'c', 'd'] }, { keyword: '호텔', matchTerms: [' '] },
+])('schema and runtime reject invalid generic discovery plan: %p', args => {
+  const fixture = { ...base, kind: 'command_request', command: 'searchNearbyPlaces', args: { useCurrentLocation: true, ...args } };
+  expect(validate(fixture)).toBe(false);
+  expect(parseVoiceAssistantEnvelope(fixture).ok).toBe(false);
+});
+
 test.each(['date', 'startTime', 'endTime', 'quantity', 'latitude', 'route', 'confirmed'])('general discovery rejects injected %s', field => {
   const fixture = { ...base, kind: 'command_request', command: 'searchNearbyPlaces', args: { useCurrentLocation: true, [field]: 1 } };
   expect(validate(fixture)).toBe(false);

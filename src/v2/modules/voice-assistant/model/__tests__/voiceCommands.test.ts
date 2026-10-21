@@ -1,6 +1,7 @@
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
 import { createPlaceExplorationApi, placeQueryKeys } from '../../../place/exploration';
 import { createPlaceDetailApi } from '../../../place/detail';
+import { createPlaceMenuApi } from '../../../place/menus';
 import { createReservationApi, reservationQueryKeys } from '../../../booking/reservations/__tests__';
 import { createApiClient, ApiError, type ApiTransport } from '../../../../shared/api';
 import { createVoiceSessionController, type VoiceDeliveryContext } from '../voiceSession';
@@ -22,6 +23,7 @@ function setup() {
   let places: unknown = { places: [{ id: 1 }] };
   let reservations: unknown = { reservations: [], totalElements: 0, hasNext: false };
   let detail: unknown = facts;
+  let menus: unknown = [];
   let slots: unknown = [slot()];
   let quote: unknown = draftQuote();
   let quoteFailure: unknown;
@@ -32,7 +34,11 @@ function setup() {
     if (path.endsWith('/quote') && quoteFailure) throw quoteFailure;
     if (failure) throw failure;
     if (delay) return { data: await delay };
-    return { data: path === '/reservations' ? reservations : path === '/places' ? places : path.endsWith('/availabilities') ? slots : path.endsWith('/quote') ? quote : detail };
+    return { data: path === '/reservations' ? reservations : path === '/places'
+      ? typeof places === 'function' ? places(options.params) : places
+      : path.endsWith('/menus') ? typeof menus === 'function' ? menus(path) : menus
+      : path.endsWith('/availabilities') ? slots : path.endsWith('/quote') ? quote
+      : typeof detail === 'function' ? detail(path) : detail };
   } } as unknown as ApiTransport;
   const client = createApiClient(transport);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
@@ -51,6 +57,7 @@ function setup() {
     queries: { list: params => commands.voiceReadQueries.list(params, createPlaceExplorationApi(client)),
       reservations: params => commands.voiceReadQueries.reservations(params, createReservationApi(client)),
       detail: id => commands.voiceReadQueries.detail(id, createPlaceDetailApi(client)),
+      menus: id => commands.voiceReadQueries.menus(id, createPlaceMenuApi(client)),
       availability: id => commands.voiceReadQueries.availability(id, {}, createReservationApi(client)),
       quote: (placeId, availabilityId, quantity, account) => commands.voiceReadQueries.quote(placeId, availabilityId, quantity, account, createReservationApi(client)) },
   });
@@ -66,6 +73,7 @@ function setup() {
     async send(value = search()) { next = value; await controller.send('input'); return results.at(-1); },
     setTransportDelay: (v: Promise<void>) => { transportDelay = v; },
     setPlaces: (v: unknown) => { places = v; }, setDetail: (v: unknown) => { detail = v; }, setSlots: (v: unknown) => { slots = v; },
+    setMenus: (v: unknown) => { menus = v; },
     setReservations: (v: unknown) => { reservations = v; },
     setQuote: (v: unknown) => { quote = v; },
     setQuoteFailure: (v: unknown) => { quoteFailure = v; },
@@ -494,6 +502,118 @@ test('keyword discovery passes the keyword and app coordinates without any reser
     keyword: '갈비탕', latitude: 37.5, longitude: 127, radiusKm: 5, page: 1, limit: 2, sort: 'NEAREST',
   } })]);
   expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
+test.each(['수영장', 'swimming pool', 'プール', '游泳池'])('%s 이름 검색이 비면 워터파크·스파의 실제 설명을 확인한다', async (keyword) => {
+  const x = setup();
+  x.setPlaces((params: { keyword?: string; limit?: number }) => ({ places: params.limit === 12 && params.keyword === '스파' ? [
+    { id: 7, name: '스파밸리', distanceMeters: 15000 },
+    { id: 8, name: '마사지 스파', distanceMeters: 2000 },
+    { id: 9, name: '목욕 스파', distanceMeters: 3000 },
+  ] : [] }));
+  x.setDetail((path: string) => {
+    const id = Number(path.split('/').at(-1));
+    return { ...facts, id, name: id === 7 ? '스파밸리' : '스파',
+      description: id === 7 ? '수영장과 워터파크를 갖춘 물놀이 시설' : id === 9 ? '수영장이 없는 목욕 시설' : '마사지와 휴식 공간' };
+  });
+  await x.controller.start();
+  const result = await x.send(generalSearch({ keyword, matchSource: 'place', matchTerms: ['수영장', '워터파크'], relatedKeywords: ['워터파크', '스파'] }));
+  expect(result).toMatchObject({ outcome: { status: 'succeeded', data: {
+    coverage: 'bounded_candidates', search: { radiusKm: 20, keywords: [keyword, '워터파크', '스파'], matchedBy: 'place_or_menu' },
+    places: [{ id: 7, name: '스파밸리', distanceMeters: 15000 }],
+  } } });
+  expect(x.calls.filter(call => call.path === '/places')).toHaveLength(5);
+  expect(x.calls.filter(call => call.path === '/places')).toEqual(expect.arrayContaining([keyword, '워터파크', '스파'].map(word => expect.objectContaining({
+    path: '/places', params: expect.objectContaining({ keyword: word, radiusKm: 20, limit: 12 }),
+  }))));
+  // Returned IDs remain backed by actual successful details for later navigation.
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail', placeId: 7 })))?.outcome.status).toBe('succeeded');
+  expect(x.calls.some(call => /reservations|availabilities|quote/.test(call.path))).toBe(false);
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
+test('스파 이름만으로 수영장이라고 추천하거나 이전 검색 ID를 유지하지 않는다', async () => {
+  const x = setup(); await x.controller.start();
+  await x.send(generalSearch({ keyword: '카페' }, 'old-search'));
+  x.setPlaces((params: { limit?: number }) => ({ places: params.limit === 12 ? [{ id: 7 }] : [] }));
+  x.setDetail({ ...facts, id: 7, name: '스파', description: '마사지 시설' });
+  expect(await x.send(generalSearch({ keyword: '수영장', matchSource: 'place' }, 'pool-search'))).toMatchObject({ outcome: {
+    status: 'succeeded', data: { places: [], coverage: 'bounded_candidates', search: { radiusKm: 20 } },
+  } });
+  expect(x.calls.filter(call => call.path === '/places/7')).toHaveLength(1); // Merge duplicate candidates.
+  expect((await x.send(command('getPlaceDetails', { placeId: 1 })))?.outcome).toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
+});
+
+test('수영장 보완 조회의 잘못된 응답을 검색 결과 없음으로 바꾸지 않는다', async () => {
+  const x = setup(); await x.controller.start();
+  x.setPlaces((params: { keyword?: string; limit?: number }) => ({ places: params.limit === 12 && params.keyword === '스파' ? 'invalid' : [] }));
+  expect(await x.send(generalSearch({ keyword: '수영장', relatedKeywords: ['스파'] }))).toMatchObject({ outcome: { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } });
+});
+
+test.each([
+  ['갈비탕', ['갈비탕'], ['갈비', '한식'], 'menu', '은하식당', '갈비탕'],
+  ['스파게티', ['스파게티', '파스타'], ['이탈리안'], 'menu', '라루체', '토마토 파스타'],
+  ['뷔페', ['뷔페', '부페', 'buffet'], ['호텔'], 'place', '오픈키친', '다양한 음식을 즐기는 뷔페 레스토랑'],
+  ['호텔', ['호텔', 'hotel'], ['숙박'], 'place', '라온', '도심의 비즈니스 호텔'],
+  ['도자기', ['도자기', '도예'], ['공방'], 'menu', '흙과시간', '도예 원데이 클래스'],
+] as const)('%s도 같은 검색 경로에서 실제 설명·메뉴로 확인한다', async (keyword, matchTerms, relatedKeywords, matchSource, name, evidence) => {
+  const x = setup();
+  x.setPlaces((params: { limit?: number }) => ({ places: params.limit === 12 ? [{ id: 7, distanceMeters: 1100 }] : [] }));
+  x.setDetail({ ...facts, id: 7, name, description: matchSource === 'place' ? evidence : '방문객을 위한 공간' });
+  x.setMenus([{ id: 1, placeId: 7, status: 'AVAILABLE', name: evidence }]);
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword, matchTerms, relatedKeywords, matchSource }))).toMatchObject({ outcome: {
+    status: 'succeeded', data: { places: [{ id: 7, name }], search: { evidence: [{ placeId: 7, source: matchSource, text: evidence }] } },
+  } });
+  expect(x.calls.filter(call => call.path.endsWith('/menus'))).toHaveLength(matchSource === 'menu' ? 1 : 0);
+  expect(x.calls.some(call => /reservations|availabilities|quote/.test(call.path))).toBe(false);
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
+test('음식점 업종이나 관련어만으로 요청 메뉴를 판매한다고 추천하지 않는다', async () => {
+  const x = setup();
+  x.setPlaces((params: { limit?: number }) => ({ places: params.limit === 12 ? [{ id: 7 }] : [] }));
+  x.setDetail({ ...facts, id: 7, name: '이탈리안 레스토랑', description: '다양한 이탈리아 요리' });
+  x.setMenus([{ id: 1, status: 'AVAILABLE', name: '피자' }, { id: 2, status: 'SOLD_OUT', name: '스파게티' }]);
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword: '스파게티', relatedKeywords: ['이탈리안'], matchSource: 'menu' })))
+    .toMatchObject({ outcome: { status: 'succeeded', data: { places: [], coverage: 'bounded_candidates' } } });
+});
+
+test('특정 가게 이름 검색은 다른 가게의 설명이나 메뉴에서 언급된 이름으로 대체하지 않는다', async () => {
+  const x = setup();
+  x.setPlaces((params: { limit?: number }) => ({ places: params.limit === 12 ? [{ id: 7 }] : [] }));
+  x.setDetail({ ...facts, id: 7, name: '다른 식당', description: '용짬뽕 근처에 위치한 식당' });
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword: '용짬뽕', matchSource: 'name' })))
+    .toMatchObject({ outcome: { status: 'succeeded', data: { places: [] } } });
+  expect(x.calls.some(call => call.path.endsWith('/menus'))).toBe(false);
+  expect(x.calls.filter(call => call.path === '/places').every(call => (call.params as { keyword?: string }).keyword === '용짬뽕')).toBe(true);
+});
+
+test('가까운 무관한 장소가 많아도 검색어·관련어 후보를 먼저 확인한다', async () => {
+  const x = setup();
+  x.setPlaces((params: { keyword?: string; limit?: number }) => ({ places: params.limit !== 12 ? []
+    : params.keyword === '스파' ? [{ id: 7, distanceMeters: 15000 }]
+    : !params.keyword ? Array.from({ length: 12 }, (_, index) => ({ id: index + 20, distanceMeters: index + 10 })) : [] }));
+  x.setDetail((path: string) => {
+    const id = Number(path.split('/').at(-1));
+    return { ...facts, id, name: id === 7 ? '스파밸리' : '상점', description: id === 7 ? '워터파크와 수영장' : '생활용품 상점' };
+  });
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword: '수영장', matchTerms: ['수영장', '워터파크'], matchSource: 'place', relatedKeywords: ['스파'] })))
+    .toMatchObject({ outcome: { status: 'succeeded', data: { places: [{ id: 7 }] } } });
+  expect(x.calls.filter(call => /^\/places\/\d+$/.test(call.path))).toHaveLength(12);
+});
+
+test('다른 가게의 메뉴가 잘못 섞인 응답으로 음식점을 추천하지 않는다', async () => {
+  const x = setup();
+  x.setPlaces({ places: [{ ...facts, id: 7 }] });
+  x.setDetail({ ...facts, id: 7 });
+  x.setMenus([{ id: 1, placeId: 999, status: 'AVAILABLE', name: '갈비탕' }]);
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword: '갈비탕', matchSource: 'menu' })))
+    .toMatchObject({ outcome: { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } });
 });
 
 test('general discovery without category or booking conditions reads actual places, displays at most three and never checks availability', async () => {

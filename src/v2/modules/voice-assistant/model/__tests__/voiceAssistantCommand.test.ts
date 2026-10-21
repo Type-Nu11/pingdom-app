@@ -36,6 +36,17 @@ test.each(['내 예약 목록 열어줘', '이 식당 예약 페이지로 보내
 );
 
 describe('provider trust boundary', () => {
+  it('accepts a generic discovery plan without adding backend request fields', () => {
+    const args = { useCurrentLocation: true, keyword: '갈비탕', matchSource: 'menu', matchTerms: ['갈비탕'], relatedKeywords: ['한식'] };
+    expect(parseVoiceAssistantEnvelope(envelope({ command: 'searchNearbyPlaces', args }))).toMatchObject({ ok: true, value: { args } });
+  });
+  it.each([
+    { matchSource: 'fetch' }, { matchSource: 'menu' }, { keyword: '호텔', relatedKeywords: [] },
+    { keyword: '호텔', relatedKeywords: ['a', 'b', 'c', 'd'] }, { keyword: '호텔', matchTerms: [' '] },
+    { keyword: '호텔', matchTerms: ['a', 'b', 'c', 'd', 'e'] }, { keyword: '호텔', matchTerms: [1] },
+  ])('rejects invalid or unbounded discovery options %p', args => {
+    reject(envelope({ command: 'searchNearbyPlaces', args: { useCurrentLocation: true, ...args } }));
+  });
   it('keeps general category and tourism tag as independent command fields', () => {
     expect(parseVoiceAssistantEnvelope(envelope({ command: 'searchNearbyPlaces', args: {
       useCurrentLocation: true, category: 'RESTAURANT', touristCategory: 'FOOD',

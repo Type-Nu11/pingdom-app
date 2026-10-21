@@ -21,6 +21,9 @@ export const AI_CHAT_SYSTEM_PROMPT = `You are Pingdy, a mobile place discovery a
 - The app displays cards from verified place API results. Do not create your own place list or card data.
 - Do not invent place details that are absent from tool results.
 - If a successful search returns zero places, say no matching results were found within this search; do not claim the place does not exist in the database.
+- Treat every menu/facility/place-type request as discovery, using the same search plan. Extract a concise core keyword in the local catalog language; remove conversational words such as "find", "nearby", "집", and "가고 싶어". Supply matchSource=menu for a specific dish, place for a facility or venue type, and name for an explicitly named business. matchTerms are up to four close synonyms of the requested thing. relatedKeywords are up to three broader terms for discovering candidates; they are NOT proof of a match. Do not turn a broad related term into a matchTerm: a spa does not prove a swimming pool, an Italian restaurant does not prove it sells spaghetti, and a hotel does not prove it has a buffet. These rules apply to arbitrary requests, not a fixed list of supported dishes or facilities.
+- Examples of the general plan: 갈비탕집 -> keyword=갈비탕, matchSource=menu, matchTerms=[갈비탕], relatedKeywords=[갈비,한식]; 스파게티집 -> keyword=스파게티, matchSource=menu, matchTerms=[스파게티,파스타], relatedKeywords=[파스타,이탈리안]; 뷔페 -> keyword=뷔페, matchSource=place, matchTerms=[뷔페,부페,buffet], relatedKeywords=[호텔,패밀리레스토랑]; 호텔 -> keyword=호텔, matchSource=place, matchTerms=[호텔,hotel], relatedKeywords=[숙박,리조트]; 수영장 -> keyword=수영장, matchSource=place, matchTerms=[수영장,워터파크], relatedKeywords=[워터파크,스파]. Derive other requests the same way; never invent venue names or unsupported category codes.
+- The app verifies discovery candidates against actual place names/descriptions and AVAILABLE menu records, returning evidence. It widens an empty keyword lookup up to 20 km and inspects a bounded set, not the whole catalog. For bounded_candidates results, state the searched radius and search limitation, especially when empty. Zero matches mean no verified result within this search, never that the place/food/facility does not exist. Do not infer today's facility operation, reservations, stock, or room availability from a matching description or general place operating status.
 - Do not claim a search succeeded if the tool returned an error. Explain briefly that the search could not be completed.
 
 ## Tool Usage and User-Facing Responses
@@ -92,7 +95,7 @@ export const AI_CHAT_TOOLS = [
     "type": "function",
     "function": {
       "name": "searchNearbyPlaces",
-      "description": "현재 위치 주변 장소를 검색합니다. 일반 음식점·식당 검색은 category=RESTAURANT만 사용하고 keyword나 touristCategory=FOOD를 추가하지 않습니다. 장소명·메뉴명은 keyword로 검색하며, 주변 아무거나 검색은 keyword·category·touristCategory를 모두 생략합니다. category는 일반 장소 분류, touristCategory는 별개 관광 태그이며 서로 치환하지 않습니다. 앱이 좌표와 최대 3개 제한을 붙이므로 위치나 개수를 묻지 않습니다. 날짜, 시간, 인원은 필요하지 않습니다.",
+      "description": "현재 위치 주변 장소를 검색합니다. 음식·시설·업종은 keyword와 matchSource, matchTerms로 찾고 relatedKeywords로 후보를 넓힙니다. 실제 장소 설명과 판매 중인 메뉴에서 근거를 확인하며, 관련어만으로 추천하지 않습니다. 특정 가게 이름은 matchSource=name으로 검색합니다. 일반 음식점은 category=RESTAURANT만 사용합니다. 주변 아무거나는 검색 조건을 생략합니다. 앱이 위치와 최대 3개 표시 제한을 결정합니다. 날짜·시간·인원은 필요하지 않습니다.",
       "parameters": {
         "type": "object",
         "additionalProperties": false,
@@ -109,6 +112,9 @@ export const AI_CHAT_TOOLS = [
             "maxLength": 100,
             "pattern": "\\S"
           },
+          "matchSource": { "type": "string", "enum": ["name", "place", "menu", "any"], "description": "이름·장소 설명·메뉴 중 요청한 내용을 확인할 출처입니다. keyword와 함께 사용합니다." },
+          "matchTerms": { "type": "array", "minItems": 1, "maxItems": 4, "items": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "\\S" }, "description": "요청한 음식·시설·업종의 핵심어와 가까운 동의어입니다. 넓은 업종어로 대체하지 않습니다." },
+          "relatedKeywords": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "\\S" }, "description": "후보 탐색에만 쓰는 관련어입니다. 해당 시설·메뉴가 있다는 근거로 사용하지 않습니다." },
           "touristCategory": {
             "type": "string",
             "enum": [

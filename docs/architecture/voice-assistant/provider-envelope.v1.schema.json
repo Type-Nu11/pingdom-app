@@ -190,6 +190,16 @@
               "maxLength": 100,
               "pattern": "\\S"
             },
+            "relatedKeywords": {
+              "type": "array", "minItems": 1, "maxItems": 3,
+              "items": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "\\S" }
+            },
+            "matchTerms": {
+              "type": "array", "minItems": 1, "maxItems": 4,
+              "items": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "\\S" }
+            },
+            "matchSource": { "enum": ["name", "place", "menu", "any"] },
+            "category": { "enum": ["RESTAURANT"] },
             "limit": {
               "type": "integer",
               "minimum": 1,
@@ -211,7 +221,8 @@
             "useCurrentLocation": {
               "type": "boolean"
             }
-          }
+          },
+          "dependencies": { "relatedKeywords": ["keyword"], "matchTerms": ["keyword"], "matchSource": ["keyword"] }
         }
       }
     },
