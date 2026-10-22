@@ -1,6 +1,6 @@
 import Skeleton from '../../../../../shared/components/Skeleton';
 import React, { useEffect, useState } from 'react';
-import { Keyboard, Pressable, ScrollView, View } from 'react-native';
+import { Keyboard, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
 import { Text, TextInput } from '../../../../../shared/components/Typography';
@@ -61,7 +61,8 @@ export default function RouteEndpointEditor(props: Props) {
   }
   const savedPlaces = saved.places.filter(hasRouteDestinationCoordinates);
   return <View testID="route-endpoint-editor" style={{ position: 'absolute', left: 8, right: 8, bottom: Math.max(8, props.bottomInset), height: Math.min(558, props.maxHeight), boxShadow: theme.liquidGlass.sheet.shadow }}>
-    <GlassSurface tintColor={theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
+    <GlassSurface material={Platform.OS === 'ios' ? 'frosted' : 'liquid'} backdropBlurEnabled={Platform.OS !== 'ios'}
+      tintColor={Platform.OS === 'ios' ? theme.colors.backgroundAssistive : theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
       style={{ flex: 1, borderTopLeftRadius: 36, borderTopRightRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, overflow: 'hidden', borderWidth: 1, borderColor: theme.liquidGlass.sheet.rim }}>
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" bounces={false}
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 16, paddingHorizontal: 16, gap: 12 }}>

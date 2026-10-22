@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
 import { Text } from '../../../../../shared/components/Typography';
@@ -38,6 +38,9 @@ export default function RouteTrackingSheet(props: Props) {
   const ink = theme.colors.labelStrong;
   const muted = theme.colors.labelAssistive;
   const glass = theme.liquidGlass.sheet;
+  const stableSurface = Platform.OS === 'ios' ? {
+    material: 'frosted' as const, backdropBlurEnabled: false, tintColor: theme.colors.backgroundAssistive,
+  } : {};
   const needsRecovery = !props.arrived && !props.coordinate;
   const needsFollow = !props.arrived && !!props.coordinate && props.state.kind === 'ready' && !props.following;
 
@@ -51,7 +54,7 @@ export default function RouteTrackingSheet(props: Props) {
   return <>
     <TrackingTop pointerEvents="box-none" style={{ top: props.topInset + 4 }}>
       <GuidanceShadow style={{ boxShadow: glass.shadow }}>
-        <Guidance testID="route-tracking-guidance" tintColor={glass.tint} androidTintColor={glass.tint}
+        <Guidance testID="route-tracking-guidance" tintColor={glass.tint} androidTintColor={glass.tint} {...stableSurface}
           style={{ maxHeight: props.maxHeight * 0.4 }}>
           <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
             <Maneuver>
@@ -73,7 +76,7 @@ export default function RouteTrackingSheet(props: Props) {
           </ScrollView>
         </Guidance>
       </GuidanceShadow>
-      <LocationSurface tintColor={theme.liquidGlass.navigation.tint} style={{ boxShadow: theme.liquidGlass.navigation.shadow }}>
+      <LocationSurface tintColor={theme.liquidGlass.navigation.tint} {...stableSurface} style={{ boxShadow: theme.liquidGlass.navigation.shadow }}>
         <LocationButton testID="route-tracking-recenter" accessibilityRole="button" accessibilityLabel={t(`routes.tracking.${props.preview ? 'previewFollow' : 'follow'}`)}
           onPress={props.coordinate ? props.onFollow : props.onRefresh} style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
           <MyLocationIcon />
@@ -81,7 +84,7 @@ export default function RouteTrackingSheet(props: Props) {
       </LocationSurface>
     </TrackingTop>
     <SheetPosition style={{ maxHeight: props.maxHeight * 0.45, boxShadow: glass.shadow }}>
-      <Sheet testID="route-tracking-sheet" tintColor={glass.tint} androidTintColor={glass.tint}>
+      <Sheet testID="route-tracking-sheet" tintColor={glass.tint} androidTintColor={glass.tint} {...stableSurface}>
         <SheetContent bounces={false} showsVerticalScrollIndicator={false} $bottomInset={props.bottomInset}>
           <Grabber accessible={false} style={{ backgroundColor: theme.colors.secondaryNormal }} />
           <SummaryRow>

@@ -55,7 +55,9 @@ const GlassSurface = ({
     : 'systemUltraThinMaterialLight');
   const resolvedNativeTint = tintColor ?? theme.liquidGlass.nativeTint;
   const resolvedFallbackTint = tintColor ?? theme.liquidGlass.fallbackSurface;
-  const surfaceTint = material === 'frosted' ? androidTintColor ?? resolvedFallbackTint : resolvedFallbackTint;
+  const surfaceTint = Platform.OS === 'android' && material === 'frosted'
+    ? androidTintColor ?? resolvedFallbackTint
+    : resolvedFallbackTint;
   const androidSurfaceTint = androidTintColor ?? resolvedFallbackTint;
   const opaqueAndroidTint = Platform.OS === 'android' && /^#[0-9a-f]{6}(ff)?$/i.test(androidSurfaceTint);
   const shouldRenderBlur = backdropBlurEnabled && !opaqueAndroidTint && (Platform.OS !== 'android' || Boolean(blurTarget));

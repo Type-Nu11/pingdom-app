@@ -1,4 +1,5 @@
 import { SheetMotionView } from '../hooks/useSheetMotionStyle';
+import { Platform } from 'react-native';
 import styled from 'styled-components/native';
 
 import FrostedSurface from '../../presentation/components/FrostedSurface';
@@ -20,7 +21,7 @@ export const SheetChromeShadow = styled(SheetMotionView)`
   border-radius: ${({ theme }) => theme.liquidGlass.sheet.topRadius}px;
   border-bottom-right-radius: ${({ theme }) => theme.liquidGlass.sheet.bottomRadius}px;
   border-bottom-left-radius: ${({ theme }) => theme.liquidGlass.sheet.bottomRadius}px;
-  background-color: ${({ theme }) => theme.liquidGlass.shadowFill};
+  background-color: ${({ theme }) => Platform.OS === 'ios' ? theme.colors.backgroundAssistive : theme.liquidGlass.shadowFill};
 `;
 
 export const SheetChrome = styled(SheetMotionView)<{ $borderColor: string }>`

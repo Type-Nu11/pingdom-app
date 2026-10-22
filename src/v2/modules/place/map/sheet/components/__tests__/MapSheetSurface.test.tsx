@@ -12,6 +12,20 @@ jest.mock('react-native-reanimated', () => ({
   interpolate: jest.requireActual('react-native-reanimated/src/interpolation').interpolate,
 }));
 
+test.each(['LIGHT', 'DARK'] as const)('iOS %s: moving glass always has a solid backing when the native effect is unavailable', async appearancePreference => {
+  jest.replaceProperty(Platform, 'OS', 'ios');
+  function Sheet() {
+    const position = useSharedValue(300);
+    return <SheetMotionProvider value={{ position, mediumTranslateY: 300, height: 800, restingTranslateY: 300 }}>
+      <MapSheetSurface testID="sheet" sheetChromeBottom={new Animated.Value(300)} mediumTranslateY={300}><Text>시트 내용</Text></MapSheetSurface>
+    </SheetMotionProvider>;
+  }
+  await renderWithProviders(<Sheet />, { appearancePreference });
+  expect(screen.getByTestId('sheet-chrome')).toHaveStyle({
+    backgroundColor: (appearancePreference === 'DARK' ? darkColors : lightColors).backgroundAssistive,
+  });
+});
+
 test('UI motion continuously sizes the viewport while retaining fixed-height glass', async () => {
   function Sheet() {
     const position = useSharedValue(150);

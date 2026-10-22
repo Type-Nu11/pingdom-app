@@ -1,6 +1,6 @@
 import { SkeletonGroup } from '../../../../../shared/components/Skeleton';
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, View, type LayoutChangeEvent } from 'react-native';
+import { ActivityIndicator, Platform, View, type LayoutChangeEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 import { Text } from '../../../../../shared/components/Typography';
@@ -72,7 +72,8 @@ export default function RoutePlannerSheet(props: Props) {
   }
   return <SheetPosition testID="route-planner-sheet" onLayout={props.onLayout}
     style={{ bottom: Math.max(8, props.bottomInset), maxHeight: props.maxHeight, boxShadow: theme.liquidGlass.sheet.shadow }}>
-    <SheetGlass tintColor={theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
+    <SheetGlass material={Platform.OS === 'ios' ? 'frosted' : 'liquid'} backdropBlurEnabled={Platform.OS !== 'ios'}
+      tintColor={Platform.OS === 'ios' ? theme.colors.backgroundAssistive : theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
       style={{ borderColor: theme.liquidGlass.sheet.rim }}>
       <SheetContent bounces={false} scrollEnabled={!dragging} showsVerticalScrollIndicator={false}>
         <Grabber accessible={false} style={{ backgroundColor: theme.colors.secondaryNormal }} />

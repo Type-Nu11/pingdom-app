@@ -171,6 +171,31 @@ test.each([
   }
 });
 
+test.each([
+  { platform: 'ios' as const, nativeGlass: true, tintColor: '#FFFFFF', expectedTint: '#FFFFFF' },
+  { platform: 'ios' as const, nativeGlass: false, tintColor: '#26262B', expectedTint: '#26262B' },
+  { platform: 'android' as const, nativeGlass: false, tintColor: '#FFFFFF', expectedTint: 'rgba(255,255,255,0.2582)' },
+])('불투명 frosted 표면은 iOS에서 Android 틴트로 덮이지 않는다: %o', async ({
+  platform, nativeGlass, tintColor, expectedTint,
+}) => {
+  jest.replaceProperty(Platform, 'OS', platform);
+  jest.mocked(isLiquidGlassAvailable).mockReturnValue(nativeGlass);
+
+  await render(
+    <GlassSurface
+      androidTintColor="rgba(255,255,255,0.2582)"
+      backdropBlurEnabled={false}
+      material="frosted"
+      testID="frosted-surface"
+      tintColor={tintColor}
+    />,
+  );
+
+  expect(screen.getByTestId('frosted-surface').children.at(-1)).toHaveStyle({ backgroundColor: expectedTint });
+  expect(screen.queryByTestId('glass-blur')).toBeNull();
+  expect(screen.queryByTestId('native-glass')).toBeNull();
+});
+
 test('Android 배경 target이 없어도 콘텐츠를 표시하고 버튼 입력을 처리한다', async () => {
   jest.replaceProperty(Platform, 'OS', 'android');
   const onPress = jest.fn();

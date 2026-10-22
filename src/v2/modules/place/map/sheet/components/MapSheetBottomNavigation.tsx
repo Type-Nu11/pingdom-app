@@ -197,14 +197,15 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
           bottomShade={false}
           cornerRadius={32}
           glassEffectStyle="clear"
-          material="balanced"
+          material={Platform.OS === 'ios' ? 'frosted' : 'balanced'}
+          backdropBlurEnabled={Platform.OS !== 'ios'}
           intensity={36}
           highlightOpacity={liquidGlass.navigation.highlightOpacity * 0.65}
           rimColor={liquidGlass.navigation.rim}
           pointerEvents="none"
           style={styles.navigationGlass}
           testID="map-navigation-glass"
-          tintColor={liquidGlass.navigation.softTint}
+          tintColor={Platform.OS === 'ios' ? colors.glassFill : liquidGlass.navigation.softTint}
         />
           {isDragging && barWidth > 8 ? (
             <Animated.View pointerEvents="none" testID="map-navigation-drag-indicator" style={{
@@ -279,14 +280,15 @@ const MapSheetBottomNavigation = memo(function MapSheetBottomNavigation({
             bottomShade={false}
             cornerRadius={32}
             glassEffectStyle="clear"
-            material="balanced"
+            material={Platform.OS === 'ios' ? 'frosted' : 'balanced'}
+            backdropBlurEnabled={Platform.OS !== 'ios'}
             intensity={36}
             highlightOpacity={liquidGlass.navigation.highlightOpacity * 0.65}
             pointerEvents="none"
             rimColor={liquidGlass.navigation.rim}
             style={styles.sendButtonGlass}
             testID="map-navigation-recommendations-surface"
-            tintColor={liquidGlass.navigation.softTint}
+            tintColor={Platform.OS === 'ios' ? colors.glassFill : liquidGlass.navigation.softTint}
           >
             {selectedTab === 'recommendations' ? (
               <>

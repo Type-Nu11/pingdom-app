@@ -298,18 +298,21 @@ export default function MapTopOverlay({
                     onPress={() => onCategoryChange(id)}
                     style={({ pressed }) => ({
                       boxShadow: liquidGlass.category.shadow,
+                      backgroundColor: Platform.OS === 'ios' ? isActive ? colors.selectedSurface : colors.surfaceElevated : 'transparent',
                       ...(pressed ? { opacity: 0.72, transform: [{ scale: 0.98 }] } : {}),
                     })}
                   >
                     <S.CategoryChipClip>
                       <S.CategoryChipGlass
                         material="frosted"
+                        backdropBlurEnabled={Platform.OS !== 'ios'}
                         androidTintColor={isActive ? liquidGlass.category.androidActiveTint : liquidGlass.category.androidTint}
-                        blurTint="default"
+                        blurTint={Platform.OS === 'android' ? 'default' : undefined}
                         glassEffectStyle="clear"
                         intensity={32}
                         pointerEvents="none"
-                        tintColor={isActive ? liquidGlass.category.activeTint : liquidGlass.category.tint}
+                        tintColor={Platform.OS === 'ios' ? isActive ? colors.selectedSurface : colors.surfaceElevated
+                          : isActive ? liquidGlass.category.activeTint : liquidGlass.category.tint}
                       />
                       <S.CategoryChipContent>
                         {Icon && iconSize ? (
@@ -353,13 +356,15 @@ export default function MapTopOverlay({
                 testID="map-locate-button"
               >
                 <S.LocateGlass
+                  material={Platform.OS === 'ios' ? 'frosted' : 'liquid'}
+                  backdropBlurEnabled={Platform.OS !== 'ios'}
                   bottomShade={false}
                   cornerRadius={22}
                   glassEffectStyle="regular"
                   highlightOpacity={liquidGlass.navigation.highlightOpacity}
                   pointerEvents="none"
                   rimColor={liquidGlass.navigation.rim}
-                  tintColor={liquidGlass.navigation.tint}
+                  tintColor={Platform.OS === 'ios' ? colors.surfaceElevated : liquidGlass.navigation.tint}
                 />
                 <FinderIcon
                   color={isLocatePressed ? colors.primary : colors.text}
@@ -387,8 +392,10 @@ export default function MapTopOverlay({
                     onPressOut={() => setIsDirectionsPressed(false)}
                   >
                     <S.LocateGlass bottomShade={false} cornerRadius={22} glassEffectStyle="regular"
+                      material={Platform.OS === 'ios' ? 'frosted' : 'liquid'} backdropBlurEnabled={Platform.OS !== 'ios'}
                       highlightOpacity={liquidGlass.navigation.highlightOpacity} pointerEvents="none"
-                      testID="map-directions-glass" rimColor={liquidGlass.navigation.rim} tintColor={liquidGlass.navigation.softTint} />
+                      testID="map-directions-glass" rimColor={liquidGlass.navigation.rim}
+                      tintColor={Platform.OS === 'ios' ? colors.surfaceElevated : liquidGlass.navigation.softTint} />
                     <S.DirectionsIconFrame testID="map-directions-icon-frame">
                       <DirectionsIcon testID="map-directions-icon" color={isDirectionsPressed && !directionsDisabled ? colors.primary : colors.text} />
                     </S.DirectionsIconFrame>

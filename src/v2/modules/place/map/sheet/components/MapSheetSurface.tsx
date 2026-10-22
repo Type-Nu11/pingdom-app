@@ -1,5 +1,5 @@
 import React, { type PropsWithChildren } from 'react';
-import { Animated, useWindowDimensions } from 'react-native';
+import { Animated, Platform, useWindowDimensions } from 'react-native';
 import { useTheme } from 'styled-components/native';
 import * as Styles from '../styles/BottomSheetGlass.styles';
 import { clampSheetValue, SheetMotionView, useSheetMotionStyle, useSheetMotion } from '../hooks/useSheetMotionStyle';
@@ -72,6 +72,7 @@ function UiMapSheetSurface({ children, expandedTranslateY = 0, mediumTranslateY,
           <SheetMotionView pointerEvents="none" testID={`${testID}-background-glass`}
             style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }, glassOpacity]}>
             <Styles.SheetGlass cornerRadius={topRadius} glassEffectStyle="regular" highlightHeight={40}
+              material={Platform.OS === 'ios' ? 'frosted' : 'liquid'} backdropBlurEnabled={Platform.OS !== 'ios'}
               highlightOpacity={liquidGlass.sheet.highlightOpacity} rimColor={liquidGlass.sheet.rim}
               tintColor={liquidGlass.sheet.tint} topRimOnly />
           </SheetMotionView>
@@ -150,6 +151,7 @@ function LegacyMapSheetSurface({ children, sheetChromeBottom, expandedTranslateY
         <SheetMotionView pointerEvents="none" testID={`${testID}-background-glass`}
           style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }, glassOpacity]}>
         <Styles.SheetGlass cornerRadius={liquidGlass.sheet.topRadius} glassEffectStyle="regular"
+          material={Platform.OS === 'ios' ? 'frosted' : 'liquid'} backdropBlurEnabled={Platform.OS !== 'ios'}
           highlightHeight={40} highlightOpacity={liquidGlass.sheet.highlightOpacity}
           rimColor={liquidGlass.sheet.rim} tintColor={liquidGlass.sheet.tint} topRimOnly />
         </SheetMotionView>
