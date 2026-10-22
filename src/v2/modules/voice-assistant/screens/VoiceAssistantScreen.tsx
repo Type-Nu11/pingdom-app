@@ -25,6 +25,10 @@ import { useVoiceInput } from '../hooks/useVoiceInput';
 import { expoSpeechInputAdapter } from '../adapters/expoSpeechInputAdapter';
 import { retainInputLocally, validateVoiceInput, type OnFinalInput, type SpeechInputAdapter } from '../model/voiceInput';
 
+type ConversationTurn = { id: number; request: string; reply: VoiceCommandViewState };
+const isConversationReply = (value: VoiceCommandViewState | undefined): value is VoiceCommandViewState =>
+  !!value && !['idle', 'processing'].includes(value.phase);
+
 export type VoiceAssistantScreenProps = {
   onClose: () => void;
   adapter?: SpeechInputAdapter;
@@ -60,20 +64,32 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       ? commandState.result.outcome.field : undefined;
   // Panel/session memory only. Never persisted, logged, or treated as command provenance.
   const [currentRequest, setCurrentRequest] = useState('');
+  const [conversation, setConversation] = useState<ConversationTurn[]>([]);
+  const [retainedReply, setRetainedReply] = useState<VoiceCommandViewState>();
+  const displayedTurn = useRef<{ id: number; request: string; reply?: VoiceCommandViewState }>({ id: 0, request: '' });
   const contentRef = useRef<ScrollView>(null);
   const textInputRef = useRef<NativeTextInput>(null);
   const focusAfterCapture = useRef(false);
-  const activeTurn = useRef<{ request: string } | null>(null);
+  const activeTurn = useRef<{ request: string; baseline?: VoiceCommandViewState } | null>(null);
   const originalRequest = useRef('');
   const answers = useRef<Record<string, string>>({});
   const inputContext = useRef({ onFinalInput, clarificationField, commandState, reservationFlow });
   inputContext.current = { onFinalInput, clarificationField, commandState, reservationFlow };
+  const beginTurn = useCallback((request: string, baseline?: VoiceCommandViewState) => {
+    const previous = displayedTurn.current;
+    if (previous.request || previous.reply) {
+      setConversation(history => [...history, { ...previous, reply: previous.reply ?? { phase: 'canceled' } }]);
+    }
+    displayedTurn.current = { id: previous.id + 1, request };
+    activeTurn.current = { request, baseline };
+    setRetainedReply(undefined);
+  }, []);
   const submitWithQuestionContext = useCallback<OnFinalInput>(async input => {
     const context = inputContext.current;
     const reservation = context.reservationFlow;
     if (!input.signal.aborted && reservation?.place && reservation.state.phase === 'review'
       && !reservation.loading && isReservationSubmissionRequest(input.text)) {
-      activeTurn.current = { request: input.text };
+      beginTurn(input.text, context.commandState);
       setCurrentRequest(input.text);
       await reservation.confirm();
       return 'accepted';
@@ -87,7 +103,8 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     } else if (!context.clarificationField && !text.startsWith(`${originalRequest.current}\n`)) {
       originalRequest.current = text; answers.current = {};
     }
-    activeTurn.current = { request: text };
+    beginTurn(input.text, context.commandState);
+    activeTurn.current!.request = text;
     setCurrentRequest(originalRequest.current || input.text);
     if (reservation?.place && !['success', 'unknown', 'submitting', 'checking'].includes(reservation.state.phase)) {
       const slot = reservation.dateSlots.find(item => item.id === reservation.selectedId);
@@ -95,7 +112,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
       if (validateVoiceInput(text).error) throw new Error('VOICE_INPUT_TOO_LONG');
     }
     return context.onFinalInput({ ...input, text });
-  }, []);
+  }, [beginTurn]);
   const { controller, state } = useVoiceInput(adapter, submitWithQuestionContext, clarificationField === 'quantity' ? 'quantity' : undefined);
   useEffect(() => { if (reservationVisible) controller.cancel(); }, [controller, reservationVisible]);
   const [editingInSheet, setEditingInSheet] = useState(false);
@@ -109,14 +126,34 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
     controller.cancel(); originalRequest.current = ''; answers.current = {};
     setSelections({}); setEditingPicker(null); setSelectionError(false);
     setCurrentRequest(''); activeTurn.current = null;
+    setConversation([]); setRetainedReply(undefined); displayedTurn.current = { id: 0, request: '' };
   }, [controller, onFinalInput]);
+  useEffect(() => {
+    if (!isConversationReply(commandState) || activeTurn.current?.baseline === commandState) return;
+    // Ending capture/session after a reply must not replace that reply with a status notice.
+    if (commandState.phase === 'canceled' && displayedTurn.current.reply) return;
+    displayedTurn.current = { ...displayedTurn.current, reply: commandState };
+    setRetainedReply(commandState);
+  }, [commandState]);
+  useEffect(() => {
+    if (!serverSubmission || !currentRequest || state.delivery !== 'accepted' || retainedReply
+      || (commandState && commandState.phase !== 'idle')) return;
+    // Context cancellation must leave visible feedback rather than only the user's text.
+    const ended: VoiceCommandViewState = { phase: 'canceled' };
+    displayedTurn.current = { ...displayedTurn.current, reply: ended };
+    setRetainedReply(ended);
+  }, [commandState, currentRequest, retainedReply, serverSubmission, state.delivery]);
+  const presentedCommandState = commandState?.phase === 'idle' || !commandState
+    || (commandState.phase === 'canceled' && retainedReply) ? retainedReply
+    : activeTurn.current?.baseline === commandState ? { phase: 'processing' as const } : commandState;
   const busy = ['permissionRequesting', 'listening', 'processing'].includes(state.phase);
   const pending = state.delivery === 'pending';
   const feedback = commandState?.phase === 'unrecognized' ? 'unrecognized' : state.error === 'noSpeech' ? 'noSpeech' : null;
   const previousTurnVisible = state.delivery !== 'none' || !!feedback || (!!commandState && commandState.phase !== 'idle');
-  const showDetails = (state.phase !== 'listening' || !!pickerField || reservationVisible) && ((state.source === 'voice' && !!state.draft) || busy || !!state.error
+  const hasConversation = conversation.length > 0 || !!retainedReply || !!currentRequest;
+  const showDetails = (hasConversation || state.phase !== 'listening' || !!pickerField || reservationVisible) && ((state.source === 'voice' && !!state.draft) || busy || !!state.error
     || state.phase === 'permissionDenied' || state.phase === 'unavailable' || !!guidance
-    || reservationVisible || !!currentRequest || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
+    || reservationVisible || hasConversation || state.delivery !== 'none' || editingInSheet || !!editingPicker || (commandState && commandState.phase !== 'idle'));
   useEffect(() => {
     if (!focusAfterCapture.current) return;
     focusAfterCapture.current = false;
@@ -219,10 +256,10 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
   </ConditionRow> : undefined;
   const assistantVisible = busy || !!state.error || state.phase === 'permissionDenied' || state.phase === 'unavailable'
     || !!guidance || !!pickerVisible || !!conditionChips || !!selectionError || state.delivery === 'localOnly'
-    || (!!commandState && commandState.phase !== 'idle') || (!serverSubmission && state.source === 'text' && !!state.draft);
-  const resultsMode = !reservationVisible && !!(commandState?.phase === 'result' && commandState.result.outcome.status === 'succeeded'
-    && ((commandState.result.command === 'searchNearbyPlaces' || commandState.result.command === 'searchNearbyReservablePlaces')
-      ? commandState.result.outcome.data.places.length > 0 : commandState.result.command === 'getPlaceDetails'));
+    || (!!presentedCommandState && presentedCommandState.phase !== 'idle') || (!serverSubmission && state.source === 'text' && !!state.draft);
+  const resultsMode = !reservationVisible && !!(presentedCommandState?.phase === 'result' && presentedCommandState.result.outcome.status === 'succeeded'
+    && ((presentedCommandState.result.command === 'searchNearbyPlaces' || presentedCommandState.result.command === 'searchNearbyReservablePlaces')
+      ? presentedCommandState.result.outcome.data.places.length > 0 : presentedCommandState.result.command === 'getPlaceDetails'));
   return (
     <KeyboardProvider><Screen testID="voice-assistant-screen" accessibilityViewIsModal onAccessibilityEscape={close}>
       <Backdrop accessibilityRole="button"
@@ -246,8 +283,14 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
             </Header>
             </SheetHeading>
             <Content $results={resultsMode} ref={contentRef} onContentSizeChange={() => {
-              contentRef.current?.scrollTo({ y: 0, animated: false });
+              contentRef.current?.scrollToEnd({ animated: false });
             }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 0, gap: pickerVisible ? 16 : 6 }}>
+            {conversation.map(turn => <React.Fragment key={turn.id}>
+              {!!turn.request && <ResultRequest testID={`voice-history-request-${turn.id}`}>“{turn.request}”</ResultRequest>}
+              <AssistantMessage testID={`voice-history-assistant-${turn.id}`}>
+                <VoiceCommandResults state={turn.reply} historical />
+              </AssistantMessage>
+            </React.Fragment>)}
             {!!currentRequest && !pickerVisible && !reservationVisible && <ResultRequest testID="voice-result-request">“{currentRequest}”</ResultRequest>}
             {feedback && !reservationVisible ? <AssistantMessage>
               <FeedbackMessage accessibilityRole="alert">{t(`voiceAssistant.feedback.${feedback}`)}</FeedbackMessage>
@@ -270,7 +313,7 @@ export default function VoiceAssistantScreen({ onClose, adapter = expoSpeechInpu
               conditions={conditionChips}
               onConfirm={selection => { void confirmSelection(selection); }} />}
             {selectionError && <Copy accessibilityRole="alert">{t('voiceAssistant.picker.tooLong')}</Copy>}
-            {commandState && !reservationVisible && !(pickerField && clarificationField) && <VoiceCommandResults state={commandState} onSelectReservationPlace={reservationFlow && !reservationVisible && !reservationLocked ? place => { controller.cancel(); void reservationFlow.selectPlace(place); } : undefined} retryDisabled={commandRetryDisabled} onOpenPlace={onOpenPlace ? id => { controller.cancel(); onOpenPlace(id); } : undefined} onShowMap={onShowPlaceOnMap ? id => { controller.cancel(); onShowPlaceOnMap(id); } : undefined} onRetry={() => {
+            {presentedCommandState && !reservationVisible && !(pickerField && clarificationField) && <VoiceCommandResults state={presentedCommandState} onSelectReservationPlace={reservationFlow && !reservationVisible && !reservationLocked ? place => { controller.cancel(); void reservationFlow.selectPlace(place); } : undefined} retryDisabled={commandRetryDisabled} onOpenPlace={onOpenPlace ? id => { controller.cancel(); onOpenPlace(id); } : undefined} onShowMap={onShowPlaceOnMap ? id => { controller.cancel(); onShowPlaceOnMap(id); } : undefined} onRetry={() => {
               if (onCommandRetry) onCommandRetry();
               else { const request = activeTurn.current?.request ?? state.draft; controller.cancel(); controller.edit(request); void controller.submit(); }
             }} />}
