@@ -266,7 +266,7 @@ test('예약 시트 제목은 다른 페이지 시트와 같이 핸들 아래 13
 
 test.each([
   ['medium', 8],
-  ['expanded', 0],
+  ['expanded', 8],
 ] as const)('%s 예약 시트는 펼치면 시트와 함께 전폭이 되어 내용이 가장자리에서 16dp에 놓인다', async (snapPoint, inset) => {
   jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
   await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />);
