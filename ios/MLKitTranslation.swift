@@ -43,7 +43,7 @@ final class MLKitTranslation: NSObject {
 
       let downloadedLanguages = Set(
         ModelManager.modelManager().downloadedTranslateModels.map(\.language)
-      )
+      ).union([.english])
       let requiresDownload = !downloadedLanguages.contains(sourceLanguage) ||
         !downloadedLanguages.contains(targetLanguage)
 
@@ -71,11 +71,6 @@ final class MLKitTranslation: NSObject {
       return
     }
 
-    guard allowModelDownload else {
-      reject("MODEL_DOWNLOAD_REQUIRED", "번역 언어 팩 다운로드가 필요해요.", nil)
-      return
-    }
-
     let translator = Translator.translator(
       options: TranslatorOptions(sourceLanguage: sourceLanguage, targetLanguage: targetLanguage)
     )
@@ -97,6 +92,16 @@ final class MLKitTranslation: NSObject {
           "translatedText": translatedText,
         ])
       }
+    }
+
+    if !allowModelDownload {
+      let installed = Set(ModelManager.modelManager().downloadedTranslateModels.map(\.language)).union([.english])
+      guard installed.contains(sourceLanguage), installed.contains(targetLanguage) else {
+        reject("MODEL_DOWNLOAD_REQUIRED", "번역 언어 팩 다운로드가 필요해요.", nil)
+        return
+      }
+      translateText()
+      return
     }
 
     translator.downloadModelIfNeeded(
