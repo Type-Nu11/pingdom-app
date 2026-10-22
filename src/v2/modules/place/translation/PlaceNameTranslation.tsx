@@ -21,13 +21,14 @@ type Props = {
   renderContent?: (content: { name: string; description: string | null; onManage: () => void; hint: string }) => React.ReactNode;
   nameStyle?: StyleProp<TextStyle>;
   maxNameLength?: number;
+  titleMinHeight?: number;
   onNamePress?: () => void;
   category?: React.ReactNode;
   inlineCategory?: boolean;
   attributionPlacement?: 'title' | 'photos';
   onTranslationChange?: (state: TranslationDisplayState) => void;
 };
-export default function PlaceNameTranslation({ original, description = null, managementHint, renderContent, nameStyle, maxNameLength, onNamePress, category, inlineCategory = false, attributionPlacement = 'title', onTranslationChange }: Props) {
+export default function PlaceNameTranslation({ original, description = null, managementHint, renderContent, nameStyle, maxNameLength, titleMinHeight = 62, onNamePress, category, inlineCategory = false, attributionPlacement = 'title', onTranslationChange }: Props) {
   const { profile } = useProfile();
   const { i18n } = useTranslation();
   const { colors, typography } = useTheme();
@@ -136,7 +137,7 @@ export default function PlaceNameTranslation({ original, description = null, man
   const hint = managementHint ?? getTranslationManageHint(i18n.language);
   return (
     <View testID="place-name-translation" style={{ minWidth: 0 }}>
-      <View testID="place-name-translation-header" style={{ flexDirection: 'row', alignItems: 'center', minHeight: renderContent ? undefined : 62 * fontScale }}>
+      <View testID="place-name-translation-header" style={{ flexDirection: 'row', alignItems: 'center', minHeight: renderContent ? undefined : titleMinHeight * fontScale }}>
         {renderContent ? <View style={{ flex: 1, minWidth: 0 }}>{renderContent({
           name: fullName, description: isTranslated && validResult ? validResult.description : description,
           onManage: () => setOpen(true), hint,

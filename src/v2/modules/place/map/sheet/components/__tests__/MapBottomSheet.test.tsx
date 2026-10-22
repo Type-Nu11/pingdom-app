@@ -4,7 +4,7 @@ import { useSharedValue } from 'react-native-reanimated';
 import { MapSheetScrollToTopProvider } from '../../hooks/useMapSheetScrollToTop';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, PanResponder, Platform, ScrollView, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
+import { Animated, PanResponder, PixelRatio, Platform, ScrollView, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
@@ -238,6 +238,8 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByLabelText(selectedPlace.name)).toHaveStyle({ fontSize: 24, lineHeight: 31 });
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
+    expect(screen.getByTestId('place-name-translation-title')).toHaveTextContent(`${selectedPlace.name} 팝업`);
+    expect(screen.getByTestId('place-name-translation-header')).toHaveStyle({ minHeight: 31.2 * PixelRatio.getFontScale() });
     expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
     expect(screen.queryByText('23명이 검증했어요!')).toBeNull();
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ width: '100%', paddingLeft: 0, paddingRight: 0 });

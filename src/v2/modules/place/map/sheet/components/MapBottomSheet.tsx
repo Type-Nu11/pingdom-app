@@ -2181,6 +2181,8 @@ const ExpandedPlaceContent = ({
             onTranslationChange={translationAttribution.onTranslationChange}
           original={place.name}
           nameStyle={styles.detailTitle}
+          inlineCategory
+          titleMinHeight={31.2}
           category={<AppText ellipsizeMode="tail" numberOfLines={1} style={styles.detailCategory}>{t(`map.categories.${formatPreviewCategory(place.category)}`)}</AppText>}
         />
         {verificationSummary ? (
