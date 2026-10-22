@@ -109,7 +109,7 @@ export type VoiceCommandOutput = {
     reservationId: number; placeId: number; placeName: string; startsAt: string; endsAt: string; status: 'PENDING' | 'CONFIRMED';
   }>[]; hasMore: boolean }>;
   searchNearbyPlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'nearest_places' | 'bounded_candidates';
-    search?: Readonly<{ radiusKm: number; keywords: readonly string[]; matchedBy: 'place_or_menu'; candidateLimit: number;
+    search?: Readonly<{ radiusKm?: number; scope?: 'catalog_name'; keywords: readonly string[]; matchedBy: 'place_or_menu'; candidateLimit: number;
       evidence: readonly VoiceSearchEvidence[] }> }>;
   searchNearbyReservablePlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'bounded_candidates' }>;
   getPlaceDetails: Readonly<{ place: VoicePlaceFacts }>;

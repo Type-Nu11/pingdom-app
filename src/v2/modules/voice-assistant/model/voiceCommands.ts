@@ -118,9 +118,10 @@ function requireLocation(runtime: VoiceCommandRuntime) {
     || !Number.isFinite(location.longitude) || Math.abs(location.longitude) > 180) throw new VoiceCommandError('LOCATION_REQUIRED');
 }
 function validateSearch(request: Request<'searchNearbyReservablePlaces'> | Request<'searchNearbyPlaces'>, ex: Execution) {
-  if (!request.args.useCurrentLocation) throw new VoiceClarification('useCurrentLocation');
   const { radiusKm, placeListEnabled } = ex.runtime;
   if (!placeListEnabled) throw new VoiceCommandError('FORBIDDEN');
+  if (request.command === 'searchNearbyPlaces' && request.args.matchSource === 'name') return;
+  if (!request.args.useCurrentLocation) throw new VoiceClarification('useCurrentLocation');
   if (!Number.isFinite(radiusKm) || radiusKm <= 0) throw new VoiceCommandError('STALE_CONTEXT');
 }
 const DISCOVERY_CANDIDATE_LIMIT = 12;
@@ -129,8 +130,9 @@ async function searchDiscovery(request: Request<'searchNearbyPlaces'>, ex: Execu
   initial: DiscoveryList,
 ): Promise<VoiceCommandOutput['searchNearbyPlaces']> {
   const args = request.args;
-  const terms = args.matchTerms ?? [args.keyword!.trim()];
   const source = args.matchSource ?? 'any';
+  const byName = source === 'name';
+  const terms = byName ? [args.keyword!.trim()] : args.matchTerms ?? [args.keyword!.trim()];
   // Broader candidate words never become acceptance criteria.
   const keywords = [...new Set([args.keyword!, ...(source === 'name' ? [] : args.relatedKeywords ?? [])].map(word => word.trim()))];
   const inspect = async (lists: DiscoveryList[], hasNearby = false) => {
@@ -139,6 +141,8 @@ async function searchDiscovery(request: Request<'searchNearbyPlaces'>, ex: Execu
       if (!list.data || !Array.isArray(list.data.places)) return invalid();
       for (const candidate of list.data.places.slice(0, DISCOVERY_CANDIDATE_LIMIT)) {
         if (!candidate || !validId(candidate.id)) return invalid();
+        if (byName && (typeof candidate.name === 'string' || typeof candidate.englishName === 'string')
+          && !findDiscoveryEvidence([candidate.name, candidate.englishName], terms)) continue;
         const distance = candidate.distanceMeters;
         if (distance !== undefined && (typeof distance !== 'number' || !Number.isFinite(distance) || distance < 0)) return invalid();
         // Inspect direct evidence and related-word hits before an unfiltered nearby sample.
@@ -176,18 +180,18 @@ async function searchDiscovery(request: Request<'searchNearbyPlaces'>, ex: Execu
   };
   const direct = await inspect([initial]);
   let matches = direct.filter((match): match is NonNullable<typeof match> => Boolean(match)).slice(0, args.limit ?? 3);
-  let radiusKm = ex.runtime.radiusKm;
+  let radiusKm: number | undefined = byName ? undefined : ex.runtime.radiusKm;
   let lists = [initial];
-  if (!matches.length) {
+  if (!matches.length && !byName) {
     radiusKm = 20; // Existing /places distance-search contract maximum.
-    const queries: (string | undefined)[] = source === 'name' ? keywords : [...keywords, undefined];
+    const queries: (string | undefined)[] = [...keywords, undefined];
     lists = await Promise.all(queries.map(keyword => ex.query(ex.queries.list({
       latitude: ex.runtime.location!.latitude, longitude: ex.runtime.location!.longitude,
       radiusKm, ...(keyword ? { keyword } : {}),
       ...(args.category ? { category: args.category } : {}),
       page: 1, limit: DISCOVERY_CANDIDATE_LIMIT, sort: 'NEAREST',
     }))));
-    const expanded = await inspect(lists, source !== 'name');
+    const expanded = await inspect(lists, true);
     matches = expanded.filter((match): match is NonNullable<typeof match> => Boolean(match))
       .sort((a, b) => (a.candidate.distanceMeters ?? Infinity) - (b.candidate.distanceMeters ?? Infinity)).slice(0, args.limit ?? 3);
   }
@@ -199,7 +203,8 @@ async function searchDiscovery(request: Request<'searchNearbyPlaces'>, ex: Execu
     const proof = metadata(ex, [match.place.id], match.query);
     ex.commit.push(() => ex.provenance.recordVerifiedPlace(proof));
   }
-  return Object.freeze({ coverage: 'bounded_candidates', search: Object.freeze({ radiusKm, keywords, matchedBy: 'place_or_menu',
+  return Object.freeze({ coverage: 'bounded_candidates', search: Object.freeze({
+    ...(byName ? { scope: 'catalog_name' as const } : { radiusKm }), keywords, matchedBy: 'place_or_menu',
     candidateLimit: DISCOVERY_CANDIDATE_LIMIT, evidence: Object.freeze(matches.map(match => Object.freeze(match.evidence))) }),
     places: Object.freeze(matches.map(({ candidate, place }) => Object.freeze({ ...place,
       ...(candidate.distanceMeters !== undefined ? { distanceMeters: candidate.distanceMeters } : {}) }))) });
@@ -208,7 +213,9 @@ async function searchDiscovery(request: Request<'searchNearbyPlaces'>, ex: Execu
 const searchNearbyPlaces: VoiceCommandHandler<'searchNearbyPlaces'> = async (request, ex) => {
   const r = ex.runtime;
   const limit = request.args.limit ?? 3;
-  const list = await ex.query(ex.queries.list({ latitude: r.location!.latitude, longitude: r.location!.longitude,
+  const list = await ex.query(ex.queries.list(request.args.matchSource === 'name'
+    ? { keyword: request.args.keyword!.trim(), page: 1, limit: DISCOVERY_CANDIDATE_LIMIT }
+    : { latitude: r.location!.latitude, longitude: r.location!.longitude,
     radiusKm: r.radiusKm, page: 1, limit, sort: 'NEAREST',
     ...(request.args.keyword ? { keyword: request.args.keyword.trim() } : {}),
     ...(request.args.category ? { category: request.args.category } : {}),
@@ -460,8 +467,10 @@ export function createVoiceCommandDispatcher(options: {
       const invoke = entry as { policy: { allowsMutation: false }; validate: (c: CommandRequest, e: Execution) => void;
         handler: ((c: CommandRequest, e: Execution) => Promise<VoiceCommandOutput[VoiceCommandName]>) | null };
       if (invoke.policy.allowsMutation !== false || !invoke.handler) throw new VoiceCommandError('FORBIDDEN');
-      // Navigation uses app-owned destinations and does not need GPS. Preserve other commands' location policy.
-      if (command.command !== 'navigateToPage' && command.command !== 'getMyReservations') requireLocation(initial);
+      // Explicit business names use the catalog keyword contract, not a nearby GPS query.
+      const nameSearch = 'requiresRuntimeLocation' in entry.policy && entry.policy.requiresRuntimeLocation === 'unlessNameSearch'
+        && command.command === 'searchNearbyPlaces' && command.args.matchSource === 'name';
+      if (command.command !== 'navigateToPage' && command.command !== 'getMyReservations' && !nameSearch) requireLocation(initial);
       invoke.validate(command, ex);
       const data = await invoke.handler(command, ex);
       check();

@@ -669,6 +669,42 @@ test('general discovery projects server distance while refusing malformed distan
     .toMatchObject({ outcome: { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' } });
 });
 
+test.each(['granted', 'denied'] as const)('%s: 특정 가게 이름은 주변 반경과 위치 권한 없이 검색하고 상세 페이지로 이동한다', async permission => {
+  const x = setup();
+  const target = { ...facts, id: 70095, name: '용짬뽕', touristCategories: [] };
+  x.setPermission(permission);
+  if (permission === 'denied') x.setLocation(null);
+  x.setPlaces((params: { radiusKm?: number }) => ({ places: params.radiusKm ? [] : [target] }));
+  x.setDetail(target);
+  await x.controller.start();
+  const result = await x.send(generalSearch({ keyword: ' 용짬뽕 ', matchSource: 'name', category: 'RESTAURANT', touristCategory: 'FOOD' }));
+  expect(result).toMatchObject({ outcome: { status: 'succeeded', data: {
+    places: [target], search: { scope: 'catalog_name', keywords: ['용짬뽕'] },
+  } } });
+  expect(x.calls[0]).toMatchObject({ path: '/places', params: { keyword: '용짬뽕', page: 1, limit: 12 } });
+  expect(x.calls[0].params).not.toHaveProperty('latitude');
+  expect(x.calls[0].params).not.toHaveProperty('radiusKm');
+  expect(x.calls[0].params).not.toHaveProperty('category');
+  expect(x.calls[0].params).not.toHaveProperty('touristCategory');
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail', placeId: target.id }, 'open-named-place')))?.outcome.status).toBe('succeeded');
+  expect(x.navigation).toHaveBeenCalledWith({ page: 'placeDetail', placeId: target.id });
+  expect(x.calls.filter(call => call.path === `/places/${target.id}`)).toHaveLength(2);
+  expect(x.queryClient.getMutationCache().getAll()).toHaveLength(0);
+});
+
+test('가게 이름 조회에서는 넓은 일치어가 원래 가게 이름을 대체하지 않는다', async () => {
+  const x = setup();
+  const target = { ...facts, id: 70095, name: '용짬뽕' };
+  x.setPlaces({ places: [{ ...facts, id: 7, name: '옆집짬뽕' }, target] });
+  x.setDetail((path: string) => path === '/places/70095' ? target : { ...facts, id: 7, name: '옆집짬뽕' });
+  await x.controller.start();
+  expect(await x.send(generalSearch({ keyword: '용짬뽕', matchSource: 'name', matchTerms: ['짬뽕'], relatedKeywords: ['중식'] })))
+    .toMatchObject({ outcome: { status: 'succeeded', data: { places: [target] } } });
+  expect(x.calls.some(call => call.path === '/places/7' || call.path.endsWith('/menus'))).toBe(false);
+  expect((await x.send(command('navigateToPage', { page: 'placeDetail', placeId: 7 }, 'wrong-name')))?.outcome)
+    .toEqual({ status: 'rejected', code: 'ID_NOT_IN_CONTEXT' });
+});
+
 test('name or menu searches do not exclude untagged restaurants with inferred tourism categories', async () => {
   const x = setup();
   x.setPlaces({ places: [{ ...facts, id: 70095, name: '용짬뽕', category: 'RESTAURANT', touristCategories: [] }] });

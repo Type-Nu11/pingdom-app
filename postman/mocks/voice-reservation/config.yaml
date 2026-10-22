@@ -2,6 +2,7 @@ version: 1
 name: Voice reservation availability
 slug: voice-reservation
 protocol: http
+interceptRequests: true
 port: 4907
 scenarios:
   - name: default
