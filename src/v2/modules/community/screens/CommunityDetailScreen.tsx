@@ -24,6 +24,8 @@ import HeaderIconButton from '../components/HeaderIconButton';
 import LikeButton from '../components/LikeButton';
 import PostAuthor from '../components/PostAuthor';
 import PostPhotoGallery from '../components/PostPhotoGallery';
+import CommunityTranslationActions from '../components/CommunityTranslationActions';
+import { useCommunityTranslation } from '../hooks/useCommunityTranslation';
 import { useCreateComment, useInfiniteComments, usePost, useDeletePost, type CommunityPostDetail } from '../hooks/useCommunity';
 import { replyParentId } from '../model/commentThread';
 import { useCommunityPlaceEntry } from '../hooks/useCommunityPlaceEntry';
@@ -166,6 +168,7 @@ export default function CommunityDetailScreen({ onBack, onEditPost, onOpenPlace,
   const { t } = useTranslation();
   const theme = useTheme();
   const postQuery = usePost(postId);
+  const translation = useCommunityTranslation(`post-detail-${postId}`, [postQuery.data?.title ?? '', postQuery.data?.content ?? '']);
   const deletion = useDeletePost(postId);
   const deleteAction = useContentDeletion(() => deletion.mutateAsync(), onBack, postId);
   const commentsQuery = useInfiniteComments(postId, {}, { enabled: postQuery.isSuccess });
@@ -329,11 +332,12 @@ export default function CommunityDetailScreen({ onBack, onEditPost, onOpenPlace,
               {postQuery.data?.category?.categoryName ? (
                 <CategoryTag label={postQuery.data.category.categoryName} testID="v2-community-detail-category" />
               ) : null}
-              <Title accessibilityRole="header">{postQuery.data?.title}</Title>
+              <Title {...translation.textActions} accessibilityRole="header">{translation.texts[0]}</Title>
 
               {/* Figma keeps the author's blank lines between paragraphs, so the
                   content renders as one text block with its newlines intact. */}
-              <Body testID="v2-community-detail-body">{postQuery.data?.content ?? ''}</Body>
+              <Body {...translation.textActions} testID="v2-community-detail-body">{translation.texts[1]}</Body>
+              <CommunityTranslationActions translation={translation} />
 
               <PostPhotoGallery images={postQuery.data?.images} />
 

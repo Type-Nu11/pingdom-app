@@ -9,6 +9,8 @@ import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.s
 import { formatCommunityTime } from '../model/communityTime';
 import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityComment } from '../api/communityApi';
+import CommunityTranslationActions from './CommunityTranslationActions';
+import { useCommunityTranslation } from '../hooks/useCommunityTranslation';
 
 export type CommentItemProps = {
   comment: CommunityComment;
@@ -40,7 +42,8 @@ export default function CommentItem({
   const { i18n, t } = useTranslation();
   const theme = useTheme();
   const authorName = comment.authorName ?? '';
-  const content = comment.content ?? '';
+  const translation = useCommunityTranslation(`comment-${comment.commentId}`, [comment.content ?? '']);
+  const content = translation.texts[0];
   const relativeTime = formatCommunityTime(comment.createdAt, now, i18n.language);
   const isReply = variant === 'reply';
   const avatarSize = isReply ? 28 : 32;
@@ -54,6 +57,7 @@ export default function CommentItem({
       <AvatarPlaceholder height={avatarSize} width={avatarSize} />
       <Content>
         <Texts
+          {...translation.textActions}
           accessibilityLabel={t('community.detail.comments.a11yLabel', {
             author: isPostAuthor ? `${authorName}, ${t('community.detail.comments.authorBadge')}` : authorName,
             content,
@@ -72,6 +76,7 @@ export default function CommentItem({
           </NameRow>
           <Body>{content}</Body>
         </Texts>
+        <CommunityTranslationActions translation={translation} />
         {onReply || showLike ? (
           <Actions>
             {onReply ? (
@@ -117,7 +122,7 @@ const Row = styled.View<{ $indent: number }>`
   padding-left: ${({ $indent }) => $indent}px;
 `;
 const Content = styled.View`flex: 1; gap: 4px; min-width: 0;`;
-const Texts = styled.View`gap: 4px;`;
+const Texts = styled.Pressable`gap: 4px;`;
 const NameRow = styled.View`flex-direction: row; align-items: center; gap: 6px;`;
 const Name = styled(AppText)`color: ${({ theme }) => theme.colors.labelNormal}; ${({ theme }) => textStyleCss(theme.typography.labelBold)}`;
 // Figma `AuthorBadge`: 20px Primary/Tint pill, 6px sides, 6px corners.

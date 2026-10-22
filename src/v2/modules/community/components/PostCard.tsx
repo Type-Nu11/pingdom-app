@@ -14,6 +14,8 @@ import { extraPhotoCount, joinMeta } from '../model/photoCount';
 import CategoryTag from './CategoryTag';
 import CommunityImage from './CommunityImage';
 import PhotoCountBadge from './PhotoCountBadge';
+import CommunityTranslationActions from './CommunityTranslationActions';
+import { useCommunityTranslation } from '../hooks/useCommunityTranslation';
 
 /** Window-space bottom edge of the overflow icon, used to anchor its menu. */
 export type OverflowAnchor = { bottom: number };
@@ -40,6 +42,7 @@ export default function PostCard({ categoryName, ownerActions, showDivider = tru
   const { i18n, t } = useTranslation();
   const theme = useTheme();
   const overflowRef = useRef<View>(null);
+  const translation = useCommunityTranslation(`post-summary-${post.postId}`, [post.title ?? '', post.contentPreview ?? '']);
 
   const openOverflow = (event: GestureResponderEvent) => {
     event.stopPropagation();
@@ -54,7 +57,7 @@ export default function PostCard({ categoryName, ownerActions, showDivider = tru
   const tagLabel = post.category?.categoryName ?? categoryName;
   // The preview is the first 150 characters of the body, line breaks included;
   // the card shows it as a single line.
-  const preview = post.contentPreview?.replace(/\s+/g, ' ').trim();
+  const preview = translation.texts[1]?.replace(/\s+/g, ' ').trim();
   const relativeTime = formatCommunityTime(post.createdAt, now, i18n.language);
   const info = joinMeta([
     post.region,
@@ -68,8 +71,9 @@ export default function PostCard({ categoryName, ownerActions, showDivider = tru
 
   return (
     <Card
+      {...translation.textActions}
       $showDivider={showDivider}
-      accessibilityLabel={post.title}
+      accessibilityLabel={translation.texts[0]}
       accessibilityRole="button"
       onPress={onPress}
       testID={`v2-community-post-${post.postId}`}
@@ -94,7 +98,7 @@ export default function PostCard({ categoryName, ownerActions, showDivider = tru
 
       <Body $hasThumbnail={Boolean(post.imageUrl)}>
         <Texts>
-          <Title numberOfLines={2}>{post.title}</Title>
+          <Title numberOfLines={2}>{translation.texts[0]}</Title>
           {preview ? (
             <Preview numberOfLines={1} testID={`v2-community-post-${post.postId}-preview`}>{preview}</Preview>
           ) : null}
@@ -119,6 +123,8 @@ export default function PostCard({ categoryName, ownerActions, showDivider = tru
           </Thumbnail>
         ) : null}
       </Body>
+
+      <CommunityTranslationActions translation={translation} />
 
       {hasMeta ? (
         <Meta>
