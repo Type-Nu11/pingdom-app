@@ -16,10 +16,6 @@
 	<string>Microphone access lets you ask Pingdy with your voice.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Speech recognition converts your voice to text. Audio may be processed by the device speech service outside this device.</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
