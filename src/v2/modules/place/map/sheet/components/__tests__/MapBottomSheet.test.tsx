@@ -607,6 +607,7 @@ describe('MapBottomSheet recommendations', () => {
     });
     expect(screen.getByTestId('recommendation-featured-image').props.source)
       .toEqual({ uri: 'https://example.com/place.jpg' });
+    expect(screen.getByTestId('favorite-icon')).toHaveProp('color', lightColors.staticWhite);
     expect(screen.getByTestId('recommendation-featured-blur-image').props).toMatchObject({
       blurRadius: 2,
       source: { uri: 'https://example.com/place.jpg' },
@@ -1287,8 +1288,8 @@ describe('MapBottomSheet recommendations', () => {
 
   test.each([
     ['medium', 8, 16],
-    ['expanded', 0, 24],
-  ] as const)('%s 추천 시트 제목은 시트 가장자리 16dp, 카드는 화면 가장자리 24dp에 맞춘다', async (snapPoint, inset, cardPadding) => {
+    ['expanded', 8, 16],
+  ] as const)('%s 추천 제목과 카드는 다른 패널처럼 화면 가장자리 24dp에 맞춘다', async (snapPoint, inset, cardPadding) => {
     const commonProps = {
       activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
       content: { type: 'recommendations' } as const, expandedTranslateY: 130,
@@ -1307,7 +1308,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: inset, paddingRight: inset });
     const title = screen.getByText('나만을 위한 추천 장소');
     expect(title).toHaveStyle({ color: lightColors.labelStrong, fontSize: 20, lineHeight: 26 });
-    expect(screen.getByTestId('recommendation-header')).toHaveStyle({ paddingHorizontal: 16 });
+    expect(screen.getByTestId('recommendation-header')).toHaveStyle({ paddingHorizontal: 16, paddingTop: 9 });
     const cardRowStyle = [screen.getByTestId('recommendation-card-row').props.contentContainerStyle].flat()
       .reduce((merged, item) => ({ ...merged, ...(item || {}) }), {});
     expect(cardRowStyle).toMatchObject({ gap: 16, paddingHorizontal: cardPadding });

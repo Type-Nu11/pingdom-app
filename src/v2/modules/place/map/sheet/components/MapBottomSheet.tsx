@@ -547,10 +547,12 @@ const FeedSegment = ({
 const BookmarkStar = ({
   selected,
   size = 28,
+  onPhoto = false,
 }: {
   selected: boolean;
   size?: number;
-}) => <FavoriteIcon selected={selected} size={size} />;
+  onPhoto?: boolean;
+}) => <FavoriteIcon idleColor={onPhoto ? '#FFFFFF' : undefined} selected={selected} size={size} />;
 
 const formatDistance = (place: DecisionPlace, language: string) => {
   if (place.distanceMeters !== undefined) {
@@ -772,7 +774,7 @@ const RecommendationBookmarkButton = ({
         }}
         style={({ pressed }) => reduceMotion && pressed ? styles.bookmarkPressed : undefined}
       >
-        <BookmarkStar selected={bookmarked} size={size} />
+        <BookmarkStar onPhoto selected={bookmarked} size={size} />
       </Pressable>
     </Animated.View>
   );
@@ -975,7 +977,7 @@ const PlaceTrendCard = ({
       }}
       style={styles.homeBookmarkStar}
     >
-      <BookmarkStar selected={bookmarked} />
+      <BookmarkStar onPhoto selected={bookmarked} />
     </Pressable>
     <View style={styles.homeTrendCardBody}>
       <AppText numberOfLines={1} style={styles.homeTrendCardName}>
@@ -1036,7 +1038,7 @@ export const ExpandedPlaceCard = ({
       }}
       style={styles.homeBookmarkStar}
     >
-      <BookmarkStar selected={bookmarked} />
+      <BookmarkStar onPhoto selected={bookmarked} />
     </Pressable>
     <View style={styles.homeGridCardBody}>
       <AppText ellipsizeMode="tail" numberOfLines={2} style={styles.homeGridCardName}>{place.name}</AppText>
@@ -1189,7 +1191,7 @@ const ExpandedHomeContent = ({
                     style={[styles.categoryChip, active && styles.categoryChipActive]}
                   >
                     <CategoryIcon active={active} category={category.id} />
-                    <AppText style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
+                    <AppText maxFontSizeMultiplier={1} numberOfLines={1} style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
                       {t(`map.categories.${category.id}`)}
                     </AppText>
                   </Pressable>
@@ -2650,7 +2652,7 @@ export default function MapBottomSheet({
     <GlassStyles.BottomSheetContainer
       style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}
     >
-      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} expandsToFullScreen={content.type === 'place-preview'} contentInset={content.type === 'place-preview' || content.type === 'external-place' || (snapPoint === 'expanded' && content.type === 'recommendations') ? 0 : 8} testID="map-sheet">
+      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} expandsToFullScreen={content.type === 'place-preview'} contentInset={content.type === 'place-preview' || content.type === 'external-place' ? 0 : 8} testID="map-sheet">
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
@@ -3075,19 +3077,19 @@ const createStyles = (
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.backgroundNeutral,
-    borderRadius: 22,
+    borderRadius: 17,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 7,
-    height: 44,
+    gap: 6,
+    height: 34,
     justifyContent: 'center',
-    paddingHorizontal: 15,
+    paddingHorizontal: 11,
   },
   categoryChipActive: {
     backgroundColor: colors.selectedSurface,
     borderColor: colors.selectedBorder,
   },
-  categoryChipLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '700' },
+  categoryChipLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18.2, includeFontPadding: false },
   categoryChipLabelActive: { color: colors.primary },
   categoryRow: {
     gap: 9,
@@ -3179,16 +3181,16 @@ const createStyles = (
   cardBookmarkStar: { bottom: 5, padding: 4, position: 'absolute', right: 5, zIndex: 3 },
   bookmarkPressed: { opacity: 0.64 },
   recommendationContent: { paddingBottom: 108 },
-  recommendationCardRow: { gap: 16, paddingBottom: 16, paddingHorizontal: 16, paddingTop: 12 },
-  // Figma keeps the cards 24dp from the screen edge in both states (7973:10445, 7973:10640).
-  recommendationCardRowExpanded: { paddingHorizontal: 24 },
+  recommendationCardRow: { gap: 16, paddingBottom: 16, paddingHorizontal: 16, paddingTop: 3 },
+  // All page content retains its 8dp inset during movement; rows add 16dp.
+  recommendationCardRowExpanded: { paddingHorizontal: 16 },
   recommendationContext: { color: colors.primary, fontSize: 10, fontWeight: '700', marginTop: 4 },
   // Figma PlaceRecommend-Up (5408:26180): 16px gaps, Headline1/Bold title 14px above the cards.
   recommendationGridRows: { gap: 16 },
-  recommendationGridScroll: { gap: 16, paddingHorizontal: 24 },
+  recommendationGridScroll: { gap: 16, paddingHorizontal: 16 },
   recommendationGridTitle: { color: colors.labelStrong, fontSize: 20, fontWeight: '700', lineHeight: 26, marginBottom: 14, marginTop: 2, paddingHorizontal: 16 },
-  // Figma PlaceRecommend (7973:10494): title text 13dp below the handle, 16dp from the sheet edge.
-  recommendationHeader: { paddingHorizontal: 16 },
+  // Align the 26dp title with the other pages' centred 44dp title rows.
+  recommendationHeader: { paddingHorizontal: 16, paddingTop: 9 },
   recommendationReason: { color: colors.text, flex: 1, flexShrink: 1, fontSize: 11, fontWeight: '600', minWidth: 0 },
   reservationPlaceCard: { height: 214, minHeight: 214, width: 164 },
   reservationPlaceCardArtwork: { borderRadius: 16, height: 164 },
