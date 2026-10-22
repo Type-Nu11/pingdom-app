@@ -60,6 +60,19 @@ export default function RouteEndpointEditor(props: Props) {
     </Pressable>;
   }
   const savedPlaces = saved.places.filter(hasRouteDestinationCoordinates);
+  const savedCard = (p: typeof savedPlaces[number], fill = false) => <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={p.name}
+    testID={`route-saved-place-${p.id}`}
+    onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude, category: toMarkerCategory(p.category) })}
+    style={{ width: fill ? undefined : 150, flex: fill ? 1 : undefined, minWidth: 0, minHeight: 112,
+      padding: 12, borderRadius: 12, gap: 6, backgroundColor: theme.colors.surfaceElevated,
+      borderWidth: 1, borderColor: theme.colors.border, boxShadow: `0px 4px 12px 0px ${theme.colors.shadowFloat}` }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.primaryTint, alignItems: 'center', justifyContent: 'center' }}><StarIcon /></View>
+      {typeof p.distanceMeters === 'number' && Number.isFinite(p.distanceMeters) && p.distanceMeters >= 0 && <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.colors.labelAssistive, fontSize: 12 }}>{formatDistance(p.distanceMeters, i18n.resolvedLanguage ?? 'en')}</Text>}
+    </View>
+    <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{p.name}</Text>
+    <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{p.category ? t(`map.categories.${toMarkerCategory(p.category)}`) : p.address}</Text>
+  </Pressable>;
   return <View testID="route-endpoint-editor" style={{ position: 'absolute', left: 8, right: 8, bottom: Math.max(8, props.bottomInset), height: Math.min(558, props.maxHeight), boxShadow: theme.liquidGlass.sheet.shadow }}>
     <GlassSurface material={Platform.OS === 'ios' ? 'frosted' : 'liquid'} backdropBlurEnabled={Platform.OS !== 'ios'}
       tintColor={Platform.OS === 'ios' ? theme.colors.backgroundAssistive : theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
@@ -107,18 +120,15 @@ export default function RouteEndpointEditor(props: Props) {
             <Pressable accessibilityRole="button" onPress={() => { setShowAll(true); if (saved.hasNextPage && !saved.isFetchingNextPage) void saved.fetchNextPage(); }} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: muted, fontSize: 12 }}>{t('routes.editor.all')}</Text></Pressable>
           </View>
           {saved.isLoading ? <Skeleton count={2} accessibilityLabel={t('routes.editor.loading')} /> : saved.isError ? button(t('routes.editor.retrySaved'), () => { void saved.refetch(); }) : !savedPlaces.length ? <Text style={{ color: muted }}>{t('routes.editor.emptySaved')}</Text> :
-            <ScrollView horizontal={!showAll} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: showAll ? 0 : 24 }}>
-              {savedPlaces.map(p => <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={p.name}
-                onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude, category: toMarkerCategory(p.category) })}
-                style={{ width: showAll ? undefined : 150, padding: 12, borderRadius: 12, gap: 6, backgroundColor: theme.colors.surfaceMuted }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.primaryTint, alignItems: 'center', justifyContent: 'center' }}><StarIcon /></View>
-                  {typeof p.distanceMeters === 'number' && Number.isFinite(p.distanceMeters) && p.distanceMeters >= 0 && <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.colors.labelAssistive, fontSize: 12 }}>{formatDistance(p.distanceMeters, i18n.resolvedLanguage ?? 'en')}</Text>}
-                </View>
-                <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{p.name}</Text>
-                <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{p.category ? t(`map.categories.${toMarkerCategory(p.category)}`) : p.address}</Text>
-              </Pressable>)}
-              {showAll && saved.hasNextPage && button(t('routes.editor.more'), () => { if (!saved.isFetchingNextPage) void saved.fetchNextPage(); })}
+            showAll ? <View style={{ gap: 12, paddingVertical: 10 }} testID="route-saved-place-grid">
+              {Array.from({ length: Math.ceil(savedPlaces.length / 2) }, (_, index) => <View key={index} style={{ flexDirection: 'row', gap: 12, alignItems: 'stretch' }}>
+                {savedPlaces.slice(index * 2, index * 2 + 2).map(p => savedCard(p, true))}
+                {index * 2 + 1 >= savedPlaces.length ? <View style={{ flex: 1 }} /> : null}
+              </View>)}
+              {saved.hasNextPage && button(t('routes.editor.more'), () => { if (!saved.isFetchingNextPage) void saved.fetchNextPage(); })}
+            </View> : <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}
+              style={{ marginHorizontal: -8 }} contentContainerStyle={{ gap: 12, paddingHorizontal: 8, paddingVertical: 10 }} testID="route-saved-place-rail">
+              {savedPlaces.map(p => savedCard(p))}
             </ScrollView>}
           <RecentReservationPlaces owner={props.recentSearchOwner} onSelect={point => { Keyboard.dismiss(); props.onSelectDestination(point); }} />
         </>}

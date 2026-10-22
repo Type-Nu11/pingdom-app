@@ -393,6 +393,14 @@ test.each(['light', 'dark'] as const)('tap opens Figma place editor and saved se
   expect(screen.getByLabelText('Search places')).toBeVisible();
   expect(screen.getByText('Saved places')).toBeVisible();
   expect(screen.getByText('Recent reservations')).toBeVisible();
+  const rail = screen.getByTestId('route-saved-place-rail');
+  expect(rail).toHaveStyle({ marginHorizontal: -8 });
+  expect(rail.props.contentContainerStyle).toMatchObject({ paddingHorizontal: 8 });
+  expect(screen.getByTestId('route-saved-place-2')).toHaveStyle({ minHeight: 112,
+    boxShadow: `0px 4px 12px 0px ${colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.40)' : 'rgba(0, 0, 0, 0.12)'}` });
+  await user.press(screen.getByRole('button', { name: 'View all' }));
+  expect(screen.getByTestId('route-saved-place-grid')).toBeVisible();
+  expect(screen.getByTestId('route-saved-place-2')).toHaveStyle({ flex: 1, minWidth: 0 });
   await user.press(screen.getByRole('button', { name: 'Saved cafe' }));
   expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
   expect(findCarRoute).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ placeId: 2, latitude: 37.7, longitude: 127.2 }), expect.anything());
