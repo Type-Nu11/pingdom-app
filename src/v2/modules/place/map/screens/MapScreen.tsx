@@ -1415,7 +1415,7 @@ export default function MapScreen({
             onRetryResults={() => refetchPlaces({ cancelRefetch: false })}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
-            snapPoint={presentedSnapPoint}
+            snapPoint={isPlacePreview ? snapPoint : presentedSnapPoint}
             userName={profile?.username}
           />
         </MapSheetPage>

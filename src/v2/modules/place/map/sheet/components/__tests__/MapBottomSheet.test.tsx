@@ -1,4 +1,5 @@
 import { SheetMotionProvider } from '../../hooks/useSheetMotionStyle';
+import { useBottomSheet } from '../../hooks/useBottomSheet';
 import { useSharedValue } from 'react-native-reanimated';
 import { MapSheetScrollToTopProvider } from '../../hooks/useMapSheetScrollToTop';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
@@ -293,6 +294,67 @@ describe('MapBottomSheet recommendations', () => {
       expect(screen.getByTestId('place-detail-drag-heading').props.onMoveShouldSetResponderCapture).toBeUndefined();
       await user.press(screen.getByTestId('map-detail-back'));
       expect(onBackHome).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalOS });
+    }
+  });
+
+  test.each(['ios', 'android'] as const)('%s 상세 상단 빈 공간을 당기면 본문 스크롤 위치와 무관하게 미리보기로 축소한다', async (os) => {
+    const originalOS = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: os });
+    try {
+      const onBackHome = jest.fn();
+      const onToggleBookmark = jest.fn(async () => undefined);
+      const Sheet = () => {
+        const sheet = useBottomSheet({
+          collapsedTranslateY: 600, mediumTranslateY: 300, initialSnapPoint: 'expanded',
+        });
+        return <MapBottomSheet
+          activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+          content={{ type: 'place-preview', placeId: places[0].id }}
+          height={700} mediumTranslateY={300} onBackHome={onBackHome}
+          onDetailPress={jest.fn()} onFilterPress={jest.fn()} onGoNowPress={jest.fn()}
+          onHandlePress={jest.fn()} onPlacePress={jest.fn()} onQueryChange={jest.fn()}
+          onRetryRecommendations={jest.fn()} onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+          onToggleBookmark={onToggleBookmark} panHandlers={sheet.panHandlers}
+          places={places} recommendationPlaces={[]} recommendationsState="ready" selectedPlace={places[0]}
+          sheetChromeBottom={sheet.sheetChromeBottom} sheetTranslateY={sheet.sheetTranslateY}
+          snapPoint={sheet.snapPoint}
+        />;
+      };
+      const { user } = await renderWithProviders(<Sheet />);
+      const scroll = screen.getByTestId('map-expanded-place-scroll');
+      // The header stays reachable even when the place body has scrolled away.
+      expect(within(scroll).queryByTestId('map-detail-top-bar')).toBeNull();
+      await fireEvent.scroll(scroll, { nativeEvent: { contentOffset: { x: 0, y: 200 } } });
+      const header = screen.getByTestId('map-detail-top-bar');
+      await user.press(within(header).getAllByRole('button')[1]);
+      expect(onToggleBookmark).toHaveBeenCalledWith(places[0], true);
+      await user.press(screen.getByTestId('map-detail-back'));
+      expect(onBackHome).toHaveBeenCalledTimes(1);
+      onBackHome.mockClear();
+
+      const drag = within(header).getByTestId('map-detail-header-drag');
+      const event = (y: number, previousY: number, time: number) => ({
+        nativeEvent: { pageX: 100, pageY: y, touches: [{}] },
+        touchHistory: {
+          numberActiveTouches: 1, indexOfSingleActiveTouch: 0, mostRecentTimeStamp: time,
+          touchBank: [{
+            touchActive: true, startPageX: 100, startPageY: 150, startTimeStamp: 1,
+            currentPageX: 100, currentPageY: y, currentTimeStamp: time,
+            previousPageX: 100, previousPageY: previousY, previousTimeStamp: time - 16,
+          }],
+        },
+      });
+      expect(drag.props.onStartShouldSetResponderCapture(event(150, 150, 1))).toBe(false);
+      expect(drag.props.onMoveShouldSetResponderCapture(event(180, 150, 17))).toBe(true);
+      await act(() => drag.props.onResponderGrant(event(180, 150, 17)));
+      await act(() => drag.props.onResponderMove(event(280, 180, 33)));
+      await act(() => drag.props.onResponderRelease(event(280, 280, 49)));
+      expect(screen.queryByTestId('map-expanded-place-scroll')).not.toBeOnTheScreen();
+      expect(screen.getByTestId('place-preview-content')).toBeOnTheScreen();
+      expect(screen.getByLabelText(places[0].name)).toBeOnTheScreen();
+      expect(onBackHome).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(Platform, 'OS', { configurable: true, value: originalOS });
     }

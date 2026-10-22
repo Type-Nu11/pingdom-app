@@ -6,7 +6,7 @@ import { clampSheetValue, SheetMotionView, useSheetMotionStyle, useSheetMotion }
 
 type SurfaceProps = PropsWithChildren<{
   sheetChromeBottom: Animated.Value; expandedTranslateY?: number; mediumTranslateY: number;
-  opaque?: boolean; contentInset?: number; innerTestID?: string; testID: string;
+  opaque?: boolean; expandsToFullScreen?: boolean; contentInset?: number; innerTestID?: string; testID: string;
 }>;
 
 export default function MapSheetSurface(props: SurfaceProps) {
@@ -14,25 +14,33 @@ export default function MapSheetSurface(props: SurfaceProps) {
   return motion ? <UiMapSheetSurface {...props} /> : <LegacyMapSheetSurface {...props} />;
 }
 
-function UiMapSheetSurface({ children, expandedTranslateY = 0, mediumTranslateY, opaque = false,
+function UiMapSheetSurface({ children, expandedTranslateY = 0, mediumTranslateY, opaque = false, expandsToFullScreen = false,
   contentInset = 0, innerTestID, testID }: SurfaceProps) {
   const { liquidGlass } = useTheme();
   const motion = useSheetMotion()!;
   const { height } = motion;
   const { width } = useWindowDimensions();
   const topRadius = opaque ? 0 : liquidGlass.sheet.topRadius;
+  const sheetTopRadius = liquidGlass.sheet.topRadius;
   const bottomRadius = liquidGlass.sheet.bottomRadius;
   const end = Math.max(expandedTranslateY + 1, mediumTranslateY);
+  const followsPosition = expandsToFullScreen || !opaque;
   // Keep the blur recording tall and stable, while the visible bounds and
   // scroll viewport follow the finger instead of jumping at spring completion.
   // Children keep the expanded width behind that clip: narrowing their parent
   // must not reflow every photo and text row on every animation frame.
   const viewportStyle = useSheetMotionStyle(position => {
     'worklet';
-    const inset = opaque ? 0 : clampSheetValue(position, [expandedTranslateY, end], [0, 8]);
+    const inset = followsPosition ? clampSheetValue(position, [expandedTranslateY, end], [0, 8]) : 0;
     return { bottom: inset, left: inset, right: inset, transform: [{ translateY: -position }],
-      borderBottomLeftRadius: opaque ? 0 : clampSheetValue(position, [expandedTranslateY, end], [0, bottomRadius]),
-      borderBottomRightRadius: opaque ? 0 : clampSheetValue(position, [expandedTranslateY, end], [0, bottomRadius]) };
+      borderBottomLeftRadius: followsPosition ? clampSheetValue(position, [expandedTranslateY, end], [0, bottomRadius]) : 0,
+      borderBottomRightRadius: followsPosition ? clampSheetValue(position, [expandedTranslateY, end], [0, bottomRadius]) : 0 };
+  }, {});
+  const movingCorners = useSheetMotionStyle(position => {
+    'worklet';
+    const radius = expandsToFullScreen
+      ? clampSheetValue(position, [expandedTranslateY, end], [0, sheetTopRadius]) : topRadius;
+    return { borderTopLeftRadius: radius, borderTopRightRadius: radius };
   }, {});
   const restorePosition = useSheetMotionStyle(position => {
     'worklet';
@@ -40,7 +48,7 @@ function UiMapSheetSurface({ children, expandedTranslateY = 0, mediumTranslateY,
   }, {});
   const contentPosition = useSheetMotionStyle(position => {
     'worklet';
-    const inset = opaque ? 0 : clampSheetValue(position, [expandedTranslateY, end], [0, 8]);
+    const inset = followsPosition ? clampSheetValue(position, [expandedTranslateY, end], [0, 8]) : 0;
     return { height: Math.max(0, height - position - inset), transform: [{ translateX: -inset }, { translateY: position }] };
   }, {});
   const glassOpacity = useSheetMotionStyle(position => {
@@ -59,8 +67,8 @@ function UiMapSheetSurface({ children, expandedTranslateY = 0, mediumTranslateY,
       {/* Fit decoration to the inset viewport instead of clipping a full-window
           rounded surface. Content below retains its stable width during drag. */}
       <Styles.SheetChromeShadow testID={`${testID}-chrome`} style={[{ height, width: '100%', bottom: undefined,
-        ...topCorners, opacity: opaque ? 0 : 1, boxShadow: liquidGlass.sheet.shadow }, restorePosition]}>
-        <Styles.SheetChrome $borderColor={liquidGlass.sheet.rim} style={topCorners}>
+        ...topCorners, opacity: opaque && !expandsToFullScreen ? 0 : 1, boxShadow: liquidGlass.sheet.shadow }, movingCorners, restorePosition]}>
+        <Styles.SheetChrome $borderColor={liquidGlass.sheet.rim} style={[topCorners, movingCorners]}>
           <SheetMotionView pointerEvents="none" testID={`${testID}-background-glass`}
             style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }, glassOpacity]}>
             <Styles.SheetGlass cornerRadius={topRadius} glassEffectStyle="regular" highlightHeight={40}
@@ -76,7 +84,7 @@ function UiMapSheetSurface({ children, expandedTranslateY = 0, mediumTranslateY,
         them through to search, profile, categories and map controls on iOS. */}
     <Styles.SheetContentViewport pointerEvents="box-none" style={[clipBounds, viewportStyle]} testID={`${testID}-content-viewport`}>
       <SheetMotionView testID={`${testID}-content-position`} style={[{
-        width, ...topCorners, overflow: 'hidden' }, contentPosition]}>
+        width, ...topCorners, overflow: 'hidden' }, movingCorners, contentPosition]}>
         <Styles.SheetInner $clipContent $inset={opaque ? 0 : contentInset} $opaque={opaque}
           testID={innerTestID ?? `${testID}-inner`} style={opaque ? { width: '100%' } : undefined}>
           {children}

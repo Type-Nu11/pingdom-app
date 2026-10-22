@@ -2133,16 +2133,7 @@ const ExpandedPlaceContent = ({
   const scrollHandoff = useSheetScrollHandoff(sheetPanHandlers);
 
   return (
-    <View {...scrollHandoff.panHandlers} style={styles.sheetContent} testID="map-expanded-place-drag">
-    <GlassStyles.ExpandedPlaceScroll
-      bounces={false}
-      contentContainerStyle={[styles.detailContent, { paddingTop: insets.top }]}
-      onScroll={scrollHandoff.onScroll}
-      overScrollMode="never"
-      scrollEventThrottle={16}
-      showsVerticalScrollIndicator={false}
-      testID="map-expanded-place-scroll"
-    >
+    <View style={[styles.sheetContent, { paddingTop: insets.top }]}>
       <View style={styles.detailTopBar} testID="map-detail-top-bar">
         <Pressable
           accessibilityLabel={t('map.detail.back')}
@@ -2154,6 +2145,11 @@ const ExpandedPlaceContent = ({
         >
           <DetailBackAsset style={styles.detailRoundArtwork} />
         </Pressable>
+        <View
+          {...sheetPanHandlers}
+          style={styles.detailHeaderDragSpace}
+          testID="map-detail-header-drag"
+        />
         <Pressable
           accessibilityLabel={t(bookmarked ? 'map.sheet.bookmarkRemove' : 'map.sheet.bookmark')}
           accessibilityRole="button"
@@ -2167,6 +2163,16 @@ const ExpandedPlaceContent = ({
         </Pressable>
       </View>
 
+    <View {...scrollHandoff.panHandlers} style={styles.sheetContent} testID="map-expanded-place-drag">
+    <GlassStyles.ExpandedPlaceScroll
+      bounces={false}
+      contentContainerStyle={[styles.detailContent]}
+      onScroll={scrollHandoff.onScroll}
+      overScrollMode="never"
+      scrollEventThrottle={16}
+      showsVerticalScrollIndicator={false}
+      testID="map-expanded-place-scroll"
+    >
       <View style={styles.detailHeading} testID="place-detail-drag-heading">
         <PlaceNameTranslation
             attributionPlacement="photos"
@@ -2483,6 +2489,7 @@ const ExpandedPlaceContent = ({
       )}
     </GlassStyles.ExpandedPlaceScroll>
     </View>
+    </View>
   );
 };
 
@@ -2643,7 +2650,7 @@ export default function MapBottomSheet({
     <GlassStyles.BottomSheetContainer
       style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}
     >
-      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} contentInset={content.type === 'place-preview' || content.type === 'external-place' || (snapPoint === 'expanded' && content.type === 'recommendations') ? 0 : 8} testID="map-sheet">
+      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} expandsToFullScreen={content.type === 'place-preview'} contentInset={content.type === 'place-preview' || content.type === 'external-place' || (snapPoint === 'expanded' && content.type === 'recommendations') ? 0 : 8} testID="map-sheet">
       {!isExpandedPlaceDetail ? (
         <View
           {...panHandlers}
@@ -2903,6 +2910,7 @@ const createStyles = (
   detailCouponTitle: { color: colors.textStrong, fontSize: 16, fontWeight: '500', lineHeight: 21 },
   detailEmptyText: { color: colors.textMuted, fontSize: 12, paddingVertical: 24, textAlign: 'center' },
   detailHeading: { paddingBottom: 14, paddingHorizontal: 16 },
+  detailHeaderDragSpace: { alignSelf: 'stretch', flex: 1 },
   detailHighlightCount: { color: colors.primary, fontSize: 14, fontWeight: '700', position: 'absolute', right: 16 },
   detailHighlightCountOnStrong: { color: colors.textInverse },
   detailHighlightFill: {

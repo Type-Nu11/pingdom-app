@@ -81,6 +81,32 @@ test('settled snap changes do not resize a sheet at the same finger position', a
   expect(screen.getByTestId('sheet-content-position')).toHaveStyle({ height: 581 });
 });
 
+test.each([
+  [0, 0, 0, 0, 800],
+  [150, 4, 18, 24, 646],
+  [300, 8, 36, 48, 492],
+] as const)('full-screen place bounds follow position %s before either content layout settles', async (offset, inset, topRadius, bottomRadius, visibleHeight) => {
+  function Sheet({ opaque }: { opaque: boolean }) {
+    const position = useSharedValue<number>(offset);
+    return <SheetMotionProvider value={{ position, mediumTranslateY: 300, height: 800, restingTranslateY: 300 }}>
+      <MapSheetSurface testID="sheet" expandsToFullScreen opaque={opaque}
+        sheetChromeBottom={new Animated.Value(offset)} mediumTranslateY={300}><View /></MapSheetSurface>
+    </SheetMotionProvider>;
+  }
+  const view = await renderWithProviders(<Sheet opaque={false} />);
+  const bounds = { left: inset, right: inset, bottom: inset,
+    borderBottomLeftRadius: bottomRadius, borderBottomRightRadius: bottomRadius };
+  const corners = { borderTopLeftRadius: topRadius, borderTopRightRadius: topRadius };
+  const checkBounds = () => {
+    expect(screen.getByTestId('sheet-content-viewport')).toHaveStyle(bounds);
+    expect(screen.getByTestId('sheet-content-position')).toHaveStyle({ height: visibleHeight, ...corners });
+    expect(screen.getByTestId('sheet-chrome')).toHaveStyle({ opacity: 1, ...corners });
+  };
+  checkBounds();
+  await view.rerender(<Sheet opaque />);
+  checkBounds();
+});
+
 test.each(['LIGHT', 'DARK'] as const)('%s shares chrome and content bounds through drag offsets', async appearancePreference => {
   for (const bottom of [0, 150, 300, 600]) {
     const view = await renderWithProviders(<MapSheetSurface testID="sheet" sheetChromeBottom={new Animated.Value(bottom)} mediumTranslateY={300}>
