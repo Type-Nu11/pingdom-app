@@ -119,12 +119,19 @@ test('refresh failure keeps favorites and offers query recovery', async () => {
 
 test.each([
   ['medium', 8],
-  ['expanded', 0],
-] as const)('%s 시트 내용은 Figma처럼 시트 가장자리에서 16dp(중간은 시트 8dp 안쪽)에 놓인다', async (snapPoint, inset) => {
+  ['expanded', 8],
+] as const)('%s에서도 같은 콘텐츠 여백을 유지해 스냅 완료 시 위치가 튀지 않는다', async (snapPoint, inset) => {
   await renderWithProviders(
     <FavoritePlacesBottomSheet {...props} expandedTranslateY={130} snapPoint={snapPoint} />,
   );
   expect(screen.getByTestId('favorites-sheet-inner')).toHaveStyle({ paddingLeft: inset, paddingRight: inset });
+});
+
+test('필터 칩은 커뮤니티와 같은 34dp 높이와 14dp 글자 크기를 유지한다', async () => {
+  await renderWithProviders(<FavoritePlacesBottomSheet {...props} />);
+  expect(screen.getByRole('tab', { name: '전체' })).toHaveStyle({ height: 34, paddingHorizontal: 11 });
+  expect(screen.getByText('전체')).toHaveStyle({ fontSize: 14, lineHeight: 18.2 });
+  expect(screen.getByText('전체').props.maxFontSizeMultiplier).toBe(1);
 });
 
 test('제목과 칩 영역도 시트 드래그를 시작할 수 있다', async () => {
@@ -139,7 +146,7 @@ test.each(['LIGHT', 'DARK'] as const)('%s 즐겨찾기는 칩 그림자를 부�
   await renderWithProviders(<FavoritePlacesBottomSheet {...props} />, { appearancePreference });
   expect(screen.getByTestId('favorites-category-scroll')).toHaveStyle({ overflow: 'visible' });
   expect(screen.getByRole('tab', { name: '전체' })).toHaveStyle({
-    boxShadow: `0px 2px 8px -2px ${appearancePreference === 'LIGHT' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.40)'}`,
+    boxShadow: `0px 4px 20px 0px ${appearancePreference === 'LIGHT' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.40)'}`,
   });
   expect(screen.getByTestId('favorites-sheet-content-viewport')).toHaveStyle({ overflow: 'hidden' });
 });

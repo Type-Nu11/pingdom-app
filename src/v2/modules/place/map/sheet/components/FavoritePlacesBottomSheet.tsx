@@ -226,7 +226,7 @@ export default function FavoritePlacesBottomSheet({
   useMapSheetScrollToTop(() => scrollRef.current?.scrollTo({ animated: true, y: 0 }));
   const footerSpace = getMapSheetNavigationBottom(insets.bottom) + 64 + 16;
   // Content runs behind the glass footer; bottom padding keeps the last row reachable.
-  const availableListHeight = Math.max(0, height - 125);
+  const availableListHeight = Math.max(0, height - (19 + 44 + 34));
   const listHeight = sheetChromeBottom.interpolate({
     inputRange: [0, Math.max(1, availableListHeight)],
     outputRange: [availableListHeight, 0],
@@ -255,7 +255,7 @@ export default function FavoritePlacesBottomSheet({
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
-      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={snapPoint === 'expanded' ? 0 : 8} innerTestID="favorites-sheet-inner" testID="favorites-sheet">
+      <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={8} innerTestID="favorites-sheet-inner" testID="favorites-sheet">
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
             accessibilityLabel={t('map.favorites.adjust')}
@@ -294,7 +294,7 @@ export default function FavoritePlacesBottomSheet({
                   style={[styles.categoryChip, active && styles.categoryChipActive]}
                 >
                   {Icon ? <Icon color={active ? theme.liquidGlass.category.activeForeground : colors.textAlternative} height={18} width={iconWidth} /> : null}
-                  <AppText style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</AppText>
+                  <AppText maxFontSizeMultiplier={1} numberOfLines={1} style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{label}</AppText>
                 </Pressable>
               );
             })}
@@ -375,13 +375,13 @@ export default function FavoritePlacesBottomSheet({
 const createStyles = ({ colors, liquidGlass: glass }: AppTheme): Record<string, object> => ({
   categoryChip: {
     alignItems: 'center', backgroundColor: glass.category.tint, borderColor: glass.sheet.rim,
-    boxShadow: `0px 2px 8px -2px ${colors.shadowFloat}`, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 6, height: 36, justifyContent: 'center', paddingHorizontal: 12,
+    boxShadow: glass.category.shadow, borderRadius: 17, borderWidth: 1, flexDirection: 'row', gap: 6, height: 34, justifyContent: 'center', paddingHorizontal: 11,
   },
   categoryChipActive: { backgroundColor: glass.category.activeTint, borderColor: glass.category.activeBorder },
-  categoryContent: { gap: 8, paddingBottom: 10, paddingHorizontal: 16, paddingTop: 16 },
-  categoryLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18, includeFontPadding: false },
+  categoryContent: { gap: 8, paddingHorizontal: 16 },
+  categoryLabel: { color: colors.textAlternative, fontSize: 14, fontWeight: '500', lineHeight: 18.2, includeFontPadding: false },
   categoryLabelActive: { color: glass.category.activeForeground },
-  categoryScroll: { flexGrow: 0, height: 62, overflow: 'visible' },
+  categoryScroll: { flexGrow: 0, height: 34, overflow: 'visible' },
   content: { flex: 1 },
   emptyBody: { color: colors.textMuted, fontSize: 13, marginTop: 5 },
   emptyState: { alignItems: 'center', paddingTop: 12 },
