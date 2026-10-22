@@ -1,7 +1,9 @@
 import React from 'react';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Alert, AppState, Linking, type AppStateStatus } from 'react-native';
-import { renderWithProviders } from '../../../../../app/testing/testProviders';
+import { createTestQueryClient, renderWithProviders } from '../../../../../app/testing/testProviders';
+import { createReservationsQueryOptions } from '../../../../booking/reservations';
+import { createPlaceDetailQueryOptions } from '../../../detail';
 import { ApiError } from '../../../../../shared/api/ApiError';
 import CarRoutePreview from '../components/CarRoutePreview';
 import { findWalkingRoute } from '../api/walkingRoutesApi';
@@ -390,10 +392,32 @@ test.each(['light', 'dark'] as const)('tap opens Figma place editor and saved se
   expect(screen.queryByRole('tab', { name: 'Car' })).toBeNull();
   expect(screen.getByLabelText('Search places')).toBeVisible();
   expect(screen.getByText('Saved places')).toBeVisible();
-  expect(screen.getByText('Recent searches')).toBeVisible();
+  expect(screen.getByText('Recent reservations')).toBeVisible();
   await user.press(screen.getByRole('button', { name: 'Saved cafe' }));
   expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
   expect(findCarRoute).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ placeId: 2, latitude: 37.7, longitude: 127.2 }), expect.anything());
+});
+
+test('a booked place always fills destination while a manually entered origin is preserved', async () => {
+  const client = createTestQueryClient();
+  const booked = { id: 55, name: '예약한 식당', address: '예약지 주소', roadAddress: null, latitude: 35.9, longitude: 128.6 };
+  client.setQueryData([...createReservationsQueryOptions({ page: 1, limit: 20 }).queryKey, 'user:101'], {
+    pages: [{ reservations: [{ id: 99, touristUserId: 101, status: 'CONFIRMED', createdAt: '2030-10-21T00:00:00Z',
+      reservationStartsAt: '2030-10-30T03:00:00Z', confirmation: { placeId: booked.id, placeName: booked.name, startsAt: '2030-10-30T03:00:00Z', timezone: 'Asia/Seoul' } }], hasNext: false }], pageParams: [1],
+  });
+  client.setQueryData(createPlaceDetailQueryOptions(booked.id).queryKey, booked);
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} initialOriginSelection="manual" recentSearchOwner={{ kind: 'user', userId: 101 }} />, { queryClient: client });
+  await user.press(screen.getByRole('button', { name: '예약한 식당 도착지로 설정' }));
+  expect(screen.getByTestId('route-endpoint-editor')).toBeVisible();
+  expect(screen.getByRole('button', { name: '도착 장소 편집, 예약한 식당' })).toBeVisible();
+  expect(findCarRoute).not.toHaveBeenCalled();
+  await user.type(screen.getByTestId('route-endpoint-search'), 'New place');
+  await user.press(await screen.findByText('New place'));
+  await user.press(screen.getByTestId('route-origin-row'));
+  await user.press(screen.getByRole('button', { name: '예약한 식당 도착지로 설정' }));
+  expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
+  expect(findCarRoute).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'New place', latitude: 37.9 }),
+    expect.objectContaining({ placeId: booked.id, latitude: booked.latitude, longitude: booked.longitude }), expect.anything());
 });
 
 test('search result edits origin, and changing both endpoints permits routes without GPS permission', async () => {

@@ -284,6 +284,10 @@ export default function CarRoutePreview({ initialEndpointRole = 'destination', i
         </> : editing ? <RouteEndpointEditor role={editing} origin={origin} destination={destination} recentSearchOwner={recentSearchOwner}
           bottomInset={insets.bottom} maxHeight={Math.max(240, viewport.height - insets.top - 70)} onRole={setEditing}
           onClose={() => setEditing(null)} onShare={shareDestination} onSelect={selectEndpoint} onRefreshLocation={onRefreshLocation}
+          onSelectDestination={point => {
+            changeEndpoints([selections[0], point]);
+            setEditing(selections[0] ? null : 'origin'); setMapPicking(false);
+          }}
           onMap={() => setMapPicking(true)} /> : <RoutePlannerSheet origin={origin} destination={destination} mode={mode} stateKey={stateKey} ready={ready}
           bottomInset={insets.bottom} maxHeight={Math.max(240, viewport.height - insets.top - 70)}
           onLayout={event => setSheetHeight(event.nativeEvent.layout.height)} hasOrigin={!!originCoordinate}

@@ -13,20 +13,21 @@ import type { RouteDestination } from '../model/routeUi';
 import { hasRouteDestinationCoordinates } from '../model/routeUi';
 import type { EndpointRole } from './RouteEndpointRows';
 import RouteHeader from './RouteHeader';
+import RecentReservationPlaces from './RecentReservationPlaces';
 import { formatDistance } from '../../../../../shared/i18n/formatters';
 import OriginIcon from '../assets/origin.svg';
 import DestinationIcon from '../assets/edit_destination.svg';
 import StarIcon from '../assets/saved_star.svg';
-import ClockIcon from '../assets/recent_clock.svg';
 
 type Props = {
   role: EndpointRole; origin: RouteDestination | null; destination: RouteDestination | null;
   bottomInset: number; maxHeight: number; recentSearchOwner?: RecentSearchOwner;
   onRole: (role: EndpointRole) => void; onClose: () => void; onShare: () => void;
   onSelect: (point: RouteDestination | null) => void; onMap: () => void; onRefreshLocation: () => void;
+  onSelectDestination: (point: RouteDestination) => void;
 };
 
-/** Figma 8892:11110. Saved places and searches are account-owned live data. */
+/** Figma 8892:11110. Saved places and reservations use the signed-in account. */
 export default function RouteEndpointEditor(props: Props) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -36,7 +37,6 @@ export default function RouteEndpointEditor(props: Props) {
   const saved = useBookmarkedPlaces();
   const recent = useRecentSearchStore();
   const ownerKey = props.recentSearchOwner ? getRecentSearchOwnerKey(props.recentSearchOwner) : undefined;
-  const history = ownerKey && recent.activeOwnerKey === ownerKey ? recent.items : [];
   useEffect(() => {
     if (props.recentSearchOwner) void useRecentSearchStore.getState().activateOwner(props.recentSearchOwner);
   }, [ownerKey]);
@@ -120,17 +120,7 @@ export default function RouteEndpointEditor(props: Props) {
               </Pressable>)}
               {showAll && saved.hasNextPage && button(t('routes.editor.more'), () => { if (!saved.isFetchingNextPage) void saved.fetchNextPage(); })}
             </ScrollView>}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text accessibilityRole="header" style={{ color: ink, fontSize: 18, fontWeight: '700' }}>{t('routes.editor.recent')}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('routes.editor.clear')} disabled={!ownerKey || !history.length}
-              onPress={() => { if (props.recentSearchOwner) void recent.clearSearches(props.recentSearchOwner); }} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: muted, fontSize: 12 }}>{t('routes.editor.clear')}</Text></Pressable>
-          </View>
-          {history.length ? history.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={t('routes.editor.recentSearch', { name: item.query })}
-            onPress={() => setQuery(item.query)} style={{ minHeight: 64, paddingVertical: 16, gap: 12, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: theme.colors.border }}>
-            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' }}><ClockIcon /></View>
-            <View style={{ flex: 1, minWidth: 0, gap: 2 }}><Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{item.query}</Text>
-              {!!item.address && <Text numberOfLines={1} style={{ color: theme.colors.labelAssistive, fontSize: 12, lineHeight: 15.6 }}>{item.address}</Text>}</View>
-          </Pressable>) : <Text style={{ color: muted }}>{t('routes.editor.emptyRecent')}</Text>}
+          <RecentReservationPlaces owner={props.recentSearchOwner} onSelect={point => { Keyboard.dismiss(); props.onSelectDestination(point); }} />
         </>}
       </ScrollView>
     </GlassSurface>
