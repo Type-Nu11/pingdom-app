@@ -206,7 +206,7 @@ export default function CommunityBottomSheet({
 
   return (
     <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
-      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={snapPoint === 'expanded' ? 0 : 8} innerTestID="v2-community-sheet-inner" testID="community-sheet">
+      <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={8} innerTestID="v2-community-sheet-inner" testID="community-sheet">
         <HandleArea {...panHandlers}>
           <HandleButton accessibilityLabel={t('community.sheetAdjust')} accessibilityRole="adjustable" onPress={onHandlePress}>
             <Handle />
@@ -410,9 +410,11 @@ const CategoryChip = styled.Pressable<{ $expanded: boolean; $selected: boolean }
     $selected ? theme.liquidGlass.category.activeTint : $expanded ? theme.colors.background : theme.liquidGlass.category.tint
   )};
 `;
-const CategoryLabel = styled(AppText)<{ $selected: boolean }>`
+const CategoryLabel = styled(AppText).attrs({ maxFontSizeMultiplier: 1, numberOfLines: 1 })<{ $selected: boolean }>`
   color: ${({ $selected, theme }) => ($selected ? theme.liquidGlass.category.activeForeground : theme.colors.textAlternative)};
   ${({ theme }) => textStyleCss(theme.typography.labelMedium)}
+  line-height: 18.2px;
+  include-font-padding: false;
 `;
 
 

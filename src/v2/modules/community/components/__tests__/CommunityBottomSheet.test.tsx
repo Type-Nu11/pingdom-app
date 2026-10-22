@@ -263,7 +263,7 @@ describe('CommunityBottomSheet header alignment', () => {
 
   test.each([
     ['medium', 8],
-    ['expanded', 0],
+    ['expanded', 8],
   ] as const)('%s 커뮤니티 시트는 즐겨찾기·예약과 같은 내부 여백을 사용한다', async (snapPoint, inset) => {
     await renderSheet(
       <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />,
@@ -276,7 +276,10 @@ describe('CommunityBottomSheet header alignment', () => {
       <CommunityBottomSheet {...createBottomSheetProps()} {...navigation} expandedTranslateY={130} snapPoint="medium" />,
     );
     const halfChip = screen.getByTestId('v2-community-sheet-category-TRAVEL');
-    expect(halfChip).toHaveStyle({ backgroundColor: lightLiquidGlass.category.tint, boxShadow: lightLiquidGlass.category.shadow });
+    expect(halfChip).toHaveStyle({ height: 34, paddingLeft: 11, paddingRight: 11,
+      backgroundColor: lightLiquidGlass.category.tint, boxShadow: lightLiquidGlass.category.shadow });
+    expect(screen.getByText('전체')).toHaveStyle({ fontSize: 14, lineHeight: 18.2 });
+    expect(screen.getByText('전체').props.maxFontSizeMultiplier).toBe(1);
     half.unmount();
 
     await renderSheet(
