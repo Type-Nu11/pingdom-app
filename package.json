@@ -97,7 +97,6 @@
     "react": "19.2.0",
     "react-i18next": "^17.0.8",
     "react-native": "0.83.6",
-    "react-native-element-dropdown": "^2.12.4",
     "react-native-keyboard-controller": "^1.20.7",
     "react-native-keychain": "^10.0.0",
     "react-native-markdown-display": "^7.0.2",
