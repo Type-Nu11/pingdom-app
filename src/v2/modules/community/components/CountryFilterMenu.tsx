@@ -8,7 +8,7 @@ import { textStyleCss } from '../../../shared/theme/typography';
 import AnchoredMenu, { type AnchoredMenuPosition } from './AnchoredMenu';
 
 export type CountryFilterMenuProps = {
-  /** Codes from `GET /community/countries`, in server order. */
+  /** Codes accepted by `GET /community/countries`. */
   countries: readonly string[];
   isError: boolean;
   isLoading: boolean;
@@ -21,7 +21,13 @@ export type CountryFilterMenuProps = {
   visible: boolean;
 };
 
-// Figma `alert` (9939:38239): a 200px frosted card with 24px corners,
+const FIGMA_COUNTRY_ORDER: readonly string[] = ['KR', 'US', 'JP', 'VN', 'CN', 'TH'];
+const countryRank = (code: string) => {
+  const index = FIGMA_COUNTRY_ORDER.indexOf(code.trim().toUpperCase());
+  return index === -1 ? FIGMA_COUNTRY_ORDER.length : index;
+};
+
+// Figma `alert` (10250:35993): a 200px frosted card with 24px corners,
 // menu, one 52px row per country with the active one in `Primary/Normal`. The
 // design has no "all countries" row, so tapping the active country clears it.
 export default function CountryFilterMenu({
@@ -35,12 +41,21 @@ export default function CountryFilterMenu({
   selectedCountryCode,
   visible,
 }: CountryFilterMenuProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const countryName = (countryCode: string) => {
+    const normalized = countryCode.trim().toUpperCase();
+    for (const key of [`community.countries.${normalized}`, `countries.${normalized.toLowerCase()}`]) {
+      if (i18n.exists(key)) return t(key);
+    }
+    return countryCode;
+  };
+  const orderedCountries = [...countries].sort((left, right) => countryRank(left) - countryRank(right));
 
   return (
     <AnchoredMenu dismissLabel={t('community.filter.dismiss')} onClose={onClose} position={position} visible={visible}
-      cornerRadius={24} tintColor={theme.colorScheme === 'light' ? 'rgba(255,255,255,0.88)' : theme.liquidGlass.fallbackSurface}
+      cornerRadius={24} material="frosted" maxHeight={358}
+      tintColor={theme.colorScheme === 'light' ? 'rgba(255,255,255,0.88)' : theme.liquidGlass.fallbackSurface}
       testID="v2-community-country-menu">
       {isLoading ? (
         <Skeleton variant="text" accessibilityLabel={t('community.filter.loading')} testID="v2-community-country-loading" style={{ padding: 12 }} />
@@ -51,7 +66,7 @@ export default function CountryFilterMenu({
             <RetryLabel>{t('community.filter.retry')}</RetryLabel>
           </RetryButton>
         </StateColumn>
-      ) : countries.map((countryCode, index) => {
+      ) : orderedCountries.map((countryCode, index) => {
         const selected = countryCode === selectedCountryCode;
         return (
           <React.Fragment key={countryCode}>
@@ -67,7 +82,7 @@ export default function CountryFilterMenu({
               testID={`v2-community-country-${countryCode}`}
             >
               <RowLabel $selected={selected}>
-                {t(`community.countries.${countryCode}`, { defaultValue: countryCode })}
+                {countryName(countryCode)}
               </RowLabel>
             </Row>
           </React.Fragment>

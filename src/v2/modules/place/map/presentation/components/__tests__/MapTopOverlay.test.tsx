@@ -1,5 +1,6 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import React from 'react';
+import { Platform } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors, darkLiquidGlass, lightLiquidGlass } from '../../../../../../shared/theme';
@@ -25,6 +26,13 @@ const props = {
 };
 
 describe('MapTopOverlay', () => {
+  test.each(['LIGHT', 'DARK'] as const)('iOS %s: category controls retain their theme surface instead of adaptive gray glass', async appearancePreference => {
+    jest.replaceProperty(Platform, 'OS', 'ios');
+    const colors = appearancePreference === 'LIGHT' ? lightColors : darkColors;
+    await renderWithProviders(<MapTopOverlay {...props} activeCategory="food" />, { appearancePreference });
+    expect(screen.getByRole('button', { name: '음악' })).toHaveStyle({ backgroundColor: colors.surfaceElevated });
+    expect(screen.getByRole('button', { name: '음식점' })).toHaveStyle({ backgroundColor: colors.selectedSurface });
+  });
   test.each(['LIGHT', 'DARK', 'SYSTEM'] as const)('%s에서 선택 상태와 테마 대비를 유지한다', async (appearancePreference) => {
     const colors = appearancePreference === 'LIGHT' ? lightColors : darkColors;
     const glass = appearancePreference === 'LIGHT' ? lightLiquidGlass : darkLiquidGlass;

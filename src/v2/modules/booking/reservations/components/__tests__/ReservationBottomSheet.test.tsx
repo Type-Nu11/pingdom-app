@@ -1,6 +1,7 @@
+import { MapSheetScrollToTopProvider } from '../../../../place/map/sheet';
 import React, { type ReactElement, type PropsWithChildren } from 'react';
 import { render, screen, userEvent } from '@testing-library/react-native';
-import { Animated, type GestureResponderHandlers } from 'react-native';
+import { ScrollView, Animated, type GestureResponderHandlers } from 'react-native';
 import { I18nextProvider } from 'react-i18next';
 import { ThemeProvider } from 'styled-components/native';
 
@@ -225,7 +226,7 @@ describe('ReservationBottomSheet', () => {
     );
 
     expect(screen.getByText('Reservations near your current location')).toBeVisible();
-    expect(screen.getByRole('tab', { name: 'Reservations', selected: true })).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Booking', selected: true })).toBeVisible();
   });
 });
 
@@ -265,7 +266,7 @@ test('예약 시트 제목은 다른 페이지 시트와 같이 핸들 아래 13
 
 test.each([
   ['medium', 8],
-  ['expanded', 0],
+  ['expanded', 8],
 ] as const)('%s 예약 시트는 펼치면 시트와 함께 전폭이 되어 내용이 가장자리에서 16dp에 놓인다', async (snapPoint, inset) => {
   jest.mocked(useReservations).mockReturnValue(queryResult({ data: { reservations: [], totalElements: 0 } }));
   await renderReservations(<ReservationBottomSheet {...bottomSheet} {...navigation} expandedTranslateY={130} snapPoint={snapPoint} />);
@@ -287,4 +288,15 @@ test.each([
     />,
   );
   expect(screen.getByTestId('sheet-expanded-fill')).toHaveStyle({ backgroundColor: theme.colors.backgroundAssistive, opacity });
+});
+
+test('더블 탭은 예약 목록도 처음으로 이동하고 목록은 네브바 뒤까지 이어진다', async () => {
+  jest.mocked(useReservations).mockReturnValue(queryResult({ data: { hasNext: false, limit: 20, page: 1, reservations: [], totalCount: 0, totalPages: 0 } }));
+  const scroll = jest.spyOn(ScrollView.prototype, 'scrollTo');
+  const ui = (request: number) => <MapSheetScrollToTopProvider value={request}><ReservationBottomSheet {...expandedBottomSheet} {...navigation} /></MapSheetScrollToTopProvider>;
+  const view = await renderReservations(ui(0));
+  scroll.mockClear();
+  await view.rerender(ui(1));
+  expect(scroll).toHaveBeenCalledWith({ animated: true, y: 0 });
+  scroll.mockRestore();
 });

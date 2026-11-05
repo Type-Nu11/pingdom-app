@@ -1,7 +1,9 @@
 import React from 'react';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Alert, AppState, Linking, type AppStateStatus } from 'react-native';
-import { renderWithProviders } from '../../../../../app/testing/testProviders';
+import { createTestQueryClient, renderWithProviders } from '../../../../../app/testing/testProviders';
+import { createReservationsQueryOptions } from '../../../../booking/reservations';
+import { createPlaceDetailQueryOptions } from '../../../detail';
 import { ApiError } from '../../../../../shared/api/ApiError';
 import CarRoutePreview from '../components/CarRoutePreview';
 import { findWalkingRoute } from '../api/walkingRoutesApi';
@@ -38,6 +40,23 @@ const destination = { placeId: 1, name: '목적지', latitude: 37.6, longitude: 
 const location = { status: 'granted' as const, canAskAgain: true as const, coordinate: { lat: 37.5, lng: 127, accuracyMeters: 10, observedAt: new Date().toISOString() } };
 const route = { path: [{ lat: 37.501, lng: 127.001 }, { lat: 37.8, lng: 127.3 }, { lat: 37.601, lng: 127.101 }], distanceMeters: 12500, durationSeconds: 1800 };
 const props = { destination, location, onClose: jest.fn(), onRefreshLocation: jest.fn() };
+
+test.each(['ko', 'en'] as const)('assistant directions keeps the booked destination and asks for an origin in %s', async language => {
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} initialOriginSelection="manual" />, { language });
+  expect(screen.getByTestId('route-endpoint-editor')).toBeVisible();
+  expect(screen.getByLabelText(language === 'ko' ? '장소 검색' : 'Search places')).toBeVisible();
+  expect(screen.getByRole('button', {
+    name: language === 'ko' ? `도착 장소 편집, ${destination.name}` : `Edit Destination, ${destination.name}`,
+  })).toBeVisible();
+  expect(findCarRoute).not.toHaveBeenCalled();
+  expect(mockMapProps.markers.map(marker => marker.id)).toEqual(['route-destination']);
+  await user.type(screen.getByTestId('route-endpoint-search'), 'New place');
+  await user.press(await screen.findByText('New place'));
+  expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
+  expect(findCarRoute).toHaveBeenLastCalledWith(
+    expect.objectContaining({ latitude: 37.9, longitude: 127.4 }), destination, expect.anything(),
+  );
+});
 
 const transit: TransitRoute = jest.requireActual('../api/transitRoutesApi').mapTransitRouteResponse(transitResponse);
 const walking = { path: [{ lat: 37.5, lng: 127 }, { lat: 37.52, lng: 127.02 }, { lat: 37.6, lng: 127.1 }], distanceMeters: 800, durationSeconds: 600, steps: [{ instruction: 'Cross the bridge', path: [] }] };
@@ -219,8 +238,7 @@ test('failed walking route allows retry without an external navigation button', 
   expect(mockMapProps.routeCoordinates).toBeUndefined();
   await user.press(screen.getByTestId('route-request'));
   expect(screen.getByTestId('walk-summary')).toHaveTextContent(/10 min/);
-  await user.press(screen.getByRole('tab', { name: 'Bicycle' }));
-  expect(screen.getByText('Use the NAVER Map app for this travel mode.')).toBeVisible();
+  expect(screen.queryByRole('tab', { name: 'Bicycle' })).toBeNull();
   expect(screen.queryByTestId('route-external')).toBeNull();
   expect(openNaverRoute).not.toHaveBeenCalled();
 });
@@ -328,7 +346,7 @@ test.each(['light', 'dark'] as const)('Figma sheet uses icon tabs, real result v
   const { user } = await renderWithProviders(<CarRoutePreview {...props} />, {
     language: 'en', colorScheme, appearancePreference: colorScheme === 'dark' ? 'DARK' : 'LIGHT',
   });
-  expect(screen.getAllByRole('tab').map(tab => tab.props.accessibilityLabel)).toEqual(['Transit', 'Walk', 'Car', 'Bicycle']);
+  expect(screen.getAllByRole('tab').map(tab => tab.props.accessibilityLabel)).toEqual(['Transit', 'Walk', 'Car']);
   expect(screen.getByRole('tab', { name: 'Car' }).props.accessibilityState).toEqual({ selected: true });
   expect(screen.getByRole('header', { name: 'Route' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Share place' })).toBeVisible();
@@ -374,10 +392,40 @@ test.each(['light', 'dark'] as const)('tap opens Figma place editor and saved se
   expect(screen.queryByRole('tab', { name: 'Car' })).toBeNull();
   expect(screen.getByLabelText('Search places')).toBeVisible();
   expect(screen.getByText('Saved places')).toBeVisible();
-  expect(screen.getByText('Recent searches')).toBeVisible();
+  expect(screen.getByText('Recent reservations')).toBeVisible();
+  const rail = screen.getByTestId('route-saved-place-rail');
+  expect(rail).toHaveStyle({ marginHorizontal: -8 });
+  expect(rail.props.contentContainerStyle).toMatchObject({ paddingHorizontal: 8 });
+  expect(screen.getByTestId('route-saved-place-2')).toHaveStyle({ minHeight: 112,
+    boxShadow: `0px 4px 12px 0px ${colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.40)' : 'rgba(0, 0, 0, 0.12)'}` });
+  await user.press(screen.getByRole('button', { name: 'View all' }));
+  expect(screen.getByTestId('route-saved-place-grid')).toBeVisible();
+  expect(screen.getByTestId('route-saved-place-2')).toHaveStyle({ flex: 1, minWidth: 0 });
   await user.press(screen.getByRole('button', { name: 'Saved cafe' }));
   expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
   expect(findCarRoute).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ placeId: 2, latitude: 37.7, longitude: 127.2 }), expect.anything());
+});
+
+test('a booked place always fills destination while a manually entered origin is preserved', async () => {
+  const client = createTestQueryClient();
+  const booked = { id: 55, name: '예약한 식당', address: '예약지 주소', roadAddress: null, latitude: 35.9, longitude: 128.6 };
+  client.setQueryData([...createReservationsQueryOptions({ page: 1, limit: 20 }).queryKey, 'user:101'], {
+    pages: [{ reservations: [{ id: 99, touristUserId: 101, status: 'CONFIRMED', createdAt: '2030-10-21T00:00:00Z',
+      reservationStartsAt: '2030-10-30T03:00:00Z', confirmation: { placeId: booked.id, placeName: booked.name, startsAt: '2030-10-30T03:00:00Z', timezone: 'Asia/Seoul' } }], hasNext: false }], pageParams: [1],
+  });
+  client.setQueryData(createPlaceDetailQueryOptions(booked.id).queryKey, booked);
+  const { user } = await renderWithProviders(<CarRoutePreview {...props} initialOriginSelection="manual" recentSearchOwner={{ kind: 'user', userId: 101 }} />, { queryClient: client });
+  await user.press(screen.getByRole('button', { name: '예약한 식당 도착지로 설정' }));
+  expect(screen.getByTestId('route-endpoint-editor')).toBeVisible();
+  expect(screen.getByRole('button', { name: '도착 장소 편집, 예약한 식당' })).toBeVisible();
+  expect(findCarRoute).not.toHaveBeenCalled();
+  await user.type(screen.getByTestId('route-endpoint-search'), 'New place');
+  await user.press(await screen.findByText('New place'));
+  await user.press(screen.getByTestId('route-origin-row'));
+  await user.press(screen.getByRole('button', { name: '예약한 식당 도착지로 설정' }));
+  expect(screen.queryByTestId('route-endpoint-editor')).toBeNull();
+  expect(findCarRoute).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'New place', latitude: 37.9 }),
+    expect.objectContaining({ placeId: booked.id, latitude: booked.latitude, longitude: booked.longitude }), expect.anything());
 });
 
 test('search result edits origin, and changing both endpoints permits routes without GPS permission', async () => {

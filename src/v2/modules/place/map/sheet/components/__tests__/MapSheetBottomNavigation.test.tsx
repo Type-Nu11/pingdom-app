@@ -214,3 +214,48 @@ test.each([
   });
   expect(screen.getByRole('tab', { name: '장소추천', selected: true })).toBeVisible();
 });
+
+test.each([
+  ['map', '지도'], ['favorites', '즐겨찾기'], ['community', '커뮤니티'],
+  ['reservations', '예약'], ['recommendations', '장소추천'],
+] as const)('%s 시트는 350ms 안에 같은 버튼을 두 번 눌렀을 때만 올린다', async (activeTab, label) => {
+  let time = 1000;
+  const clock = jest.spyOn(Date, 'now').mockImplementation(() => time);
+  const onDoublePress = jest.fn();
+  const onOpen = jest.fn();
+  await renderWithProviders(<MapSheetBottomNavigation activeTab={activeTab} onDoublePress={onDoublePress}
+    onOpenMap={onOpen} onOpenFavorites={onOpen} onOpenCommunity={onOpen}
+    onOpenReservations={onOpen} onOpenRecommendations={onOpen} sheetTranslateY={new Animated.Value(0)} />);
+  const tab = screen.getByRole('tab', { name: label });
+  await fireEvent.press(tab);
+  expect(onDoublePress).not.toHaveBeenCalled();
+  expect(onOpen).not.toHaveBeenCalled();
+  time += 400;
+  await fireEvent.press(tab);
+  expect(onDoublePress).not.toHaveBeenCalled();
+  time += 200;
+  await fireEvent.press(tab);
+  expect(onDoublePress).toHaveBeenCalledTimes(1);
+  expect(onDoublePress).toHaveBeenCalledWith(activeTab);
+  expect(onOpen).not.toHaveBeenCalled();
+  clock.mockRestore();
+});
+
+test('다른 탭을 한 번 누르면 전환하고 두 번째 연속 탭에만 시트를 올린다', async () => {
+  const onDoublePress = jest.fn();
+  function Navigation() {
+    const [tab, setTab] = useState<'map' | 'favorites' | 'community'>('map');
+    return <MapSheetBottomNavigation activeTab={tab} onDoublePress={onDoublePress}
+      onOpenFavorites={() => setTab('favorites')} onOpenCommunity={() => setTab('community')}
+      sheetTranslateY={new Animated.Value(0)} />;
+  }
+  await renderWithProviders(<Navigation />);
+  await fireEvent.press(screen.getByRole('tab', { name: '즐겨찾기' }));
+  expect(screen.getByRole('tab', { name: '즐겨찾기', selected: true })).toBeVisible();
+  expect(onDoublePress).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByRole('tab', { name: '커뮤니티' }));
+  expect(onDoublePress).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByRole('tab', { name: '커뮤니티' }));
+  expect(onDoublePress).toHaveBeenCalledTimes(1);
+  expect(onDoublePress).toHaveBeenCalledWith('community');
+});

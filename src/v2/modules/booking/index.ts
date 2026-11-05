@@ -1,6 +1,7 @@
 export type { AvailabilityList } from './reservations';
 export type { ReservationQuote, ReservationConfirmation } from './reservations';
 export { createReservationQuoteQueryOptions } from './reservations';
+export { createReservationsQueryOptions } from './reservations';
 export { createAvailabilitiesQueryOptions, isSelectableAvailability, NEARBY_RESERVATION_CANDIDATE_LIMIT, useNearbyReservablePlaceIds, useReservations } from './reservations';
 export type { PlaceAvailabilities } from './reservations';
 export { usePlaceAvailabilities } from './reservations';

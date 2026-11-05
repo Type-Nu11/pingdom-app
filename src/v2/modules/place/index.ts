@@ -4,3 +4,4 @@ export { createPlaceListQueryOptions } from './search/queries';
 export { createPlaceDetailQueryOptions } from './detail/hooks/usePlaceDetail';
 export type { PlaceDetail } from './detail/model/placeDetail.types';
 export type { PlaceList, PlaceListParams } from './search/queries';
+export { createPlaceMenusQueryOptions } from './menus/hooks/usePlaceMenus';

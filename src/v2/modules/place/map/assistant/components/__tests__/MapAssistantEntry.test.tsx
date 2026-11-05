@@ -1,7 +1,7 @@
 import React from 'react';
 import MapAssistantButton from '../MapAssistantButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Animated, AppState } from 'react-native';
+import { Animated, AppState, Platform } from 'react-native';
 import { NavigationContext } from '@react-navigation/native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import * as SafeArea from 'react-native-safe-area-context';
@@ -147,12 +147,19 @@ test('leaving the map during first-use lookup cannot show a late intro', async (
   } finally { read.mockRestore(); }
 });
 
-test.each(['LIGHT', 'DARK'] as const)('%s directions action uses theme, 44 dp target and separate vertical slot below locate', async appearancePreference => {
+test.each([
+  ['ios', 'LIGHT'], ['ios', 'DARK'], ['android', 'LIGHT'], ['android', 'DARK'],
+] as const)('%s %s directions action uses theme, 44 dp target and separate vertical slot below locate', async (platform, appearancePreference) => {
+  jest.replaceProperty(Platform, 'OS', platform);
   await renderWithProviders(<Harness />, { appearancePreference });
   await layout();
   expect(screen.getByTestId('map-directions-button')).toHaveStyle({ height: 44, width: 44 });
   expect(screen.getByTestId('map-directions-icon').props.color).toBe(appearancePreference === 'DARK' ? darkColors.text : lightColors.text);
-  expect(screen.getByTestId('map-directions-glass').props.tintColor).toBe(appearancePreference === 'DARK' ? darkLiquidGlass.navigation.softTint : lightLiquidGlass.navigation.softTint);
+  const colors = appearancePreference === 'DARK' ? darkColors : lightColors;
+  const glass = appearancePreference === 'DARK' ? darkLiquidGlass : lightLiquidGlass;
+  expect(screen.getByTestId('map-directions-glass').children[0]).toHaveStyle({
+    backgroundColor: platform === 'ios' ? colors.surfaceElevated : glass.navigation.softTint,
+  });
   expect(screen.getByTestId('map-directions-icon-frame')).toHaveStyle({ width: 24, height: 24, transform: [{ translateY: 2 }, { translateX: 2 }] });
   expect(screen.queryByText('AI')).toBeNull();
   const artwork = screen.getByTestId('map-assistant-button-artwork');

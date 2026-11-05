@@ -1,4 +1,5 @@
 import React from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { ApiError } from '../../../../../shared/api';
@@ -7,6 +8,11 @@ import { placeMenuApi } from '../../api/placeMenuApi';
 import type { PlaceMenus } from '../../model/placeMenu.types';
 import PlaceMenuSection from '../PlaceMenuSection';
 import { useProfile } from '../../../../user/profile';
+import { offlineTranslation } from '../../../translation/service';
+
+jest.mock('../../../translation/service', () => ({ offlineTranslation: {
+  available: jest.fn(() => false), models: jest.fn(), download: jest.fn(), delete: jest.fn(), translate: jest.fn(),
+} }));
 
 jest.mock('../../../../user/profile', () => ({ useProfile: jest.fn() }));
 import * as exchangeApi from '../../api/menuExchangeRateApi';
@@ -28,6 +34,7 @@ const menu = (overrides: PlaceMenus[number] = {}): PlaceMenus[number] => ({
 
 describe('PlaceMenuSection', () => {
   beforeEach(() => {
+    jest.mocked(offlineTranslation.available).mockReturnValue(false);
     jest.mocked(useProfile).mockReturnValue({
       error: null, isFetching: false, isError: false, isLoading: false, refetch: jest.fn(),
       profile: {
@@ -35,6 +42,79 @@ describe('PlaceMenuSection', () => {
       birthYear: 1998, profileImageUrl: null,
       },
     });
+  });
+
+  test('상품명과 설명을 함께 번역하며 원화 가격과 실제 사진은 유지한다', async () => {
+    await AsyncStorage.clear();
+    jest.mocked(offlineTranslation.available).mockReturnValue(true);
+    jest.mocked(offlineTranslation.models).mockResolvedValue(['ko', 'ja']);
+    jest.mocked(offlineTranslation.translate).mockImplementation(async (text, target) => `${target}: ${text}`);
+    jest.spyOn(placeMenuApi, 'listPlaceMenus').mockResolvedValue([menu(), menu({ id: 2, name: '차', description: null })]);
+    await AsyncStorage.setItem('@pingdom/place-translation/target/1', 'en');
+    await renderWithProviders(<PlaceMenuSection placeId={17} presentation="mapDetail" />);
+    expect(await screen.findByText('en: 시그니처 라테')).toBeTruthy();
+    expect(await screen.findByText('en: 고소한 원두와 우유')).toBeTruthy();
+    expect(await screen.findByText('en: 차')).toBeTruthy();
+    expect(screen.getAllByText('₩6,500')).toHaveLength(2);
+    expect(screen.getByLabelText('시그니처 라테 메뉴 이미지').props.source).toEqual({ uri: 'https://cdn.example.test/menu.jpg' });
+    expect(screen.getAllByLabelText('Translated by Google')).toHaveLength(2);
+    expect(offlineTranslation.translate).not.toHaveBeenCalledWith(null, expect.anything());
+    expect(offlineTranslation.download).not.toHaveBeenCalled();
+    await fireEvent(screen.getByText('en: 시그니처 라테'), 'longPress');
+    expect(await screen.findByText('고소한 원두와 우유')).toBeVisible();
+    await fireEvent.press(screen.getByRole('radio', { name: '日本語' }));
+    await screen.findByText('ja: 시그니처 라테');
+    await screen.findByText('ja: 고소한 원두와 우유');
+    await screen.findByText('ja: 차');
+    await fireEvent.press(screen.getByRole('radio', { name: '한국어' }));
+    await fireEvent.press(screen.getByRole('button', { name: '닫기' }));
+    expect(await screen.findByText('시그니처 라테')).toBeTruthy();
+    expect(await screen.findByText('차')).toBeTruthy();
+    expect(screen.queryByLabelText('Translated by Google')).toBeNull();
+    await AsyncStorage.clear();
+  });
+
+  test('설명 번역 실패 시 원문 전체를 유지하고 재시도할 수 있다', async () => {
+    await AsyncStorage.clear();
+    await AsyncStorage.setItem('@pingdom/place-translation/target/1', 'en');
+    jest.mocked(offlineTranslation.available).mockReturnValue(true);
+    jest.mocked(offlineTranslation.models).mockResolvedValue(['ko']);
+    jest.mocked(offlineTranslation.translate).mockImplementation(async text => {
+      if (text === '고소한 원두와 우유') throw new Error('translation failed');
+      return 'Signature latte';
+    });
+    jest.spyOn(placeMenuApi, 'listPlaceMenus').mockResolvedValue([menu()]);
+    await renderWithProviders(<PlaceMenuSection placeId={17} />);
+    expect(await screen.findByRole('button', { name: '다시 확인' })).toBeTruthy();
+    expect(screen.getByText('시그니처 라테')).toBeTruthy();
+    expect(screen.getByText('고소한 원두와 우유')).toBeTruthy();
+    expect(screen.queryByText('Signature latte')).toBeNull();
+    expect(screen.getByText('₩6,500')).toBeTruthy();
+    expect(screen.queryByLabelText('Translated by Google')).toBeNull();
+    await AsyncStorage.clear();
+  });
+
+  test('언어팩은 동의한 한 번만 내려받고 현재 보이는 모든 상품을 번역한다', async () => {
+    await AsyncStorage.clear();
+    await AsyncStorage.setItem('@pingdom/place-translation/target/1', 'en');
+    jest.mocked(offlineTranslation.available).mockReturnValue(true);
+    jest.mocked(offlineTranslation.models).mockResolvedValue([]);
+    jest.mocked(offlineTranslation.translate).mockImplementation(async text => `번역: ${text}`);
+    jest.mocked(offlineTranslation.download).mockImplementationOnce(async () => {
+      jest.mocked(offlineTranslation.models).mockResolvedValue(['ko']);
+    });
+    jest.spyOn(placeMenuApi, 'listPlaceMenus').mockResolvedValue([menu(), menu({ id: 2, name: '차', description: null })]);
+    await renderWithProviders(<PlaceMenuSection placeId={17} />);
+    await waitFor(() => expect(screen.getAllByRole('button', { name: '언어팩 다운로드 필요' })).toHaveLength(2));
+    expect(offlineTranslation.translate).not.toHaveBeenCalled();
+    expect(offlineTranslation.download).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getAllByRole('button', { name: '언어팩 다운로드 필요' })[0]);
+    await fireEvent.press(screen.getByRole('button', { name: 'Wi-Fi로 다운로드' }));
+    expect(await screen.findByText('번역: 시그니처 라테')).toBeTruthy();
+    expect(await screen.findByText('번역: 고소한 원두와 우유')).toBeTruthy();
+    expect(await screen.findByText('번역: 차')).toBeTruthy();
+    expect(offlineTranslation.download).toHaveBeenCalledTimes(1);
+    await AsyncStorage.clear();
   });
 
   test('map detail presentation uses Figma menu geometry with server-provided content', async () => {

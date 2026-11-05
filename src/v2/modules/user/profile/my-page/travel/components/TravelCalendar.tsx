@@ -1,5 +1,6 @@
 import { Text as AppText } from '../../../../../../shared/components/Typography';
 import React, { useState } from 'react';
+import { useCalendarDragSelection } from '../../../../../../shared/hooks/useCalendarDragSelection';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
@@ -20,19 +21,27 @@ type TravelCalendarProps = {
   isUpdating?: boolean;
   minimumDate?: ServerTravelDate;
   onDatePress?: (date: ServerTravelDate) => void;
+  onRangeSelect?: (range: HighlightedRange) => void;
   selectedStartDate?: ServerTravelDate | null;
 };
 
 export default function TravelCalendar({
-  highlightedRange,
+  highlightedRange: savedRange,
   initialMonth,
   isUpdating = false,
   minimumDate,
   onDatePress,
-  selectedStartDate = null,
+  onRangeSelect,
+  selectedStartDate: savedStartDate = null,
 }: TravelCalendarProps) {
   const { i18n, t } = useTranslation();
   const [calendarMonth, setCalendarMonth] = useState(initialMonth);
+  const drag = useCalendarDragSelection<ServerTravelDate>({
+    onPress: (date) => onDatePress?.(date),
+    onCommit: (range) => onRangeSelect?.(range),
+  });
+  const highlightedRange = drag.preview ?? savedRange;
+  const selectedStartDate = drag.preview?.startDate ?? savedStartDate;
   const weeks = chunkIntoWeeks(buildCalendarDays(calendarMonth));
 
   return (
@@ -65,7 +74,7 @@ export default function TravelCalendar({
         ))}
       </WeekdayRow>
 
-      <Grid>
+      <Grid {...drag.gridHandlers} testID="v2-my-page-calendar-grid">
         {weeks.map((week, weekIndex) => (
           <WeekRow key={`week-${weekIndex}`}>
             {week.map((day, dayIndex) => {
@@ -93,7 +102,7 @@ export default function TravelCalendar({
                   } : undefined}
                   disabled={disabled}
                   key={day?.date ?? `empty-${weekIndex}-${dayIndex}`}
-                  onPress={day && !disabled ? () => onDatePress?.(day.date) : undefined}
+                  {...(day ? drag.dayProps(day.date, disabled) : {})}
                   testID={day ? `v2-my-page-calendar-day-${day.date}` : undefined}
                 >
                   {day ? (

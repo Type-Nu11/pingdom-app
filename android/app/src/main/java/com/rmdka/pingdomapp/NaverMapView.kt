@@ -43,8 +43,11 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     private var centerLng: Double? = null
     private var userLat: Double? = null
     private var userLng: Double? = null
+    private var userHeading: Double? = null
     private var releaseFollowAfterGesture = false
     private var followUser = true
+    private var frameRateLimit = 0
+    private var appliedFrameRateLimit: Int? = null
     private var nightMode = false
     private var appliedNightMode: Boolean? = null
     private var logoTopMargin = 160f
@@ -184,6 +187,8 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun setCenterLng(value: Double) { centerLng = value }
     fun setUserLat(value: Double?) { userLat = value }
     fun setUserLng(value: Double?) { userLng = value }
+    fun setUserHeading(value: Double?) { userHeading = value }
+    fun setFrameRateLimit(value: Int) { frameRateLimit = value.coerceIn(0, 60) }
     fun setZoomLevel(value: Int) { zoomLevel = value.coerceIn(0, 21) }
     fun setFollowUser(value: Boolean) { followUser = value }
     // SDK 준비 전에도 최신 테마를 보관한다. getMapAsync 완료 시 applyProps()가 반영한다.
@@ -250,6 +255,10 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
     fun applyProps() {
         if (disposed) return
         val map = naverMap ?: return
+        if (appliedFrameRateLimit != frameRateLimit) {
+            map.fpsLimit = frameRateLimit
+            appliedFrameRateLimit = frameRateLimit
+        }
         map.uiSettings.setLogoMargin(dp(16f), dp(logoTopMargin), 0, 0)
         // 최초 적용(null) 또는 테마 변경 때만 SDK 스타일을 갱신한다.
         if (appliedNightMode != nightMode) {
@@ -314,6 +323,8 @@ class NaverMapView(private val reactContext: ThemedReactContext) :
         val validUser = validCoordinate(userLat, userLng)
         if (validUser) {
             userMarker.position = LatLng(userLat!!, userLng!!)
+            userMarker.isFlat = true
+            userHeading?.takeIf { it.isFinite() && it >= 0 }?.let { userMarker.angle = (it % 360).toFloat() }
             if (userMarker.map == null) {
                 userMarker.icon = OverlayImage.fromBitmap(createUserLocationBitmap())
                 userMarker.anchor = PointF(0.5f, userAnchorY())

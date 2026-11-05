@@ -1,6 +1,6 @@
 import { getVoiceSilenceMs, type CompletionContext } from './completion';
 
-/** Transcript updates select a duration; only acoustic quiet starts the clock. */
+/** One fixed quiet window; transcript updates and repeated quiet do not extend it. */
 export function createSilenceTimer(onElapsed: () => void) {
   let text = '';
   let context: CompletionContext = {};

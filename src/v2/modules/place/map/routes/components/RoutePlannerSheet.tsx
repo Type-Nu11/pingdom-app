@@ -1,6 +1,6 @@
 import { SkeletonGroup } from '../../../../../shared/components/Skeleton';
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, View, type LayoutChangeEvent } from 'react-native';
+import { ActivityIndicator, Platform, View, type LayoutChangeEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 import { Text } from '../../../../../shared/components/Typography';
@@ -15,7 +15,6 @@ import WalkIcon from '../assets/mode_walk.svg';
 import WalkSelectedIcon from '../assets/mode_walk_selected.svg';
 import CarIcon from '../assets/mode_car.svg';
 import CarSelectedIcon from '../assets/mode_car_selected.svg';
-import BikeIcon from '../assets/mode_bike.svg';
 import RouteEndpointRows, { type EndpointRole } from './RouteEndpointRows';
 import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
 import StartIcon from '../assets/start.svg';
@@ -36,9 +35,9 @@ type Props = {
   transit?: { itinerary: TransitItinerary; alternatives?: TransitItinerary[]; index: number; count: number; estimateAt?: number; onSelect: (index: number) => void; onStart: () => void };
   walk?: { summary: WalkRouteSummary; onStart: () => void; pages?: RoutePages };
 };
-const modes = ['transit', 'walk', 'car', 'bike'] as const;
-const icons = { transit: TransitInactiveIcon, walk: WalkIcon, car: CarIcon, bike: BikeIcon };
-const selectedIcons = { transit: TransitIcon, walk: WalkSelectedIcon, car: CarSelectedIcon, bike: BikeIcon };
+const modes = ['transit', 'walk', 'car'] as const;
+const icons = { transit: TransitInactiveIcon, walk: WalkIcon, car: CarIcon };
+const selectedIcons = { transit: TransitIcon, walk: WalkSelectedIcon, car: CarSelectedIcon };
 
 /** Figma 8548:35327. Map imagery, routes and result values remain live data. */
 export default function RoutePlannerSheet(props: Props) {
@@ -73,7 +72,8 @@ export default function RoutePlannerSheet(props: Props) {
   }
   return <SheetPosition testID="route-planner-sheet" onLayout={props.onLayout}
     style={{ bottom: Math.max(8, props.bottomInset), maxHeight: props.maxHeight, boxShadow: theme.liquidGlass.sheet.shadow }}>
-    <SheetGlass tintColor={theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
+    <SheetGlass material={Platform.OS === 'ios' ? 'frosted' : 'liquid'} backdropBlurEnabled={Platform.OS !== 'ios'}
+      tintColor={Platform.OS === 'ios' ? theme.colors.backgroundAssistive : theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
       style={{ borderColor: theme.liquidGlass.sheet.rim }}>
       <SheetContent bounces={false} scrollEnabled={!dragging} showsVerticalScrollIndicator={false}>
         <Grabber accessible={false} style={{ backgroundColor: theme.colors.secondaryNormal }} />

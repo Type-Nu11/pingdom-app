@@ -1,6 +1,7 @@
 import hashlib
 import importlib.util
 import json
+import plistlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -11,6 +12,20 @@ SPEC.loader.exec_module(MODULE)
 
 
 class WakeWordAssetsTest(unittest.TestCase):
+    def test_ios_requires_both_simulator_architectures(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vendor = Path(directory)
+            info = vendor / 'SherpaOnnxC.xcframework/Info.plist'
+            info.parent.mkdir()
+            device = {'SupportedPlatform': 'ios', 'SupportedArchitectures': ['arm64']}
+            simulator = {'SupportedPlatform': 'ios', 'SupportedPlatformVariant': 'simulator',
+                         'SupportedArchitectures': ['arm64']}
+            info.write_bytes(plistlib.dumps({'AvailableLibraries': [device, simulator]}))
+            self.assertFalse(MODULE.ios_architectures_valid(vendor))
+            simulator['SupportedArchitectures'].append('x86_64')
+            info.write_bytes(plistlib.dumps({'AvailableLibraries': [device, simulator]}))
+            self.assertTrue(MODULE.ios_architectures_valid(vendor))
+
     def fixture(self, root, keywords=None):
         if keywords is None:
             keywords = ('HH EY1 P IH1 NG D IY0 @Hey_Pingdy\n'

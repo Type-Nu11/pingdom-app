@@ -1,3 +1,4 @@
+import { MapSheetScrollToTopProvider } from '../sheet/hooks/useMapSheetScrollToTop';
 import { useAppDialog } from '../../../../shared/components/AppDialogProvider';
 import { MapSheetBottomNavigation, MapSheetNavigationHiddenProvider, getMapSheetCollapsedVisibleHeight } from '../sheet';
 import CarRoutePreview from '../routes/components/CarRoutePreview';
@@ -12,8 +13,10 @@ import MapAssistantButton from '../assistant/components/MapAssistantButton';
 import { MapTutorialProvider } from '../tutorial/MapTutorialProvider';
 import { MapTutorialTarget } from '../tutorial/context';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BlurTargetView } from 'expo-blur';
 import {
   Animated,
+  Platform,
   Keyboard,
   StatusBar,
   useWindowDimensions,
@@ -36,6 +39,9 @@ import MapBottomSheet, {
   type VisitFilter,
 } from '../sheet/components/MapBottomSheet';
 import FavoritePlacesBottomSheet from '../sheet/components/FavoritePlacesBottomSheet';
+import MapSheetPage from '../sheet/components/MapSheetPage';
+import { SheetMotionProvider, SheetMotionView, clampSheetValue } from '../sheet/hooks/useSheetMotionStyle';
+import { useAnimatedStyle } from 'react-native-reanimated';
 import { useMapCommunitySheet } from '../sheet/mapCommunitySheet';
 import { useMapReservationSheet } from '../sheet/mapReservationSheet';
 import {
@@ -198,6 +204,8 @@ export default function MapScreen({
   const theme = useTheme();
   const isFocused = useIsFocused();
   const mapGlassActive = useMapGlassActivity(isFocused);
+  const sheetBlurTarget = useRef<View | null>(null);
+  const [scrollToTopRequest, setScrollToTopRequest] = useState(0);
   const feedbackActive = useRef(isFocused);
   useEffect(() => {
     feedbackActive.current = isFocused;
@@ -215,6 +223,8 @@ export default function MapScreen({
   const [routeEndpointRole, setRouteEndpointRole] = useState<'origin' | 'destination'>('destination');
   const [emptyRouteOpen, setEmptyRouteOpen] = useState(false);
   const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
+  const [routeOriginSelection, setRouteOriginSelection] = useState<'currentLocation' | 'manual'>('currentLocation');
+  const [assistantDirectionsPlaceId, setAssistantDirectionsPlaceId] = useState<number | null>(null);
   const [externalRouteRole, setExternalRouteRole] = useState<'origin' | 'destination' | null>(null);
   const [externalCardHeight, setExternalCardHeight] = useState(EXTERNAL_PLACE_CARD_ESTIMATED_HEIGHT);
   const center = location.coordinate;
@@ -444,24 +454,24 @@ export default function MapScreen({
   const mediumTranslateY = fullSheetHeight - mediumVisibleHeight;
   // The external place card has nothing more to reveal, so its sheet never rises above medium.
   const expandedTranslateY = isPlacePreview ? 0 : externalPlace ? mediumTranslateY : expandedSheetTop;
-  const { jumpTo, panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, snapTo } = useBottomSheet({
+  const { jumpTo, panHandlers, sheetChromeBottom, sheetTranslateY, snapPoint, presentedSnapPoint, snapTo, uiPosition } = useBottomSheet({
     collapsedTranslateY,
     expandedTranslateY,
     initialSnapPoint: getPageEntrySnapPoint(useMapSheetStore.getState().snapPoint),
     mediumTranslateY,
+    uiThreadMotion: true,
   });
+  const restingTranslateY = presentedSnapPoint === 'expanded' ? expandedTranslateY : presentedSnapPoint === 'collapsed' ? collapsedTranslateY : mediumTranslateY;
+  const sheetMotion = useMemo(() => ({ position: uiPosition, mediumTranslateY, expandedTranslateY, height: fullSheetHeight, restingTranslateY }),
+    [uiPosition, mediumTranslateY, expandedTranslateY, fullSheetHeight, restingTranslateY]);
+  const sheetPositionStyle = useAnimatedStyle(() => ({ transform: [{ translateY: uiPosition.value }] }));
+  const floatingActionStyle = useAnimatedStyle(() => ({
+    opacity: clampSheetValue(uiPosition.value, [expandedTranslateY, Math.max(mediumTranslateY, expandedTranslateY + 1)], [0, 1]),
+  }));
   useEffect(() => {
     // Place details keep their own height; only the shared page sheet is remembered.
     if (isBottomNavigationSheet) useMapSheetStore.getState().setSnapPoint(snapPoint);
   }, [isBottomNavigationSheet, snapPoint]);
-  const verificationCtaOpacity = sheetTranslateY.interpolate({
-    inputRange: [
-      expandedTranslateY,
-      Math.max(mediumTranslateY, expandedTranslateY + 1),
-    ],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
   useEffect(() => {
     if (externalPlaceKey !== null && snapPoint === 'expanded') snapTo('medium');
   // snapTo is recreated on every render; only the selection and snap point matter here.
@@ -506,12 +516,12 @@ export default function MapScreen({
     return serverPlaces;
   }, [apiPlaces, recommendationPlaces]);
   const mapExplorationPlaceIds = useMemo(() => selectMapExplorationPlaceIds({
-    expanded: snapPoint === 'expanded',
+    expanded: presentedSnapPoint === 'expanded',
     places: allPlaces,
     recommendationPlaces,
     recommendationsActive: content.type === 'recommendations',
     selectedPlaceId: content.type === 'place-preview' ? content.placeId : undefined,
-  }), [allPlaces, content, recommendationPlaces, snapPoint]);
+  }), [allPlaces, content, recommendationPlaces, presentedSnapPoint]);
   const mapExplorationImageUrlsByPlaceId = usePlaceExplorationMediaList(
     mapExplorationPlaceIds,
     { enabled: mapSection === 'map' },
@@ -613,6 +623,17 @@ export default function MapScreen({
   useEffect(() => {
     setRoutePreviewPlaceId(null);
   }, [selectedPlaceActionTarget?.placeId, isFocused]);
+  useEffect(() => {
+    if (assistantDirectionsPlaceId === null) return;
+    if (!isFocused || content.type !== 'place-preview' || content.placeId !== assistantDirectionsPlaceId) {
+      setAssistantDirectionsPlaceId(null);
+    } else if (selectedPlaceActionTarget?.placeId === assistantDirectionsPlaceId) {
+      setRouteEndpointRole('destination');
+      setRouteOriginSelection('manual');
+      setRoutePreviewPlaceId(assistantDirectionsPlaceId);
+      setAssistantDirectionsPlaceId(null);
+    }
+  }, [assistantDirectionsPlaceId, content, isFocused, selectedPlaceActionTarget?.placeId]);
   const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
     dialog.show(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
   }, [dialog, t]);
@@ -623,11 +644,13 @@ export default function MapScreen({
   const handleDirectionsPress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     setRouteEndpointRole('destination');
+    setRouteOriginSelection('currentLocation');
     setRoutePreviewPlaceId(place.id);
   }, [selectedPlaceActionTarget]);
   const handleDeparturePress = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     setRouteEndpointRole('origin');
+    setRouteOriginSelection('currentLocation');
     setRoutePreviewPlaceId(place.id);
   }, [selectedPlaceActionTarget]);
   const handleSharePlace = useCallback((place: DecisionPlace) => {
@@ -914,7 +937,7 @@ export default function MapScreen({
   const openMapSection = useCallback((nextSection: 'community' | 'favorites' | 'map' | 'reservations') => {
     setContent({ type: 'home' });
     setMapSection(nextSection);
-    // A raised sheet stays raised on the next page instead of dropping back to medium.
+    // Changing pages preserves the current resting height. Only a double tap raises it.
     jumpTo(getPageEntrySnapPoint(snapPoint));
   }, [jumpTo, snapPoint]);
   const assistantNavigationLock = useRef<string | null>(null);
@@ -923,7 +946,14 @@ export default function MapScreen({
     const key = JSON.stringify(target);
     if (assistantNavigationLock.current === key) return true;
     Keyboard.dismiss();
-    if (target.page === 'search') {
+    if (target.page === 'directions') {
+      setMapSection('map');
+      setActiveCategory('all');
+      setContent({ type: 'place-preview', placeId: target.placeId });
+      setAssistantDirectionsPlaceId(target.placeId);
+      jumpTo('medium');
+      assistant.close();
+    } else if (target.page === 'search') {
       // Reuse the touch entry; opening search does not require a GPS fix.
       handleSearchFocus();
       assistant.close();
@@ -935,7 +965,7 @@ export default function MapScreen({
     else if (!onNavigateAssistantPage?.(target)) return false;
     assistantNavigationLock.current = key;
     return true;
-  }, [assistant.close, handleSearchFocus, openMapSection, onNavigateAssistantPage, snapTo]);
+  }, [assistant.close, handleSearchFocus, jumpTo, openMapSection, onNavigateAssistantPage, snapTo]);
   const handleMapRefresh = useCallback(async () => {
     if (mapRefreshLock.current) return;
 
@@ -1072,7 +1102,7 @@ export default function MapScreen({
   });
   const isExpandedPlaceDetail = mapSection === 'map'
     && content.type === 'place-preview'
-    && snapPoint === 'expanded';
+    && presentedSnapPoint === 'expanded';
   return (
     <MapTutorialProvider
       onFinish={() => { void location.refresh(false); }}
@@ -1083,6 +1113,7 @@ export default function MapScreen({
     <View onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
       style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <MapGlassBackdrop active={mapGlassActive}>
+      <SheetMotionProvider value={sheetMotion}>
       {isFocused && <StatusBar
         hidden={false}
         backgroundColor={isExpandedPlaceDetail ? theme.colors.background : 'transparent'}
@@ -1111,6 +1142,8 @@ export default function MapScreen({
           onMarkerPress={handleMarkerPress}
           userLat={userLat}
           userLng={userLng}
+          renderingActive={isFocused && snapPoint !== 'expanded' && presentedSnapPoint !== 'expanded' && !emptyRouteOpen && routePreviewPlaceId === null}
+          headingEnabled={isFocused && snapPoint !== 'expanded' && presentedSnapPoint !== 'expanded' && !emptyRouteOpen && routePreviewPlaceId === null}
           zoomLevel={mapZoomLevel}
         />
       </View>
@@ -1119,8 +1152,8 @@ export default function MapScreen({
           onClose={() => setEmptyRouteOpen(false)} onRefreshLocation={() => { void location.refresh(); }} />
       )}
       {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
-        <CarRoutePreview key={`${routeEndpointRole}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
-          initialEndpointRole={routeEndpointRole} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
+        <CarRoutePreview key={`${routeEndpointRole}:${routeOriginSelection}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
+          initialEndpointRole={routeEndpointRole} initialOriginSelection={routeOriginSelection} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
           onClose={() => setRoutePreviewPlaceId(null)} onRefreshLocation={() => { void location.refresh(); }} />
       )}
       {isFocused && externalRouteRole !== null && externalRouteDestination && (
@@ -1147,15 +1180,17 @@ export default function MapScreen({
           }}
           profileImageUrl={profile?.profileImageUrl}
           query={query}
-          showCategories={snapPoint !== 'expanded'}
+          showCategories={presentedSnapPoint !== 'expanded'}
         />
         <MapSheetNavigationHiddenProvider value={true}>
-        <Animated.View
+        <MapSheetScrollToTopProvider value={scrollToTopRequest}>
+        <SheetMotionView
           pointerEvents="box-none"
-          style={[styles.sectionTransition, { transform: [{ translateY: sheetTranslateY }] }]}
+          style={[styles.sectionTransition, sheetPositionStyle]}
           testID={`map-section-transition-${mapSection}`}
         >
-        {mapSection === 'community' ? (
+        <BlurTargetView ref={sheetBlurTarget} pointerEvents="box-none" style={styles.containerBlurTarget} testID="map-sheet-blur-target">
+        <MapSheetPage active={mapSection === 'community'} testID="map-page-community">
           <CommunityBottomSheet
             collapsedTranslateY={collapsedTranslateY}
             expandedTranslateY={expandedTranslateY}
@@ -1175,7 +1210,7 @@ export default function MapScreen({
             onOpenRecommendations={() => {
               setMapSection('map');
               setContent({ type: 'recommendations' });
-              snapTo('expanded');
+              jumpTo(getPageEntrySnapPoint(snapPoint));
             }}
             onOpenReservations={() => {
               openMapSection('reservations');
@@ -1184,9 +1219,10 @@ export default function MapScreen({
             panHandlers={panHandlers}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
-            snapPoint={snapPoint}
+            snapPoint={presentedSnapPoint}
           />
-        ) : mapSection === 'favorites' ? (
+        </MapSheetPage>
+        <MapSheetPage active={mapSection === 'favorites'} testID="map-page-favorites">
           <FavoritePlacesBottomSheet
             collapsedTranslateY={collapsedTranslateY}
             expandedTranslateY={expandedTranslateY}
@@ -1216,7 +1252,7 @@ export default function MapScreen({
             onOpenRecommendations={() => {
               setMapSection('map');
               setContent({ type: 'recommendations' });
-              snapTo('expanded');
+              jumpTo(getPageEntrySnapPoint(snapPoint));
             }}
             onOpenReservations={() => {
               openMapSection('reservations');
@@ -1233,9 +1269,10 @@ export default function MapScreen({
             pendingPlaceIds={bookmarkPendingPlaceIds}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
-            snapPoint={snapPoint}
+            snapPoint={presentedSnapPoint}
           />
-        ) : mapSection === 'reservations' ? (
+        </MapSheetPage>
+        <MapSheetPage active={mapSection === 'reservations'} testID="map-page-reservations">
           <ReservationBottomSheet
             bookmarkedPlaceIds={bookmarkedPlaceIds}
             bookmarkPendingPlaceIds={bookmarkPendingPlaceIds}
@@ -1270,7 +1307,7 @@ export default function MapScreen({
             onOpenRecommendations={() => {
               setMapSection('map');
               setContent({ type: 'recommendations' });
-              snapTo('expanded');
+              jumpTo(getPageEntrySnapPoint(snapPoint));
             }}
             onOpenReservation={(reservationId) => onOpenReservation?.(reservationId)}
             onPlacePress={handlePlacePress}
@@ -1278,9 +1315,10 @@ export default function MapScreen({
             panHandlers={panHandlers}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
-            snapPoint={snapPoint}
+            snapPoint={presentedSnapPoint}
           />
-        ) : (
+        </MapSheetPage>
+        <MapSheetPage active={mapSection === 'map'} testID="map-page-map">
           <MapBottomSheet
             activeFilters={activeFilters}
             bookmarkedPlaceIds={bookmarkedPlaceIds}
@@ -1335,7 +1373,7 @@ export default function MapScreen({
             }}
             onOpenRecommendations={() => {
               setContent({ type: 'recommendations' });
-              snapTo('expanded');
+              jumpTo(getPageEntrySnapPoint(snapPoint));
             }}
             onOpenSavedPlaces={() => {
               openMapSection('reservations');
@@ -1377,38 +1415,37 @@ export default function MapScreen({
             onRetryResults={() => refetchPlaces({ cancelRefetch: false })}
             sheetChromeBottom={sheetChromeBottom}
             sheetTranslateY={sheetTranslateY}
-            snapPoint={snapPoint}
+            snapPoint={isPlacePreview ? snapPoint : presentedSnapPoint}
             userName={profile?.username}
           />
-        )}
+        </MapSheetPage>
+        </BlurTargetView>
       {assistant.enabled && !isSearchOpen && !emptyRouteOpen && (
-        <Animated.View
+        <SheetMotionView
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
           accessibilityElementsHidden={snapPoint === 'expanded'}
           importantForAccessibility={snapPoint === 'expanded' ? 'no-hide-descendants' : 'auto'}
-          style={{
+          style={[{
             bottom: fullSheetHeight + 8,
             left: 12,
-            opacity: verificationCtaOpacity,
             position: 'absolute',
             zIndex: 60,
-          }}
+          }, floatingActionStyle]}
           testID="map-assistant-sheet-button-motion"
         >
           <MapAssistantButton disabled={assistant.isBusy || snapPoint === 'expanded'} onPress={assistant.open} />
-        </Animated.View>
+        </SheetMotionView>
       )}
       {/* Map actions stay available above every resting sheet, including place previews. */}
       {!isSearchOpen && !emptyRouteOpen && onOpenVisitVerification ? (
-        <Animated.View
+        <SheetMotionView
           pointerEvents={snapPoint === 'expanded' ? 'none' : 'auto'}
-          style={{
+          style={[{
             bottom: fullSheetHeight + 8,
-            opacity: verificationCtaOpacity,
             position: 'absolute',
             right: 12,
             zIndex: 60,
-          }}
+          }, floatingActionStyle]}
           accessibilityElementsHidden={snapPoint === 'expanded'}
           importantForAccessibility={snapPoint === 'expanded' ? 'no-hide-descendants' : 'auto'}
           testID="visit-verification-map-cta-motion"
@@ -1419,20 +1456,26 @@ export default function MapScreen({
             onPress={onOpenVisitVerification}
           />
           </MapTutorialTarget>
-        </Animated.View>
+        </SheetMotionView>
       ) : null}
-        </Animated.View>
+        </SheetMotionView>
+        </MapSheetScrollToTopProvider>
         </MapSheetNavigationHiddenProvider>
         {(mapSection !== 'map' || (content.type !== 'place-preview' && content.type !== 'external-place')) && (
           <View pointerEvents="box-none" style={styles.navigationOverlay}>
             <MapSheetBottomNavigation
+              onDoublePress={() => {
+                snapTo('expanded');
+                setScrollToTopRequest(request => request + 1);
+              }}
+              blurTarget={Platform.OS === 'android' && mapGlassActive ? sheetBlurTarget : undefined}
               activeTab={mapSection === 'map' && content.type === 'recommendations' ? 'recommendations' : mapSection}
               onOpenMap={() => openMapSection('map')}
               onOpenFavorites={() => openMapSection('favorites')}
               onOpenCommunity={() => openMapSection('community')}
               onOpenReservations={() => openMapSection('reservations')}
               onOpenRecommendations={() => {
-                setMapSection('map'); setContent({ type: 'recommendations' }); snapTo('expanded');
+                setMapSection('map'); setContent({ type: 'recommendations' }); jumpTo(getPageEntrySnapPoint(snapPoint));
               }}
               sheetTranslateY={navigationOffset}
             />
@@ -1476,8 +1519,21 @@ export default function MapScreen({
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         placeListEnabled: env.featureFlags.placeList,
         navigateToPage: navigateAssistantPage,
+        showPlaceOnMap: placeId => {
+          if (!Number.isSafeInteger(placeId) || placeId <= 0) return false;
+          Keyboard.dismiss();
+          setMapSection('map');
+          setActiveCategory('all');
+          setIsFollowingUser(false);
+          setManualCameraCenter(null);
+          setDismissedMarkerCenter(null);
+          setContent({ type: 'place-preview', placeId });
+          snapTo('medium');
+          return true;
+        },
         selectedPlaceId: hasSelectedPlace ? selectedPlaceId : undefined,
       }} />
+      </SheetMotionProvider>
       </MapGlassBackdrop>
       <MapAssistantIntro visible={assistant.isNoticeOpen} onClose={assistant.close}
         onContinue={assistant.continueToAssistant} />
@@ -1491,6 +1547,9 @@ const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right:
 const styles: Record<string, object> = {
   container: { flex: 1 },
   mapBackground: absoluteFill,
+  // Native Android blur targets intercept their empty bounds. Keep the target
+  // inside the moving sheet, below its 64px floating-action extension.
+  containerBlurTarget: { ...absoluteFill, top: 64 },
   // Include the floating actions above the sheet in the moving parent hit area.
   sectionTransition: { ...absoluteFill, top: -64, zIndex: 50 },
   navigationOverlay: { ...absoluteFill, zIndex: 60 },

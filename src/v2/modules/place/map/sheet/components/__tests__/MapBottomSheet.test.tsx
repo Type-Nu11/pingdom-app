@@ -1,6 +1,10 @@
+import { SheetMotionProvider } from '../../hooks/useSheetMotionStyle';
+import { useBottomSheet } from '../../hooks/useBottomSheet';
+import { useSharedValue } from 'react-native-reanimated';
+import { MapSheetScrollToTopProvider } from '../../hooks/useMapSheetScrollToTop';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, PanResponder, Platform, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
+import { Animated, PanResponder, PixelRatio, Platform, ScrollView, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
@@ -234,6 +238,8 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByLabelText(selectedPlace.name)).toHaveStyle({ fontSize: 24, lineHeight: 31 });
 
     await result.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
+    expect(screen.getByTestId('place-name-translation-title')).toHaveTextContent(`${selectedPlace.name} 팝업`);
+    expect(screen.getByTestId('place-name-translation-header')).toHaveStyle({ minHeight: 31.2 * PixelRatio.getFontScale() });
     expect(screen.getByText('실서버 쿠폰 발급 영역')).toBeVisible();
     expect(screen.queryByText('23명이 검증했어요!')).toBeNull();
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ width: '100%', paddingLeft: 0, paddingRight: 0 });
@@ -252,6 +258,108 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('map-expanded-place-scroll').props.contentContainerStyle).toEqual(
       expect.arrayContaining([expect.objectContaining({ flexGrow: 1, backgroundColor: colors.background })]),
     );
+  });
+
+  test.each(['ios', 'android'] as const)('%s 상세는 맨 위 아래 당김만 시트에 전달하고 뒤로가기 버튼은 눌린다', async (os) => {
+    const originalOS = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: os });
+    try {
+      const onBackHome = jest.fn();
+      const capture = jest.fn(() => true);
+      const { user } = await renderWithProviders(<MapBottomSheet
+        activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+        content={{ type: 'place-preview', placeId: places[0].id }}
+        height={700} mediumTranslateY={300} onBackHome={onBackHome}
+        onDetailPress={jest.fn()} onFilterPress={jest.fn()} onGoNowPress={jest.fn()}
+        onHandlePress={jest.fn()} onPlacePress={jest.fn()} onQueryChange={jest.fn()}
+        onRetryRecommendations={jest.fn()} onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+        onToggleBookmark={jest.fn(async () => undefined)}
+        panHandlers={{ onMoveShouldSetResponderCapture: capture }}
+        places={places} recommendationPlaces={[]} recommendationsState="ready" selectedPlace={places[0]}
+        sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint="expanded"
+      />);
+      const drag = screen.getByTestId('map-expanded-place-drag');
+      const scroll = screen.getByTestId('map-expanded-place-scroll');
+      // Native overscroll must not retain the downward gesture before handoff.
+      expect(scroll.props.bounces).toBe(false);
+      expect(scroll.props.overScrollMode).toBe('never');
+      const start = { nativeEvent: { pageX: 100, pageY: 150, touches: [{}] } };
+      const down = { nativeEvent: { pageX: 102, pageY: 180, touches: [{}] } };
+      expect(drag.props.onStartShouldSetResponderCapture(start)).toBe(false);
+      expect(drag.props.onMoveShouldSetResponderCapture(down)).toBe(true);
+      expect(capture).toHaveBeenCalledTimes(1);
+      await fireEvent.scroll(scroll, { nativeEvent: { contentOffset: { x: 0, y: 200 } } });
+      drag.props.onStartShouldSetResponderCapture(start);
+      expect(drag.props.onMoveShouldSetResponderCapture(down)).toBe(false);
+      expect(capture).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('map-detail-top-bar').props.onMoveShouldSetResponderCapture).toBeUndefined();
+      expect(screen.getByTestId('place-detail-drag-heading').props.onMoveShouldSetResponderCapture).toBeUndefined();
+      await user.press(screen.getByTestId('map-detail-back'));
+      expect(onBackHome).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalOS });
+    }
+  });
+
+  test.each(['ios', 'android'] as const)('%s 상세 상단 빈 공간을 당기면 본문 스크롤 위치와 무관하게 미리보기로 축소한다', async (os) => {
+    const originalOS = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: os });
+    try {
+      const onBackHome = jest.fn();
+      const onToggleBookmark = jest.fn(async () => undefined);
+      const Sheet = () => {
+        const sheet = useBottomSheet({
+          collapsedTranslateY: 600, mediumTranslateY: 300, initialSnapPoint: 'expanded',
+        });
+        return <MapBottomSheet
+          activeFilters={[]} bookmarkedPlaceIds={{}} collapsedTranslateY={600}
+          content={{ type: 'place-preview', placeId: places[0].id }}
+          height={700} mediumTranslateY={300} onBackHome={onBackHome}
+          onDetailPress={jest.fn()} onFilterPress={jest.fn()} onGoNowPress={jest.fn()}
+          onHandlePress={jest.fn()} onPlacePress={jest.fn()} onQueryChange={jest.fn()}
+          onRetryRecommendations={jest.fn()} onSearchFocus={jest.fn()} onSubmitSearch={jest.fn()}
+          onToggleBookmark={onToggleBookmark} panHandlers={sheet.panHandlers}
+          places={places} recommendationPlaces={[]} recommendationsState="ready" selectedPlace={places[0]}
+          sheetChromeBottom={sheet.sheetChromeBottom} sheetTranslateY={sheet.sheetTranslateY}
+          snapPoint={sheet.snapPoint}
+        />;
+      };
+      const { user } = await renderWithProviders(<Sheet />);
+      const scroll = screen.getByTestId('map-expanded-place-scroll');
+      // The header stays reachable even when the place body has scrolled away.
+      expect(within(scroll).queryByTestId('map-detail-top-bar')).toBeNull();
+      await fireEvent.scroll(scroll, { nativeEvent: { contentOffset: { x: 0, y: 200 } } });
+      const header = screen.getByTestId('map-detail-top-bar');
+      await user.press(within(header).getAllByRole('button')[1]);
+      expect(onToggleBookmark).toHaveBeenCalledWith(places[0], true);
+      await user.press(screen.getByTestId('map-detail-back'));
+      expect(onBackHome).toHaveBeenCalledTimes(1);
+      onBackHome.mockClear();
+
+      const drag = within(header).getByTestId('map-detail-header-drag');
+      const event = (y: number, previousY: number, time: number) => ({
+        nativeEvent: { pageX: 100, pageY: y, touches: [{}] },
+        touchHistory: {
+          numberActiveTouches: 1, indexOfSingleActiveTouch: 0, mostRecentTimeStamp: time,
+          touchBank: [{
+            touchActive: true, startPageX: 100, startPageY: 150, startTimeStamp: 1,
+            currentPageX: 100, currentPageY: y, currentTimeStamp: time,
+            previousPageX: 100, previousPageY: previousY, previousTimeStamp: time - 16,
+          }],
+        },
+      });
+      expect(drag.props.onStartShouldSetResponderCapture(event(150, 150, 1))).toBe(false);
+      expect(drag.props.onMoveShouldSetResponderCapture(event(180, 150, 17))).toBe(true);
+      await act(() => drag.props.onResponderGrant(event(180, 150, 17)));
+      await act(() => drag.props.onResponderMove(event(280, 180, 33)));
+      await act(() => drag.props.onResponderRelease(event(280, 280, 49)));
+      expect(screen.queryByTestId('map-expanded-place-scroll')).not.toBeOnTheScreen();
+      expect(screen.getByTestId('place-preview-content')).toBeOnTheScreen();
+      expect(screen.getByLabelText(places[0].name)).toBeOnTheScreen();
+      expect(onBackHome).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalOS });
+    }
   });
 
   test('장소 상세 영업 상태를 한 줄 요약으로 한국어·영어·fallback 렌더링한다', async () => {
@@ -501,6 +609,7 @@ describe('MapBottomSheet recommendations', () => {
     });
     expect(screen.getByTestId('recommendation-featured-image').props.source)
       .toEqual({ uri: 'https://example.com/place.jpg' });
+    expect(screen.getByTestId('favorite-icon')).toHaveProp('color', lightColors.staticWhite);
     expect(screen.getByTestId('recommendation-featured-blur-image').props).toMatchObject({
       blurRadius: 2,
       source: { uri: 'https://example.com/place.jpg' },
@@ -1181,8 +1290,8 @@ describe('MapBottomSheet recommendations', () => {
 
   test.each([
     ['medium', 8, 16],
-    ['expanded', 0, 24],
-  ] as const)('%s 추천 시트 제목은 시트 가장자리 16dp, 카드는 화면 가장자리 24dp에 맞춘다', async (snapPoint, inset, cardPadding) => {
+    ['expanded', 8, 16],
+  ] as const)('%s 추천 제목과 카드는 다른 패널처럼 화면 가장자리 24dp에 맞춘다', async (snapPoint, inset, cardPadding) => {
     const commonProps = {
       activeFilters: [], bookmarkedPlaceIds: {}, collapsedTranslateY: 600,
       content: { type: 'recommendations' } as const, expandedTranslateY: 130,
@@ -1201,7 +1310,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByTestId('map-sheet-inner')).toHaveStyle({ paddingLeft: inset, paddingRight: inset });
     const title = screen.getByText('나만을 위한 추천 장소');
     expect(title).toHaveStyle({ color: lightColors.labelStrong, fontSize: 20, lineHeight: 26 });
-    expect(screen.getByTestId('recommendation-header')).toHaveStyle({ paddingHorizontal: 16 });
+    expect(screen.getByTestId('recommendation-header')).toHaveStyle({ paddingHorizontal: 16, paddingTop: 9 });
     const cardRowStyle = [screen.getByTestId('recommendation-card-row').props.contentContainerStyle].flat()
       .reduce((merged, item) => ({ ...merged, ...(item || {}) }), {});
     expect(cardRowStyle).toMatchObject({ gap: 16, paddingHorizontal: cardPadding });
@@ -1341,8 +1450,12 @@ describe('MapBottomSheet recommendations', () => {
       top: 4,
       width: 181,
     });
-    // Figma 4525:25520: Glass/FillRaised thumb on a Glass/FillSubtle track, 8px inside the floating sheet.
-    expect(screen.getByTestId('feed-segment-indicator')).toHaveStyle({ backgroundColor: lightColors.glassFillRaised });
+    // The iOS selected pill is opaque and outlined so its state stays visible over glass.
+    expect(screen.getByTestId('feed-segment-indicator')).toHaveStyle({
+      backgroundColor: lightColors.surfaceElevated,
+      borderColor: lightColors.border,
+      borderWidth: 1,
+    });
     expect(screen.getByTestId('feed-segment-inset')).toHaveStyle({ paddingHorizontal: 8 });
     expect(screen.getByRole('button', { name: '추천 장소 1, 테스트 주소 1' })).toHaveStyle({
       height: 182,
@@ -1488,15 +1601,12 @@ describe('MapBottomSheet recommendations', () => {
     await view.rerender(<MapBottomSheet {...commonProps} snapPoint="expanded" />);
     expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('auto');
 
-    // Exercise the actual row measurement, not only the sizing helper. Horizontal
-    // preview cards remain 242x182 while grid cards respond to the sheet width.
-    for (const rowWidth of [359, 386]) {
-      await act(async () => fireEvent(screen.getByTestId('map-expanded-place-grid'), 'layout', {
-        nativeEvent: { layout: { x: 0, y: 0, width: rowWidth, height: 800 } },
-      }));
-      const cards = screen.getAllByRole('button', { name: `${rankedPlaces[0].name}, ${rankedPlaces[0].address}` });
-      expect(cards.at(-1)).toHaveStyle(getMapGridCardSize(rowWidth));
-    }
+    // Fixed pairs share the available width through flex instead of wrapping
+    // independently rounded dp widths on devices such as the Galaxy Note20.
+    expect(screen.getByTestId('map-expanded-place-grid')).toHaveStyle({ flexDirection: 'column', gap: 16, paddingHorizontal: 8 });
+    expect(screen.getByTestId('map-expanded-grid-row-0')).toHaveStyle({ flexDirection: 'row', gap: 16 });
+    const cards = screen.getAllByRole('button', { name: `${rankedPlaces[0].name}, ${rankedPlaces[0].address}` });
+    expect(cards.at(-1)).toHaveStyle({ flex: 1, minWidth: 0, aspectRatio: 177 / 222 });
 
     await view.rerender(<MapBottomSheet {...commonProps} snapPoint="medium" />);
     expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('none');
@@ -1530,6 +1640,21 @@ describe('MapBottomSheet recommendations', () => {
     );
     await view.user.press(screen.getAllByRole('button', { name: '추천 장소 1, 테스트 주소 1' })[0]);
     expect(onRankedPlacePress).toHaveBeenCalledWith(rankedPlaces[0]);
+
+    function MotionSheet({ expanded }: { expanded: boolean }) {
+      const position = useSharedValue(300);
+      return <SheetMotionProvider value={{ position, mediumTranslateY: 300, height: 800, restingTranslateY: expanded ? 0 : 300 }}>
+        <MapBottomSheet {...commonProps} snapPoint={expanded ? 'expanded' : 'medium'} />
+      </SheetMotionProvider>;
+    }
+    await view.rerender(<MotionSheet expanded={false} />);
+    // The grid is prepared behind the clip before the first raise, and the
+    // segment track survives settling instead of being replaced and remeasured.
+    expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('none');
+    const track = screen.getByTestId('feed-segment-control');
+    await view.rerender(<MotionSheet expanded />);
+    expect(screen.getByTestId('feed-segment-control')).toBe(track);
+    expect(screen.getByTestId('expanded-home-only-content').props.pointerEvents).toBe('auto');
   });
 
   test('장소 요청 실패를 빈 핫플 결과로 표시하지 않는다', async () => {
@@ -1653,6 +1778,17 @@ describe('MapBottomSheet recommendations', () => {
     ...overrides,
   });
 
+  test.each(['home', 'recommendations'] as const)('%s 더블 탭은 펼쳐진 시트 안의 스크롤도 처음으로 이동한다', async (type) => {
+    const scroll = jest.spyOn(ScrollView.prototype, 'scrollTo');
+    const props = categoryProps([], { content: { type } });
+    const ui = (request: number) => <MapSheetScrollToTopProvider value={request}><MapBottomSheet {...props} /></MapSheetScrollToTopProvider>;
+    const view = await renderWithProviders(ui(0));
+    scroll.mockClear();
+    await view.rerender(ui(1));
+    expect(scroll).toHaveBeenCalledWith({ animated: true, y: 0 });
+    scroll.mockRestore();
+  });
+
   test.each(['medium', 'expanded'] as const)('%s 장소 사진 로딩 실패 타일은 제거하고 정상 사진만 뷰어에 전달한다', async snapPoint => {
     const place = places[0];
     await renderWithProviders(<MapBottomSheet {...categoryProps([], {
@@ -1710,7 +1846,10 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.queryAllByTestId('recommendation-featured-blur-image')).toHaveLength(0);
     const images = screen.getAllByTestId('place-artwork-image');
     expect(images).toHaveLength(14);
-    images.forEach(image => expect(image.props.resizeMethod).toBe('resize'));
+    images.forEach(image => {
+      expect(image.props.resizeMethod).toBe('resize');
+      expect(image.props.fadeDuration).toBe(0);
+    });
     expect(screen.getAllByText('트렌드 1').length).toBeGreaterThan(0);
   });
 

@@ -1,0 +1,13 @@
+# Simulation scaffold. Add fault-injection scenarios under each mock, e.g.:
+#   scenarios:
+#     - overrides:
+#         conditions:
+#           latency: { delay_ms: 500 }
+# Then serve it with: postman simulation run <this file>
+
+simulation: voice-reservation
+routing: path
+mocks:
+  - name: Voice reservation availability
+    routeKey: booking
+    path: ../mocks/voice-reservation/config.yaml

@@ -1,3 +1,4 @@
+import CalendarScrollView from '../../../../../shared/components/CalendarScrollView';
 import { useAppDialog } from '../../../../../shared/components/AppDialogProvider';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -138,14 +139,13 @@ export default function MyPageScreen({
     || updateTravelScheduleMutation.isPending;
 
   const handleTravelDatePress = (date: Parameters<typeof selectTravelDate>[1]) => {
-    if (
-      travelUpdateLocked.current
-      || isTravelScheduleSaving
-    ) return;
-
     const nextInput = draftTravelSelection.kind === 'complete'
       ? { endDateText: '', startDateText: date }
       : selectTravelDate(draftTravelDateInput, date);
+    saveTravelDateInput(nextInput);
+  };
+  const saveTravelDateInput = (nextInput: TravelDateInput) => {
+    if (travelUpdateLocked.current || isTravelScheduleSaving) return;
     setDraftTravelDateInput(nextInput);
     const nextSelection = getTravelScheduleSelectionState(nextInput);
     if (nextSelection.kind !== 'complete') return;
@@ -324,6 +324,9 @@ export default function MyPageScreen({
                 isUpdating={isTravelScheduleSaving}
                 minimumDate={todayTravelDate}
                 onDatePress={handleTravelDatePress}
+                onRangeSelect={({ startDate, endDate }) => saveTravelDateInput({
+                  startDateText: startDate, endDateText: endDate,
+                })}
                 selectedStartDate={draftTravelStartDate}
               />
             )}
@@ -401,7 +404,7 @@ const Screen = styled(SafeAreaView)`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const Content = styled.ScrollView`
+const Content = styled(CalendarScrollView)`
   flex: 1;
 `;
 

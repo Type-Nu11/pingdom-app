@@ -42,7 +42,7 @@ class MLKitTranslationModule(
                 RemoteModelManager.getInstance()
                     .getDownloadedModels(TranslateRemoteModel::class.java)
                     .addOnSuccessListener { models ->
-                        val downloadedLanguages = models.map { it.language }.toSet()
+                        val downloadedLanguages = models.map { it.language }.toSet() + TranslateLanguage.ENGLISH
                         val requiresDownload = sourceLanguage !in downloadedLanguages ||
                             targetLanguage !in downloadedLanguages
 
@@ -83,15 +83,8 @@ class MLKitTranslationModule(
                 .build()
         )
 
-        if (!allowModelDownload) {
-            translator.close()
-            promise.reject("MODEL_DOWNLOAD_REQUIRED", "번역 언어 팩 다운로드가 필요해요.")
-            return
-        }
-
-        translator.downloadModelIfNeeded(DownloadConditions.Builder().build())
-            .addOnSuccessListener {
-                translator.translate(text)
+        fun translateText() {
+            translator.translate(text)
                     .addOnSuccessListener { translatedText ->
                         translator.close()
                         val result = Arguments.createMap().apply {
@@ -105,7 +98,26 @@ class MLKitTranslationModule(
                         translator.close()
                         promise.reject("TRANSLATION_FAILED", error.message, error)
                     }
-            }
+        }
+
+        if (!allowModelDownload) {
+            RemoteModelManager.getInstance().getDownloadedModels(TranslateRemoteModel::class.java)
+                .addOnSuccessListener { models ->
+                    val installed = models.map { it.language }.toSet() + TranslateLanguage.ENGLISH
+                    if (sourceLanguage !in installed || targetLanguage !in installed) {
+                        translator.close()
+                        promise.reject("MODEL_DOWNLOAD_REQUIRED", "번역 언어 팩 다운로드가 필요해요.")
+                    } else translateText()
+                }
+                .addOnFailureListener { error ->
+                    translator.close()
+                    promise.reject("MODEL_STATUS_FAILED", error.message, error)
+                }
+            return
+        }
+
+        translator.downloadModelIfNeeded(DownloadConditions.Builder().build())
+            .addOnSuccessListener { translateText() }
             .addOnFailureListener { error ->
                 translator.close()
                 promise.reject("MODEL_DOWNLOAD_FAILED", error.message, error)

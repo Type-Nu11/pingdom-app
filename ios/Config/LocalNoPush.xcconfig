@@ -1,0 +1,3 @@
+// Local Personal Team build without APNs. Use with xcodebuild -xcconfig.
+// Keep the standard Debug/Release signing entitlements unchanged.
+CODE_SIGN_ENTITLEMENTS = $(SRCROOT)/PingDom/LocalNoPush.entitlements

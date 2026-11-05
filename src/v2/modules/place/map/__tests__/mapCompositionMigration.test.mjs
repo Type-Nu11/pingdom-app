@@ -129,7 +129,7 @@ test('expanded sheet stops below the search header and temporarily hides map cat
   assert.doesNotMatch(expandedTop, /categoryHeight/);
   assert.match(screen, /const expandedTranslateY = isPlacePreview \? 0 : externalPlace \? mediumTranslateY : expandedSheetTop;/);
 
-  assert.match(screen, /showCategories=\{snapPoint !== 'expanded'\}/);
+  assert.match(screen, /showCategories=\{presentedSnapPoint !== 'expanded'\}/);
 });
 
 test('resting map content disables vertical scrolling while preserving nested horizontal lists', () => {
@@ -226,7 +226,9 @@ test('marker details open without a settling animation before their buttons can 
 
 test('sheet and floating actions move under one parent instead of separate transforms', () => {
   const screen = read('../screens/MapScreen.tsx');
-  assert.match(screen, /style=\{\[styles\.sectionTransition, \{ transform: \[\{ translateY: sheetTranslateY \}\] \}\]\}/);
+  assert.match(screen, /style=\{\[styles\.sectionTransition, sheetPositionStyle\]\}/);
+  assert.match(screen, /const sheetPositionStyle = useAnimatedStyle\([\s\S]*?translateY: uiPosition\.value/);
+  assert.match(screen, /uiThreadMotion: true/);
   assert.equal((screen.match(/parentOwnsMotion/g) ?? []).length, 4);
   const actions = screen.slice(screen.indexOf('{assistant.enabled && !isSearchOpen'), screen.indexOf('{isSearchOpen ? ('));
   assert.doesNotMatch(actions, /transform: \[\{ translateY: sheetTranslateY/);

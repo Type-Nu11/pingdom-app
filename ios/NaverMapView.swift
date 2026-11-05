@@ -42,6 +42,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
     @objc var zoomLevel: NSNumber?
     @objc var userLat: NSNumber?
     @objc var userLng: NSNumber?
+    @objc var userHeading: NSNumber?
     @objc var followUser = true
     @objc var nightMode = false
     @objc var markers: NSArray? {
@@ -67,6 +68,7 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         userMarker.anchor = CGPoint(x: 0.5, y: 0.72)
         userMarker.zIndex = 20
         userMarker.isForceShowIcon = true
+        userMarker.isFlat = true
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -236,6 +238,9 @@ final class NaverMapView: UIView, NMFMapViewCameraDelegate, NMFMapViewTouchDeleg
         let validUser = validCoordinate(userLat, userLng)
         if validUser, let lat = userLat, let lng = userLng {
             userMarker.position = NMGLatLng(lat: lat, lng: lng)
+            if let heading = userHeading?.doubleValue, heading.isFinite, heading >= 0 {
+                userMarker.angle = CGFloat(heading.truncatingRemainder(dividingBy: 360))
+            }
             userMarker.mapView = mapView
         } else {
             userMarker.mapView = nil

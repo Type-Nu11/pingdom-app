@@ -14,7 +14,7 @@ type CommonPolicy = Readonly<{
 }>;
 // PREPARE_WRITE의 requiresUserConfirmation은 실제 예약 제출에 적용됩니다. 초안 준비 자체는 자동 허용합니다.
 export type VoiceCommandPolicy = CommonPolicy & (
-  | Readonly<{ classification: 'READ'; automaticAction: 'query'; requiresUserConfirmation: false; requiresRuntimeLocation: boolean }>
+  | Readonly<{ classification: 'READ'; automaticAction: 'query'; requiresUserConfirmation: false; requiresRuntimeLocation: boolean | 'unlessNameSearch' }>
   | Readonly<{ classification: 'PREPARE_WRITE'; automaticAction: 'draft'; requiresUserConfirmation: true; requiresFreshAvailability: true; allowedProductType: 'GENERAL' }>
   | Readonly<{ classification: 'LOCAL_FORM'; automaticAction: 'fillForm'; requiresUserConfirmation: true }>
   | Readonly<{ classification: 'NAVIGATION'; automaticAction: 'navigate'; requiresUserConfirmation: false }>
@@ -30,7 +30,8 @@ const common = {
  * 예약 확정은 이 표에 추가하지 않고 앱 확인 화면의 사용자 이벤트로만 수행합니다.
  */
 export const VOICE_COMMAND_POLICIES = Object.freeze({
-  searchNearbyPlaces: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: true, provenance: 'none' } as const),
+  getMyReservations: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: false, provenance: 'none' } as const),
+  searchNearbyPlaces: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: 'unlessNameSearch', provenance: 'none' } as const),
   searchNearbyReservablePlaces: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: true, provenance: 'none' } as const),
   getPlaceDetails: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: false, provenance: 'recentSearchOrUserSelection' } as const),
   getAvailabilities: Object.freeze({ ...common, classification: 'READ', automaticAction: 'query', requiresUserConfirmation: false, requiresRuntimeLocation: false, provenance: 'recentSearchOrUserSelection' } as const),

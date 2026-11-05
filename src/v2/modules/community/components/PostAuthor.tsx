@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components/native';
 
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
-import { formatRelativeMinutes } from '../../../shared/i18n/formatters';
+import { formatCommunityTime } from '../model/communityTime';
 import { textStyleCss } from '../../../shared/theme/typography';
 import type { CommunityPostDetail } from '../api/communityApi';
 import { joinMeta } from '../model/photoCount';
@@ -28,8 +28,7 @@ export default function PostAuthor({ author, createdAt, now, region, viewCount }
   const { i18n, t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const imageUrl = author?.profileImageUrl;
-  const minutesAgo = createdAt ? Math.floor((now.getTime() - new Date(createdAt).getTime()) / 60_000) : 0;
-  const relativeTime = createdAt ? formatRelativeMinutes(minutesAgo, i18n.language) : '';
+  const relativeTime = formatCommunityTime(createdAt, now, i18n.language);
   const meta = joinMeta([
     region,
     relativeTime,

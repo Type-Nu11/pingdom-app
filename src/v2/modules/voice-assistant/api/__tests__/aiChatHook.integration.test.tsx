@@ -10,6 +10,98 @@ const original = AppState.currentState;
 beforeEach(() => { (AppState as { currentState: string }).currentState = 'active'; });
 afterEach(() => { (AppState as { currentState: string }).currentState = original; });
 
+test('수영장 이름 조회 실패 후 검증한 워터파크 결과와 20km 검색 범위를 모델에 돌려준다', async () => {
+  const bodies: unknown[] = [];
+  const place = { id: 42, name: '스파밸리', address: '서버 주소', touristCategories: [], operatingStatus: 'OPERATING',
+    description: '워터파크와 수영장을 갖춘 시설' };
+  const restore = configureApiTransport({
+    get: async (path: string, options: { params?: { keyword?: string; limit?: number } }) => ({ data: path === '/places'
+      ? { places: options.params?.limit === 12 && options.params.keyword === '스파' ? [{ id: 42, distanceMeters: 15000 }] : [] }
+      : place }),
+    post: async (_path: string, body: unknown) => {
+      bodies.push(body);
+      return { data: JSON.stringify({ type: 'message', role: 'assistant', content: bodies.length === 1
+        ? [{ type: 'tool_use', id: 'pool-search', name: 'searchNearbyPlaces', input: {
+          keyword: '수영장', relatedKeywords: ['워터파크', '스파'], matchTerms: ['수영장', '워터파크'], matchSource: 'place',
+        } }]
+        : [{ type: 'text', text: '20km 범위에서 수영 시설이 안내된 장소를 찾았어요.' }],
+      stop_reason: bodies.length === 1 ? 'tool_use' : 'end_turn' }) };
+    },
+  } as unknown as ApiTransport);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: { latitude: 35.8, longitude: 128.6 },
+    locationPermission: 'granted', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true }), { wrapper });
+  try {
+    await act(async () => { await view.result.current.onFinalInput({ text: '수영장 찾아줘', source: 'text', signal: new AbortController().signal }); });
+    expect(view.result.current.commandState).toMatchObject({ phase: 'result', result: { command: 'searchNearbyPlaces', outcome: {
+      status: 'succeeded', data: { places: [{ id: 42, name: '스파밸리' }], coverage: 'bounded_candidates', search: { radiusKm: 20 } },
+    } } });
+    expect(bodies).toHaveLength(2);
+    expect(JSON.stringify((bodies[1] as { messages: unknown }).messages)).toContain('bounded_candidates');
+    expect(JSON.stringify((bodies[1] as { messages: unknown }).messages)).toContain('스파밸리');
+    expect(client.getMutationCache().getAll()).toHaveLength(0);
+  } finally { await view.unmount(); client.clear(); restore(); }
+});
+
+test('reserved-place directions reads my bookings and verified coordinates before route dispatch', async () => {
+  const paths: string[] = [], bodies: unknown[] = [];
+  const navigateToPage = jest.fn(() => true);
+  const startsAt = new Date(Date.now() + 3600000).toISOString();
+  const endsAt = new Date(Date.now() + 7200000).toISOString();
+  const restore = configureApiTransport({
+    get: async (path: string) => {
+      paths.push(path);
+      return { data: path === '/reservations' ? { reservations: [{ id: 9, status: 'CONFIRMED',
+        bookerName: 'PRIVATE_BOOKER', bookerPhone: 'PRIVATE_PHONE', requestNote: 'PRIVATE_NOTE',
+        reservationStartsAt: startsAt, reservationEndsAt: endsAt,
+        confirmation: { placeId: 42, placeName: '예약한 식당', startsAt, endsAt } }], totalElements: 1, hasNext: false }
+        : { id: 42, name: '예약한 식당', address: '서울', touristCategories: [], operatingStatus: 'OPERATING', latitude: 37.5, longitude: 127 } };
+    },
+    post: async (_path: string, body: unknown) => {
+      bodies.push(body);
+      const first = bodies.length === 1;
+      return { data: JSON.stringify({ type: 'message', role: 'assistant', content: [{ type: 'tool_use',
+        id: first ? 'my-bookings' : 'booking-directions', name: first ? 'getMyReservations' : 'navigateToPage',
+        input: first ? {} : { page: 'directions', placeId: 42 } }], stop_reason: 'tool_use' }) };
+    },
+  } as unknown as ApiTransport);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true, navigateToPage }), { wrapper });
+  try {
+    await act(async () => { await view.result.current.onFinalInput({ text: '내가 예약한 곳 길찾기 해줘', source: 'voice', signal: new AbortController().signal }); });
+    expect(navigateToPage).toHaveBeenCalledTimes(1);
+    expect(navigateToPage).toHaveBeenCalledWith({ page: 'directions', placeId: 42 });
+    expect(paths).toEqual(['/reservations', '/places/42']);
+    expect(bodies).toHaveLength(2);
+    expect((bodies[0] as { tools: { name: string }[] }).tools.map(tool => tool.name)).toEqual(['getMyReservations', 'cancelVoiceSession']);
+    expect(JSON.stringify(bodies.map(body => (body as { messages: unknown }).messages))).not.toMatch(/PRIVATE_|bookerName|bookerPhone|requestNote/);
+    expect(client.getMutationCache().getAll()).toHaveLength(0);
+  } finally { await view.unmount(); client.clear(); restore(); }
+});
+
+test('a provider cannot substitute the reservations page for a reserved-place directions request', async () => {
+  const navigateToPage = jest.fn(() => true);
+  const get = jest.fn();
+  const restore = configureApiTransport({ get,
+    post: async () => ({ data: JSON.stringify({ type: 'message', role: 'assistant', stop_reason: 'tool_use', content: [
+      { type: 'tool_use', id: 'wrong-page', name: 'navigateToPage', input: { page: 'reservations' } },
+    ] }) }),
+  } as unknown as ApiTransport);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  const view = await renderHook(() => hooks.useVoiceCommands({ accountRevision: 'user', location: null,
+    locationPermission: 'denied', radiusKm: 5, timezone: 'Asia/Seoul', placeListEnabled: true, navigateToPage }), { wrapper });
+  try {
+    await act(async () => { await view.result.current.onFinalInput({ text: '내가 예약한 곳 길찾기 해줘', source: 'voice', signal: new AbortController().signal }); });
+    expect(navigateToPage).not.toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalled();
+    expect(view.result.current.commandState).toMatchObject({ phase: 'error', code: 'INVALID_RESPONSE' });
+  } finally { await view.unmount(); client.clear(); restore(); }
+});
+
 test.each([
   ['arbitrary API', { name: 'fetch', input: { url: '/reservations', method: 'POST' } }],
   ['reservation confirmation bypass', { name: 'createReservation', input: { confirmed: true } }],
@@ -192,7 +284,9 @@ test.each(['empty', 'failed'] as const)('a %s search never presents an AI claim 
     await act(async () => { await view.result.current.onFinalInput({ text: '용짬뽕 찾아', source: 'text', signal: new AbortController().signal }); });
     expect(posts).toBe(2);
     expect(outcomes).toEqual([kind === 'failed' ? { status: 'rejected', code: 'INVALID_SERVER_RESPONSE' }
-      : { status: 'succeeded', data: { places: [], coverage: 'nearest_places' } }]);
+      : { status: 'succeeded', data: { places: [], coverage: 'bounded_candidates', search: {
+        radiusKm: 20, keywords: ['용짬뽕'], matchedBy: 'place_or_menu', candidateLimit: 12, evidence: [],
+      } } }]);
     expect(view.result.current.commandState).not.toHaveProperty('text');
   } finally { await view.unmount(); client.clear(); restore(); }
 });

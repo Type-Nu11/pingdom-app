@@ -1,9 +1,10 @@
-import { Animated } from 'react-native';
+import { SheetMotionView } from '../hooks/useSheetMotionStyle';
+import { Platform } from 'react-native';
 import styled from 'styled-components/native';
 
 import FrostedSurface from '../../presentation/components/FrostedSurface';
 
-export const BottomSheetContainer = styled(Animated.View)`
+export const BottomSheetContainer = styled(SheetMotionView)`
   position: absolute;
   right: 0;
   bottom: 0;
@@ -12,7 +13,7 @@ export const BottomSheetContainer = styled(Animated.View)`
   overflow: visible;
 `;
 
-export const SheetChromeShadow = styled(Animated.View)`
+export const SheetChromeShadow = styled(SheetMotionView)`
   position: absolute;
   top: 0;
   right: 0;
@@ -20,10 +21,10 @@ export const SheetChromeShadow = styled(Animated.View)`
   border-radius: ${({ theme }) => theme.liquidGlass.sheet.topRadius}px;
   border-bottom-right-radius: ${({ theme }) => theme.liquidGlass.sheet.bottomRadius}px;
   border-bottom-left-radius: ${({ theme }) => theme.liquidGlass.sheet.bottomRadius}px;
-  background-color: ${({ theme }) => theme.liquidGlass.shadowFill};
+  background-color: ${({ theme }) => Platform.OS === 'ios' ? theme.colors.backgroundAssistive : theme.liquidGlass.shadowFill};
 `;
 
-export const SheetChrome = styled(Animated.View)<{ $borderColor: string }>`
+export const SheetChrome = styled(SheetMotionView)<{ $borderColor: string }>`
   flex: 1;
   border-width: 1px;
   border-color: ${({ $borderColor }) => $borderColor};
@@ -47,14 +48,14 @@ export const SheetGlass = styled(FrostedSurface)`
 
 // The native content viewport follows the same animated bounds as the glass.
 // Clipping only the background cannot contain photos or other overflowing children.
-export const SheetContentViewport = styled(Animated.View)`
+export const SheetContentViewport = styled(SheetMotionView)`
   position: absolute;
   top: 0;
   overflow: hidden;
 `;
 
 // Expanded Figma pages use a solid assistive surface over the resting glass.
-export const SheetExpandedFill = styled(Animated.View)`
+export const SheetExpandedFill = styled(SheetMotionView)`
   position: absolute;
   top: 0;
   right: 0;

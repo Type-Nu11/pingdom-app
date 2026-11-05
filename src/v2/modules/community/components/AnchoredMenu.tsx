@@ -14,17 +14,19 @@ type AnchoredMenuProps = {
   position: AnchoredMenuPosition;
   visible: boolean;
   cornerRadius?: number;
+  material?: 'liquid' | 'frosted';
+  maxHeight?: number;
   tintColor?: string;
   testID?: string;
 };
 
-export default function AnchoredMenu({ children, dismissLabel, onClose, position, visible, cornerRadius, tintColor, testID }: AnchoredMenuProps) {
+export default function AnchoredMenu({ children, dismissLabel, onClose, position, visible, cornerRadius, material = 'liquid', maxHeight: preferredMaxHeight, tintColor, testID }: AnchoredMenuProps) {
   const theme = useTheme();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [cardHeight, setCardHeight] = useState(0);
   const minTop = insets.top + 8;
-  const maxHeight = Math.max(52, height - minTop - insets.bottom - 8);
+  const maxHeight = Math.min(preferredMaxHeight ?? Infinity, Math.max(52, height - minTop - insets.bottom - 8));
   const top = Math.max(minTop, Math.min(position.top, height - insets.bottom - 8 - cardHeight));
   const radius = cornerRadius ?? theme.radius.lg;
   return (
@@ -41,7 +43,7 @@ export default function AnchoredMenu({ children, dismissLabel, onClose, position
             left: position.left === undefined ? undefined : Math.max(insets.left + 8, Math.min(position.left, width - insets.right - 208)),
             right: position.left === undefined ? Math.max(insets.right + 8, position.right ?? 16) : undefined, top }}
         >
-          <Glass glassEffectStyle="regular" tintColor={tintColor} style={{ borderRadius: radius }}>
+          <Glass material={material} glassEffectStyle="regular" tintColor={tintColor} style={{ borderRadius: radius }}>
             <ScrollView bounces={false} showsVerticalScrollIndicator={false} style={{ maxHeight: maxHeight - 16 }}>
               {children}
             </ScrollView>

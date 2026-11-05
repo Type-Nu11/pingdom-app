@@ -75,6 +75,16 @@ class NaverMapViewManager : SimpleViewManager<NaverMapView>() {
         view.setUserLng(userLng)
     }
 
+    @ReactProp(name = "frameRateLimit", defaultInt = 0)
+    fun setFrameRateLimit(view: NaverMapView, limit: Int) {
+        view.setFrameRateLimit(limit)
+    }
+
+    @ReactProp(name = "userHeading", defaultDouble = Double.NaN)
+    fun setUserHeading(view: NaverMapView, userHeading: Double) {
+        view.setUserHeading(userHeading)
+    }
+
     @ReactProp(name = "followUser", defaultBoolean = true)
     fun setFollowUser(view: NaverMapView, followUser: Boolean) {
         view.setFollowUser(followUser)

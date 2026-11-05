@@ -38,6 +38,8 @@ describe('CommunityImage', () => {
 
     const photo = screen.getByTestId('photo');
     expect(photo.props.source).toEqual({ uri: 'https://cdn.test/a.jpg' });
+    expect(photo).toHaveProp('resizeMethod', 'resize');
+    expect(photo).toHaveProp('fadeDuration', 0);
     expect(photo).toHaveStyle({ borderTopLeftRadius: 12, height: 80, width: 80 });
   });
 

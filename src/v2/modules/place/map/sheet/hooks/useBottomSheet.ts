@@ -1,5 +1,6 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder } from 'react-native';
+import { cancelAnimation, runOnJS, useSharedValue, withSpring } from 'react-native-reanimated';
 
 export type BottomSheetSnapPoint = 'collapsed' | 'medium' | 'expanded';
 
@@ -8,6 +9,7 @@ type UseBottomSheetParams = {
   expandedTranslateY?: number;
   initialSnapPoint?: BottomSheetSnapPoint;
   mediumTranslateY: number;
+  uiThreadMotion?: boolean;
 };
 
 const SNAP_ORDER: BottomSheetSnapPoint[] = ['expanded', 'medium', 'collapsed'];
@@ -63,6 +65,7 @@ export const useBottomSheet = ({
   expandedTranslateY = 0,
   initialSnapPoint = 'medium',
   mediumTranslateY,
+  uiThreadMotion = false,
 }: UseBottomSheetParams) => {
   const snapValues = useMemo(() => ({
     collapsed: collapsedTranslateY,
@@ -73,12 +76,19 @@ export const useBottomSheet = ({
   snapValuesRef.current = snapValues;
 
   const sheetTranslateY = useRef(new Animated.Value(snapValues[initialSnapPoint])).current;
-  // Layout clipping and translation must follow exactly the same frame.
-  // Layout properties require the JS driver, so do not split this into two springs.
+  const position = useSharedValue(snapValues[initialSnapPoint]);
+  useLayoutEffect(() => () => cancelAnimation(position), [position]);
+  // Standalone sheets retain their legacy Animated contract. MapScreen uses one
+  // UI shared value for both translation and clipping, with no parallel JS spring.
   const sheetChromeBottom = sheetTranslateY;
   const sheetOffsetY = useRef(snapValues[initialSnapPoint]);
   const snapPointRef = useRef<BottomSheetSnapPoint>(initialSnapPoint);
   const [snapPoint, setSnapPoint] = useState<BottomSheetSnapPoint>(initialSnapPoint);
+  const [presentedSnapPoint, setPresentedSnapPoint] = useState<BottomSheetSnapPoint>(initialSnapPoint);
+  const animationRevision = useRef(0);
+  const commitPresentation = useCallback((next: BottomSheetSnapPoint, revision: number) => {
+    if (animationRevision.current === revision) setPresentedSnapPoint(next);
+  }, []);
 
   const appliedTarget = useRef(snapValues[initialSnapPoint]);
   const pendingSnap = useRef(false);
@@ -87,6 +97,7 @@ export const useBottomSheet = ({
   const snapTo = (nextSnapPoint: BottomSheetSnapPoint) => {
     snapPointRef.current = nextSnapPoint;
     setSnapPoint(nextSnapPoint);
+    if (!uiThreadMotion) setPresentedSnapPoint(nextSnapPoint);
     // Content changes in the same event can change the destination coordinates.
     // Start only after that render commits, using its updated snap values.
     pendingSnap.current = true;
@@ -95,13 +106,17 @@ export const useBottomSheet = ({
 
   const jumpTo = (nextSnapPoint: BottomSheetSnapPoint) => {
     pendingSnap.current = false;
+    animationRevision.current += 1;
     const nextValue = snapValuesRef.current[nextSnapPoint];
 
     sheetTranslateY.stopAnimation();
+    cancelAnimation(position);
+    position.value = nextValue;
     sheetOffsetY.current = nextValue;
     appliedTarget.current = nextValue;
     snapPointRef.current = nextSnapPoint;
     setSnapPoint(nextSnapPoint);
+    setPresentedSnapPoint(nextSnapPoint);
     sheetTranslateY.setValue(nextValue);
   };
 
@@ -113,6 +128,18 @@ export const useBottomSheet = ({
     sheetOffsetY.current = nextValue;
     if (pendingSnap.current) {
       pendingSnap.current = false;
+      if (uiThreadMotion) {
+        const next = snapPointRef.current;
+        const revision = ++animationRevision.current;
+        position.value = withSpring(nextValue, {
+          damping: 26, mass: 0.82, stiffness: 240, overshootClamping: true, energyThreshold: 0.000001,
+        }, finished => {
+          if (finished) runOnJS(commitPresentation)(next, revision);
+        });
+        // Legacy consumers receive the settled target, never a per-frame JS update.
+        sheetTranslateY.setValue(nextValue);
+        return;
+      }
       Animated.spring(sheetTranslateY, {
         damping: 26,
         mass: 0.82,
@@ -125,12 +152,23 @@ export const useBottomSheet = ({
       return;
     }
     sheetTranslateY.setValue(nextValue);
-  }, [sheetChromeBottom, sheetTranslateY, snapRequest, snapValues]);
+    position.value = nextValue;
+    if (uiThreadMotion) {
+      animationRevision.current += 1;
+      setPresentedSnapPoint(snapPointRef.current);
+    }
+  }, [commitPresentation, position, sheetChromeBottom, sheetTranslateY, snapRequest, snapValues, uiThreadMotion]);
 
   const panResponder = useMemo(() => PanResponder.create({
     onMoveShouldSetPanResponder: (_, gesture) => shouldClaimVerticalDrag(gesture),
     onMoveShouldSetPanResponderCapture: (_, gesture) => shouldClaimVerticalDrag(gesture),
     onPanResponderGrant: () => {
+      if (uiThreadMotion) {
+        animationRevision.current += 1;
+        cancelAnimation(position);
+        sheetOffsetY.current = position.value;
+        return;
+      }
       sheetTranslateY.stopAnimation((value) => {
         sheetOffsetY.current = value;
       });
@@ -142,7 +180,8 @@ export const useBottomSheet = ({
         values.collapsed,
       );
 
-      sheetTranslateY.setValue(nextValue);
+      if (uiThreadMotion) position.value = nextValue;
+      else sheetTranslateY.setValue(nextValue);
     },
     onPanResponderRelease: (_, gesture) => {
       snapTo(resolveReleaseSnapPoint(snapPointRef.current, snapValuesRef.current, sheetOffsetY.current, gesture));
@@ -153,7 +192,7 @@ export const useBottomSheet = ({
     onPanResponderTerminate: () => snapTo(snapPointRef.current),
   // PanResponder intentionally reads changing values through refs.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [sheetChromeBottom, sheetTranslateY]);
+  }), [position, sheetChromeBottom, sheetTranslateY, uiThreadMotion]);
 
   const toggleSheet = () => {
     snapTo(snapPointRef.current === 'collapsed' ? 'medium' : 'collapsed');
@@ -165,7 +204,9 @@ export const useBottomSheet = ({
     panHandlers: panResponder.panHandlers,
     sheetChromeBottom,
     sheetTranslateY,
+    uiPosition: position,
     snapPoint,
+    presentedSnapPoint,
     snapTo,
     toggleSheet,
   };

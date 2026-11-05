@@ -11,6 +11,9 @@ export type VoiceTouristCategory = PlaceDetail['touristCategories'][number];
 // against actual production place data, independently of tourism tags.
 export const VOICE_PLACE_CATEGORIES = ['RESTAURANT'] as const;
 export type VoicePlaceCategory = typeof VOICE_PLACE_CATEGORIES[number];
+export const VOICE_SEARCH_MATCH_SOURCES = ['name', 'place', 'menu', 'any'] as const;
+export type VoiceSearchMatchSource = typeof VOICE_SEARCH_MATCH_SOURCES[number];
+export type VoiceSearchEvidence = Readonly<{ placeId: number; source: Exclude<VoiceSearchMatchSource, 'any'>; text: string }>;
 /** YYYY-MM-DD(0001~9999년). string 타입만으로는 날짜를 보장하지 않으므로 parser 검증이 필요합니다. */
 export type VoiceLocalDate = string;
 /** 앱 세션 timezone 기준 HH:mm. 같은 날의 시작 < 종료 조건은 parser가 검사합니다. */
@@ -21,19 +24,24 @@ export type VoiceLocalTime = string;
  * 외부 입력을 이 타입으로 단언하지 말고 반드시 parseVoiceAssistantEnvelope를 통과시킵니다.
  * 좌표·확인 여부는 앱이 결정합니다. 예약자 정보는 사용자가 제공한 값만 초안에 반영합니다.
  */
-export const VOICE_PAGE_IDS = ['map', 'search', 'favorites', 'reservations', 'myPage', 'settings', 'placeDetail', 'createReservation',
+export const VOICE_PAGE_IDS = ['map', 'search', 'favorites', 'reservations', 'myPage', 'settings', 'placeDetail', 'createReservation', 'directions',
   'community', 'communityPost', 'recommendations', 'coupons', 'verifiedPlaces', 'accountManagement',
   'notificationSettings', 'loginInformation', 'locationSettings', 'privacySettings', 'dataManagement'] as const;
 export type VoicePageId = typeof VOICE_PAGE_IDS[number];
-export type VoiceNavigationTarget = Readonly<{ page: Exclude<VoicePageId, 'placeDetail' | 'createReservation' | 'communityPost'> }>
-  | Readonly<{ page: 'placeDetail' | 'createReservation'; placeId: number }>
+export type VoiceNavigationTarget = Readonly<{ page: Exclude<VoicePageId, 'placeDetail' | 'createReservation' | 'communityPost' | 'directions'> }>
+  | Readonly<{ page: 'placeDetail' | 'createReservation' | 'directions'; placeId: number }>
   | Readonly<{ page: 'communityPost'; postId: number }>;
 
 export type VoiceAssistantCommand =
   | Readonly<{ command: 'navigateToPage'; args: Readonly<{ page: VoicePageId; placeId?: number }> }>
+  | Readonly<{ command: 'getMyReservations'; args: Readonly<Record<string, never>> }>
   | Readonly<{ command: 'searchNearbyPlaces'; args: Readonly<{
     category?: VoicePlaceCategory;
     keyword?: string;
+    /** App-owned discovery plan; these fields never become backend query parameters. */
+    relatedKeywords?: readonly string[];
+    matchTerms?: readonly string[];
+    matchSource?: VoiceSearchMatchSource;
     limit?: number;
     touristCategory?: VoiceTouristCategory;
     useCurrentLocation: boolean;
@@ -97,7 +105,12 @@ export type ReservationDraft = Readonly<{
 }>;
 /** 명령별 성공 데이터. prepareReservation의 성공은 초안 준비이며 예약 생성 성공이 아닙니다. */
 export type VoiceCommandOutput = {
-  searchNearbyPlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'nearest_places' }>;
+  getMyReservations: Readonly<{ reservations: readonly Readonly<{
+    reservationId: number; placeId: number; placeName: string; startsAt: string; endsAt: string; status: 'PENDING' | 'CONFIRMED';
+  }>[]; hasMore: boolean }>;
+  searchNearbyPlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'nearest_places' | 'bounded_candidates';
+    search?: Readonly<{ radiusKm?: number; scope?: 'catalog_name'; keywords: readonly string[]; matchedBy: 'place_or_menu'; candidateLimit: number;
+      evidence: readonly VoiceSearchEvidence[] }> }>;
   searchNearbyReservablePlaces: Readonly<{ places: readonly VoicePlaceFacts[]; coverage: 'bounded_candidates' }>;
   getPlaceDetails: Readonly<{ place: VoicePlaceFacts }>;
   getAvailabilities: Readonly<{ placeId: number; date: VoiceLocalDate; quantity: number; availabilities: readonly VoiceAvailabilityFacts[] }>;

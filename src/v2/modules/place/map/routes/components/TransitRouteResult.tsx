@@ -65,7 +65,7 @@ function TransitRouteCard({ itinerary, estimateAt, recommended, onStart }: { iti
       subtitle={[labels.arrival, labels.metrics.distance].filter(Boolean).join(' · ')} meta={labels.meta}
       recommended={recommended} onStart={onStart} actionLabel={t('routes.tracking.start')} actionHint={t('routes.tracking.hint')} disabled={!transitMapSegments(itinerary).length}>
       <SegmentBar itinerary={itinerary} />
-      <EstimateNote><ClockIcon /><Text style={{ flex: 1, fontSize: 12, lineHeight: 15.6, color: theme.colors.primary, fontWeight: '500' }}>{t('routes.design.providerEstimate')}</Text></EstimateNote>
+      <EstimateNote><ClockIcon /><Text style={{ flex: 1, fontSize: 12, lineHeight: 15.6, color: theme.colors.labelAssistive, fontWeight: '500' }}>{t('routes.design.providerEstimate')}</Text></EstimateNote>
       {!transitMapSegments(itinerary).length && <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>{t('routes.transit.noGeometry')}</Text>}
     </RouteSummaryCard>
   );

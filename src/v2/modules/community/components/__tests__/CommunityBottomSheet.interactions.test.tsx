@@ -1,6 +1,7 @@
+import { MapSheetScrollToTopProvider } from '../../../place/map/sheet';
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react-native';
-import { Animated, type GestureResponderHandlers } from 'react-native';
+import { FlatList, Animated, type GestureResponderHandlers } from 'react-native';
 
 import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { useCategories, useCommunityFeed, useCountries } from '../../hooks/useCommunity';
@@ -99,6 +100,17 @@ describe('CommunityBottomSheet interactions', () => {
     jest.mocked(useCountries).mockReturnValue(countriesResult());
   });
 
+  test('더블 탭은 게시글 목록 스크롤을 처음으로 이동한다', async () => {
+    jest.mocked(useCommunityFeed).mockReturnValue(postsResult({ data: { pages: [postPage({ posts: [{ postId: 1, title: '글' }] })], pageParams: [1] } }));
+    const scroll = jest.spyOn(FlatList.prototype, 'scrollToOffset').mockImplementation(() => {});
+    const ui = (request: number) => <MapSheetScrollToTopProvider value={request}><CommunityBottomSheet {...createBottomSheetProps()} {...navigation} /></MapSheetScrollToTopProvider>;
+    const view = await renderSheet(ui(0));
+    scroll.mockClear();
+    await view.rerender(ui(1));
+    expect(scroll).toHaveBeenCalledWith({ animated: true, offset: 0 });
+    scroll.mockRestore();
+  });
+
   test('카테고리를 누르면 해당 카테고리로 게시글 조회를 전환한다', async () => {
     jest.mocked(useCommunityFeed).mockReturnValue(postsResult({
       data: { pages: [postPage({ posts: [{ postId: 1, title: '장소 글' }] })], pageParams: [1] },
@@ -177,12 +189,12 @@ describe('CommunityBottomSheet interactions', () => {
 
   test('계약에 없는 국가 코드는 코드 그대로 보여준다', async () => {
     jest.mocked(useCommunityFeed).mockReturnValue(postsResult());
-    jest.mocked(useCountries).mockReturnValue(countriesResult({ data: ['KR', 'FR'] }));
+    jest.mocked(useCountries).mockReturnValue(countriesResult({ data: ['KR', 'XX'] }));
     const { user } = await renderSheet(<CommunityBottomSheet {...createBottomSheetProps()} {...navigation} />);
 
     await user.press(screen.getByTestId('v2-community-sheet-filter'));
 
-    expect(screen.getByTestId('v2-community-country-FR')).toHaveTextContent('FR');
+    expect(screen.getByTestId('v2-community-country-XX')).toHaveTextContent('XX');
   });
 
   test('국가 목록 조회가 실패하면 메뉴에서 재시도할 수 있다', async () => {

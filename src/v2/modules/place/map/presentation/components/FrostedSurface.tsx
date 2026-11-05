@@ -32,7 +32,7 @@ const FrostedSurface = ({
   const gradientId = `frosted-highlight-${useId().replace(/:/g, '')}`;
 
   return (
-    <GlassSurface {...glassProps}>
+    <GlassSurface {...glassProps} cornerRadius={cornerRadius}>
       <S.HighlightGradient $height={highlightHeight} height={highlightHeight ?? '100%'} pointerEvents="none" width="100%">
         <Defs>
           <LinearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">

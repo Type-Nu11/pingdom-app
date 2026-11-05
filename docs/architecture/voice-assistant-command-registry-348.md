@@ -28,7 +28,8 @@ fixture는 generated `ProviderEnvelopeV1` DTO와 타입 검사되며 production�
 현재 production 연결은 `MapScreen → MapAssistantModal → VoiceCommandScreen → useVoiceCommands`입니다.
 기존 feature flag와 #347의 활성 세션이 필요합니다. parser 실패, stale session/epoch/generation/context,
 deadline/취소, 알 수 없는 ID, handler 부재, prepare 명령은 도메인 실행으로 이어지지 않습니다.
-승인된 위치/권한은 검색뿐 아니라 상세·availability와 provider의 로컬 cancel 명령에도 필요합니다.
+승인된 위치/권한은 주변 검색뿐 아니라 상세·availability와 provider의 로컬 cancel 명령에도 필요합니다.
+특정 가게 이름 검색(`matchSource=name`)과 검증된 장소로의 화면 이동은 GPS가 필요하지 않습니다.
 사용자가 직접 누르는 앱의 닫기/취소 버튼은 위치와 무관하게 세션을 정리합니다.
 Gateway 장애는 #347의 안전한 오류 코드로 종료하고, `PROVIDER_UNAVAILABLE` envelope도 화면에
 동일한 고정 오류 코드로 표시합니다. 성공 결과로 변환하지 않습니다.
@@ -88,7 +89,13 @@ generation, context revision, 실제 위치·권한·반경·timezone, signal, `
 
 ## 검색·상세·availability 정책
 
-- 앱에서 승인한 실제 위치와 granted 권한, 유효한 반경/feature flag가 있어야 검색합니다.
+- `searchNearbyPlaces`의 `matchSource=name`은 `GET /places?keyword=...&page=1&limit=12`로
+  전체 가게 이름을 조회합니다. 좌표·반경·추정 업종·관광 태그를 넣지 않고, 원래 이름을
+  넓은 `matchTerms`나 관련어로 바꾸지 않습니다. 이름이 맞는 후보의 canonical 상세를 확인한
+  뒤 실제 ID만 기록합니다. 결과의 `search.scope=catalog_name`에는 `radiusKm`가 없습니다.
+  후보 제한 내 조회이며 “DB에 없는 장소”라는 결론을 내리지 않습니다.
+  `페이지 가줘`는 검색한 실제 ID로 `navigateToPage(page=placeDetail)`를 이어서 실행합니다.
+- 주변 검색은 앱에서 승인한 실제 위치와 granted 권한, 유효한 반경/feature flag가 있어야 실행합니다.
   위치 누락은 LOCATION_REQUIRED, `useCurrentLocation: false`는 location clarification입니다.
   좌표 fallback은 없습니다. runtime의 좌표는 장소 목록 Query에만 전달하고 gateway/result/log/storage에 넣지 않습니다.
 - `NEAREST`, 기존 후보 제한 **12**, 지원되는 `touristCategory`만 서버 목록 param으로 보냅니다.

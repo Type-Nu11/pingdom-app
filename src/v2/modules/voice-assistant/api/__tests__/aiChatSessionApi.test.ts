@@ -86,7 +86,7 @@ test('live completion replies show only assistant content and serialize tool his
     expect(JSON.stringify(history)).not.toContain('private reasoning');
     for (const request of x.requests) {
       expect(request.body.model).toBe('claude-haiku-5-5');
-      expect(request.body.system).toBe(AI_CHAT_SYSTEM_PROMPT);
+      expect(request.body.system).toContain(AI_CHAT_SYSTEM_PROMPT);
       expect(request.body.messages.every((message: any) => ['user', 'assistant'].includes(message.role))).toBe(true);
     }
     expect(AI_CHAT_SYSTEM_PROMPT).toContain('Respond in the language of the latest user request');
@@ -232,7 +232,7 @@ test('closing chat drops old dialogue before the next session', async () => {
   const c = createVoiceSessionController(() => {}, x.api);
   try {
     await c.start(); await c.send('첫 질문'); await c.close(); await c.start(); await c.send('새 질문');
-    expect(x.requests[1].body.system).toBe(AI_CHAT_SYSTEM_PROMPT);
+    expect(x.requests[1].body.system).toContain(AI_CHAT_SYSTEM_PROMPT);
     expect(x.requests[1].body.messages).toEqual([{ role: 'user', content: '새 질문' }]);
   } finally { c.dispose(); }
 });

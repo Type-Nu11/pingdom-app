@@ -18,6 +18,21 @@ const outcome = (id: string, failed = false): AppCommandResult => ({ schemaVersi
   kind: 'command_result', commandId: id, command: 'searchNearbyPlaces', outcome: failed ? { status: 'rejected', code: 'NETWORK_ERROR' }
     : { status: 'succeeded', data: { coverage: 'nearest_places', places: [] } } });
 
+test('예약 날짜 해석에는 현재 연월일과 앱 시간대를 매 요청에 제공한다', async () => {
+  jest.useFakeTimers({ now: new Date('2026-10-20T15:30:00Z') });
+  const requests: any[] = [];
+  const api = createAiChatSessionApi(createApiClient({ post: async (_path: string, body: unknown) => {
+    requests.push(body); return { data: JSON.stringify(message([{ type: 'text', text: '일정을 확인할게요.' }])) };
+  } } as unknown as ApiTransport), () => ({ language: 'ko', timezone: 'Asia/Seoul' }));
+  const controller = createVoiceSessionController(jest.fn(), api);
+  try {
+    await controller.start(); await controller.send('오늘 두 명 예약');
+    expect(requests[0].system).toContain('Current local date: 2026-10-21');
+    expect(requests[0].system).toContain('App timezone: Asia/Seoul');
+    expect(requests[0].system).toContain('2026-10-20T15:30:00.000Z');
+  } finally { controller.dispose(); jest.useRealTimers(); }
+});
+
 test('native Claude request uses top-level system, output cap and input_schema without OpenAI fields', async () => {
   const x = setup([message([{ type: 'text', text: '안녕하세요.' }])]);
   const consume = jest.fn(), c = createVoiceSessionController(consume, x.api);
@@ -25,7 +40,7 @@ test('native Claude request uses top-level system, output cap and input_schema w
     await c.start(); await c.send('Hello');
     expect(c.getSnapshot().error).toBeNull();
     expect(consume.mock.calls[0][0]).toMatchObject({ kind: 'assistant_message', text: '안녕하세요.' });
-    expect(x.requests[0]).toMatchObject({ model: 'claude-haiku-5-5', system: AI_CHAT_SYSTEM_PROMPT, max_tokens: expect.any(Number),
+    expect(x.requests[0]).toMatchObject({ model: 'claude-haiku-5-5', system: expect.stringContaining(AI_CHAT_SYSTEM_PROMPT), max_tokens: expect.any(Number),
       messages: [{ role: 'user', content: 'Hello' }], tools: AI_CHAT_TOOLS.map(({ function: f }) => ({ name: f.name, description: f.description, input_schema: f.parameters })) });
     expect(x.requests[0].tools.every((t: any) => !('function' in t) && !('type' in t))).toBe(true);
   } finally { c.dispose(); }

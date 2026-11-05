@@ -1,4 +1,6 @@
+import CalendarScrollView from '../../../../shared/components/CalendarScrollView';
 import Skeleton from '../../../../shared/components/Skeleton';
+import { useCalendarDragSelection } from '../../../../shared/hooks/useCalendarDragSelection';
 import { ApiErrorState, Button } from '../../../../shared/components';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -93,6 +95,10 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   const bookerValidation = validateBookerInput(bookerInput);
   const bookerErrorKeyFor = (field: keyof typeof bookerValidation.errors) =>
     showBookerErrors ? bookerValidation.errors[field] : null;
+  const dateDrag = useCalendarDragSelection({
+    onPress: (date: string) => { beginNewReservationIntent(); setSelectedDate(date); setSelectedAvailabilityId(null); },
+    onCommit: (_, endpoint) => { beginNewReservationIntent(); setSelectedDate(endpoint); setSelectedAvailabilityId(null); },
+  });
   const bookableAvailabilities = useMemo(
     () => availabilityData.filter(
       (item) => isSelectableAvailability(item) && isAvailabilityBookable(item, quantity, now),
@@ -305,9 +311,9 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
           <Calendar>
             <MonthRow><MonthButton accessibilityLabel={t('reservation.create.previousMonth')} accessibilityRole="button" onPress={() => moveMonth(-1)}><MonthButtonText>‹</MonthButtonText></MonthButton><MonthTitle testID="v2-reservation-month">{new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric' }).format(month)}</MonthTitle><MonthButton accessibilityLabel={t('reservation.create.nextMonth')} accessibilityRole="button" onPress={() => moveMonth(1)}><MonthButtonText>›</MonthButtonText></MonthButton></MonthRow>
             <WeekRow>{WEEKDAY_KEYS.map((day, weekday) => <Weekday $weekday={weekday} key={day}>{t(`reservation.create.weekdays.${day}`)}</Weekday>)}</WeekRow>
-            <CalendarGrid>{buildLocalCalendar(month).map((date, index) => date ? (() => {
+            <CalendarGrid {...dateDrag.gridHandlers} testID="v2-reservation-calendar-grid">{buildLocalCalendar(month).map((date, index) => date ? (() => {
               const key = localDateKey(date);
-              const selected = key === selectedDate;
+              const selected = key === (dateDrag.endpoint ?? selectedDate);
               const isPast = startOfLocalDay(date).getTime() < startOfLocalDay(now).getTime();
               const available = !isPast && availableDates.has(key);
               // Keep today's completed slots inspectable for their unavailable reason,
@@ -326,7 +332,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
                   ? t('reservation.create.scheduledDateLabel', { date: key })
                   : t('reservation.create.unavailableDateLabel', { date: key });
               const selectedAndAvailable = selected && available;
-              return <DayCell key={key}><DayButton $selected={selectedAndAvailable} accessibilityLabel={dateLabel} accessibilityRole="button" accessibilityState={{ disabled: !scheduled, selected }} disabled={!scheduled} onPress={() => { beginNewReservationIntent(); setSelectedDate(key); setSelectedAvailabilityId(null); }}><DayText $available={available} $selected={selectedAndAvailable} $weekday={date.getDay()}>{date.getDate()}</DayText>{remainingCapacity !== undefined ? <DayCapacity $selected={selectedAndAvailable} testID={`v2-reservation-date-capacity-${key}`}>{remainingCapacity}</DayCapacity> : null}</DayButton></DayCell>;
+              return <DayCell key={key}><DayButton $selected={selectedAndAvailable} accessibilityLabel={dateLabel} accessibilityRole="button" accessibilityState={{ disabled: !scheduled, selected }} disabled={!scheduled} {...dateDrag.dayProps(key, !scheduled)}><DayText $available={available} $selected={selectedAndAvailable} $weekday={date.getDay()}>{date.getDate()}</DayText>{remainingCapacity !== undefined ? <DayCapacity $selected={selectedAndAvailable} testID={`v2-reservation-date-capacity-${key}`}>{remainingCapacity}</DayCapacity> : null}</DayButton></DayCell>;
             })() : <DayCell key={`blank-${index}`} />)}</CalendarGrid>
           </Calendar>
         </Section>
@@ -600,7 +606,7 @@ const Header = styled.View`height: 64px; flex-direction: row; align-items: cente
 const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center;`;
 const HeaderTitle = styled(AppText)`flex: 1; color: ${({ theme }) => theme.colors.textStrong}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.title.fontWeight}; text-align: center;`;
 const HeaderSpacer = styled.View`width: 44px;`;
-const Form = styled.ScrollView`flex: 1;`;
+const Form = styled(CalendarScrollView)`flex: 1;`;
 const PlaceSummary = styled.View`flex-direction: row; align-items: center; gap: ${({ theme }) => theme.spacing.md}px; margin: ${({ theme }) => theme.spacing.md}px; padding: ${({ theme }) => theme.spacing.sm}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const Thumbnail = styled.Image`width: 48px; height: 48px; border-radius: ${({ theme }) => theme.radius.sm}px;`;
 const ThumbnailFallback = styled.View`width: 48px; height: 48px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.sm}px; background-color: ${({ theme }) => theme.colors.border};`;
