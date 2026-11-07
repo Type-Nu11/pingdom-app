@@ -66,3 +66,14 @@ test('빈 번역 결과를 캐시하지 않고 재시도한다', async () => {
   await expect(service.translate('Retry post', 'en', 'ko')).rejects.toThrow('EMPTY_TRANSLATION');
   await expect(service.translate('Retry post', 'en', 'ko')).resolves.toBe('번역:Retry post');
 });
+
+test('모델 변경 알림은 잠금 해제 후 전달되어 다른 콘텐츠의 자동 번역을 막지 않는다', async () => {
+  const { service } = setup();
+  const tasks: Promise<string>[] = [];
+  const unsubscribe = service.subscribeModels(() => { tasks.push(service.translate('Model ready notification', 'en', 'ko')); });
+  await service.downloadModels(['ko']);
+  await expect(Promise.all(tasks)).resolves.toEqual(['번역:Model ready notification']);
+  unsubscribe();
+  await service.delete('ko');
+  expect(tasks).toHaveLength(1);
+});
