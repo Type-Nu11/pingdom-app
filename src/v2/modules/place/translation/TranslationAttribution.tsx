@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import React from 'react';
 import { View } from 'react-native';
 import { TranslationAttributionBadge } from '../../../shared/translation/TranslationAttributionBadge';
+import { useGroupedTranslationAttribution } from '../../../shared/translation/TranslationAttributionGroup';
 export { TranslationAttributionBadge } from '../../../shared/translation/TranslationAttributionBadge';
 
 export type TranslationDisplayState = { original: string; translated: boolean };
@@ -16,6 +17,8 @@ export function useTranslationAttribution(original: string) {
 
 /** Reserve the footer while translating so photos do not move when attribution appears. */
 export default function TranslationAttribution({ visible, testID }: { visible: boolean; testID?: string }) {
+  const grouped = useGroupedTranslationAttribution(visible);
+  if (grouped) return null;
   return <View testID={testID} style={{ minHeight: 24, alignItems: 'center', paddingBottom: 8 }}>
     {visible ? <TranslationAttributionBadge /> : null}
   </View>;

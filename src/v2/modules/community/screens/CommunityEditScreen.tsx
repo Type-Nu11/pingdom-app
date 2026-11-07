@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../shared/translation/TranslationAttributionGroup';
 import { useAppDialog } from '../../../shared/components/AppDialogProvider';
 import { submitEditedAttachments } from '../../../shared/components/contentEditSubmission';
 import { canManageCommunityPost } from '../model/postOwnership';
@@ -37,7 +38,7 @@ export default function CommunityEditScreen({ postId, onBack, onDirtyChange, med
   if (currentCategory?.categoryId && currentCategory.categoryName && !options.some(option => option.id === currentCategory.categoryId)) {
     options.push({ id: currentCategory.categoryId, label: currentCategory.categoryName });
   }
-  return <PostEditor key={postId} post={post.data} options={options} onBack={onBack} onDirtyChange={onDirtyChange} mediaPicker={mediaPicker} />;
+  return <TranslationAttributionGroup><PostEditor key={postId} post={post.data} options={options} onBack={onBack} onDirtyChange={onDirtyChange} mediaPicker={mediaPicker} /></TranslationAttributionGroup>;
 }
 
 function PostEditor({ post: initialPost, options, onBack, onDirtyChange, mediaPicker }: {
@@ -94,6 +95,7 @@ function PostEditor({ post: initialPost, options, onBack, onDirtyChange, mediaPi
           return { status: result.status, uris: result.status === 'selected' ? result.photos.map(photo => photo.uri) : [] }; }}>
         <PlaceSection>
           <SectionTitle>{t('editContent.places')}</SectionTitle>
+          <TranslationAttributionNotice />
           {places.map((place, index) => <CommunityPlaceCard key={`${place.placeId}-${index}`} name={place.placeName ?? ''}
             category={place.category} region={place.region} imageUrl={place.imageUrl} muted={place.deleted}
             trailing={<RemovePlace accessibilityRole="button" accessibilityLabel={t('editContent.removePlace')}

@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../shared/translation/TranslationAttributionGroup';
 import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -199,7 +200,7 @@ export default function CommunityWriteScreen({
   }
 
   return (
-    <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-write-screen">
+    <TranslationAttributionGroup><Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-write-screen">
       <Header>
         <HeaderIconButton
           Icon={BackButtonIcon}
@@ -329,6 +330,7 @@ export default function CommunityWriteScreen({
               <PlaceSubtitle>{t('community.write_screen.placeTagHint')}</PlaceSubtitle>
             </SectionHead>
 
+            <TranslationAttributionNotice />
             {placeTags.map((place) => (
               // The place search result carries a category but no thumbnail or
               // region, so the shared card shows only what was returned.
@@ -416,7 +418,7 @@ export default function CommunityWriteScreen({
           </SubmitBar>
         </Content>
       </KeyboardArea>
-    </Screen>
+    </Screen></TranslationAttributionGroup>
   );
 }
 

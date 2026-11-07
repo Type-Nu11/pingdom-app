@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../shared/translation/TranslationAttributionGroup';
 import React from 'react';
 import { FlatList, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,22 +35,24 @@ export function MyCommunityPostsPreview({ onOpenList, onOpenPost, onEditPost }: 
   const { t } = useTranslation();
   const query = useMyCommunityPosts(2);
   const posts = query.data?.pages[0]?.posts?.filter(post => post.postId) ?? [];
-  return <Section>
+  return <TranslationAttributionGroup><Section>
     <SectionHeader accessibilityRole="button" onPress={onOpenList} testID="my-community-posts-heading">
       <SectionTitle>{t('editContent.myPosts')}</SectionTitle><ChevronIcon />
     </SectionHeader>
+    <TranslationAttributionNotice />
     {query.isPending ? <LoadingState /> : query.isError ? <ApiErrorState error={query.error} onRetry={() => void query.refetch()} />
       : !posts.length ? <Label>{t('editContent.emptyPosts')}</Label>
         : posts.map((post, index) => <OwnPost key={post.postId} post={post} showDivider={index < posts.length - 1} onOpenPost={onOpenPost} onEditPost={onEditPost} />)}
-  </Section>;
+  </Section></TranslationAttributionGroup>;
 }
 
 export default function MyCommunityPostsScreen({ onBack, onOpenPost, onEditPost }: OpenProps & { onBack: () => void }) {
   const { t } = useTranslation();
   const query = useMyCommunityPosts();
   const posts = query.data?.pages.flatMap(page => page.posts ?? []).filter(post => post.postId) ?? [];
-  return <Screen edges={['top', 'bottom', 'left', 'right']}>
+  return <TranslationAttributionGroup><Screen edges={['top', 'bottom', 'left', 'right']}>
     <Header><HeaderBackButton accessibilityLabel={t('editContent.back')} onPress={onBack} /><Title>{t('editContent.myPosts')}</Title></Header>
+    <TranslationAttributionNotice />
     {query.isPending ? <LoadingState fill /> : query.isError && !posts.length
       ? <ApiErrorState fill error={query.error} onBack={onBack} onRetry={() => void query.refetch()} />
       : <FlatList contentContainerStyle={LIST_CONTENT_STYLE} data={posts} refreshing={query.isRefetching && !query.isFetchingNextPage} onRefresh={() => void query.refetch()} keyExtractor={post => String(post.postId)}
@@ -57,7 +60,7 @@ export default function MyCommunityPostsScreen({ onBack, onOpenPost, onEditPost 
         ListEmptyComponent={<Label>{t('editContent.emptyPosts')}</Label>}
         ListFooterComponent={query.hasNextPage ? <Button label={t('editContent.loadMore')} loading={query.isFetchingNextPage}
           onPress={() => { if (!query.isFetching) void query.fetchNextPage(); }} /> : null} />}
-  </Screen>;
+  </Screen></TranslationAttributionGroup>;
 }
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
 const LIST_CONTENT_STYLE = { paddingHorizontal: 24, paddingBottom: 16 } as const;

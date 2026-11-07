@@ -1,3 +1,4 @@
+import TranslatedPlaceName from '../../../../../shared/translation/TranslatedPlaceName';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
@@ -88,7 +89,7 @@ export default function RecentReservationPlaces({ owner, onSelect }: {
           style={{ minHeight: 64, paddingVertical: 12, gap: 12, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: colors.border }}>
           <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' }}><ClockIcon /></View>
           <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <Text numberOfLines={1} style={{ color: colors.textStrong, fontSize: 16, fontWeight: '500' }}>{confirmation.placeName}</Text>
+            <TranslatedPlaceName name={confirmation.placeName ?? ''}>{(name, actions) => <Text {...actions} numberOfLines={1} style={{ color: colors.textStrong, fontSize: 16, fontWeight: '500' }}>{name}</Text>}</TranslatedPlaceName>
             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{[dateLabel, t(`reservation.list.statuses.${item.status.toLowerCase()}`)].filter(Boolean).join(' · ')}</Text>
           </View>
           {pending === item.id ? <ActivityIndicator color={colors.primary} /> : null}

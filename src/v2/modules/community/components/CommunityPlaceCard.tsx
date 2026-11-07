@@ -5,6 +5,7 @@ import styled from 'styled-components/native';
 import { textStyleCss } from '../../../shared/theme/typography';
 import { joinMeta } from '../model/photoCount';
 import CommunityImage from './CommunityImage';
+import TranslatedPlaceName from '../../../shared/translation/TranslatedPlaceName';
 
 export type CommunityPlaceCardProps = {
   category?: string | null;
@@ -49,10 +50,10 @@ export default function CommunityPlaceCard({
       ) : null}
       <Info>
         {meta ? <Meta numberOfLines={1} testID={testID ? `${testID}-meta` : undefined}>{meta}</Meta> : null}
-        <NameRow>
-          <Name $muted={muted} numberOfLines={1}>{name}</Name>
+        <TranslatedPlaceName name={name}>{(translated, actions) => <NameRow>
+          <Name {...actions} $muted={muted} numberOfLines={1}>{translated}</Name>
           {nameAccessory}
-        </NameRow>
+        </NameRow>}</TranslatedPlaceName>
       </Info>
       {trailing}
     </Card>

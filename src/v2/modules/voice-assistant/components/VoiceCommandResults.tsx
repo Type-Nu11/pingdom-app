@@ -1,3 +1,5 @@
+import TranslatedPlaceName from '../../../shared/translation/TranslatedPlaceName';
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../shared/translation/TranslationAttributionGroup';
 import React from 'react';
 import { ImageBackground, Share } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -64,7 +66,8 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, onOpenPlace, retryD
       <RetryText>{t('voiceAssistant.command.retry')}</RetryText>
     </RetryButton>}
   </>;
-  const places = (items: readonly VoicePlaceFacts[]) => <>
+  const places = (items: readonly VoicePlaceFacts[]) => <TranslationAttributionGroup>
+    <TranslationAttributionNotice />
     <Cards horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
       {items.map(item => <PlaceCard place={item} imageUrl={media[String(item.id)]?.[0]} onOpen={!historical && onOpenPlace ? () => onOpenPlace(item.id) : undefined} onReserve={!historical && state.phase === 'result' && state.result.command === 'searchNearbyReservablePlaces' && onSelectReservationPlace ? () => onSelectReservationPlace(item) : undefined} key={item.id} />)}
     </Cards>
@@ -82,7 +85,7 @@ function VoiceCommandResultBody({ state, onRetry, onShowMap, onOpenPlace, retryD
         <ShareIcon /><ActionText>{t('voiceAssistant.command.share')}</ActionText>
       </ActionChip>
     </Actions>
-  </>;
+  </TranslationAttributionGroup>;
 
   if (state.phase === 'idle') return null;
   if (state.phase === 'unrecognized') return historical
@@ -143,10 +146,10 @@ function PlaceCard({ place, imageUrl, onReserve, onOpen }: { place: VoicePlaceFa
           <Stop offset="0" stopColor="#000" stopOpacity="0" /><Stop offset="0.5" stopColor="#000" stopOpacity="0.45" /><Stop offset="1" stopColor="#000" stopOpacity="1" />
         </LinearGradient></Defs><Rect width="100%" height="100%" fill="url(#assistantCardShade)" /></Svg>
       </CardShade>
-      <CardFooter>
-        <CardName numberOfLines={2}>{place.name}</CardName>
+      <TranslatedPlaceName name={place.name}>{(name, actions) => <CardFooter>
+        <CardName {...actions} numberOfLines={2}>{name}</CardName>
         <StarIcon />
-      </CardFooter>
+      </CardFooter>}</TranslatedPlaceName>
     </CardImage>
     <CardDetails>
       <Address numberOfLines={1}>{place.address || t(`voiceAssistant.command.operating.${place.operatingStatus}`)}</Address>

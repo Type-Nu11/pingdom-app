@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../../../shared/translation/TranslationAttributionGroup';
 import { Text as AppText } from '../../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList } from 'react-native';
@@ -62,12 +63,13 @@ export default function VerifiedPlacesScreen({ onBack, onOpenReview }: VerifiedP
   };
 
   return (
-    <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-verified-places-screen">
+    <TranslationAttributionGroup><Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-verified-places-screen">
       <TopBar>
         <HeaderBackButton accessibilityLabel={t('myPage.back')} onPress={onBack} />
         <TopBarTitle>{t('myPage.verifiedPlaces.title')}</TopBarTitle>
         <Spacer />
       </TopBar>
+      <TranslationAttributionNotice />
 
       {reviewsQuery.isError || listState.kind === 'error' ? (
         <ErrorState
@@ -117,7 +119,7 @@ export default function VerifiedPlacesScreen({ onBack, onOpenReview }: VerifiedP
         )}
       />
       )}
-    </Screen>
+    </Screen></TranslationAttributionGroup>
   );
 }
 

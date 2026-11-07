@@ -12,6 +12,7 @@ import { isTranslationLanguage, missingModels, recommendedTranslationLanguage, t
 import { offlineTranslation } from './service';
 import { getTranslationCopy, getTranslationManageHint } from './copy';
 import { notifyTranslationChange, subscribeTranslationChanges } from './changes';
+import { useGroupedTranslationAttribution } from '../../../shared/translation/TranslationAttributionGroup';
 
 type Phase = 'idle' | 'checking' | 'downloading' | 'ready' | 'translating' | 'failed';
 type Props = {
@@ -50,6 +51,7 @@ export default function PlaceNameTranslation({ original, description = null, man
   const modelName = (code: string) => code === 'ko' ? '한국어' : translationLanguages.find((item) => item.code === code)?.name ?? code;
   const validResult = result?.original === original && result?.originalDescription === description && result?.target === target ? result : null;
   const isTranslated = Boolean(showResult && validResult);
+  const groupedAttribution = useGroupedTranslationAttribution(isTranslated);
   const fullName = showResult && validResult ? validResult.text : original;
   const characters = Array.from(fullName);
   const displayName = maxNameLength && characters.length > maxNameLength
@@ -165,9 +167,9 @@ export default function PlaceNameTranslation({ original, description = null, man
             </Pressable>
           ) : null}
       </View>
-      {(attributionPlacement === 'title' || !inlineCategory || phase === 'failed') && <View style={{ height: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      {((attributionPlacement === 'title' && !groupedAttribution) || (!inlineCategory && category != null) || phase === 'failed') && <View style={{ height: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         {phase === 'failed' ? <Text accessibilityLiveRegion="polite" style={textStyle}>{copy.failed}</Text> : !inlineCategory ? category ?? <View /> : <View />}
-        {attributionPlacement === 'title' && isTranslated ? <TranslationAttributionBadge /> : null}
+        {attributionPlacement === 'title' && isTranslated && !groupedAttribution ? <TranslationAttributionBadge /> : null}
       </View>}
       <AppModal visible={open} onClose={() => setOpen(false)} dismissLabel={copy.close} testID="place-translation-dialog">
             <Text style={{ ...typography.title, color: colors.textStrong }} accessibilityRole="header">{copy.language}</Text>

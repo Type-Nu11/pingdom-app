@@ -20,12 +20,13 @@ const requiredModels = (source: string, target: string) => source === target ? [
 export function createTranslationService(bridge: () => OfflineTranslationBridge) {
   const cache = new Map<string, string>();
   const pending = new Map<string, Promise<string>>();
+  const modelListeners = new Set<() => void>();
   let modelOperation: Promise<void> | null = null;
   const mutateModels = (operation: () => Promise<void>) => {
     if (modelOperation || pending.size) return Promise.reject(new Error('BUSY'));
     const task = operation().finally(() => { modelOperation = null; });
     modelOperation = task;
-    return task;
+    return task.then(() => { modelListeners.forEach(listener => listener()); });
   };
   const service = {
     available: () => Boolean(NativeModules.MLKitTranslation?.translateOffline),
@@ -41,8 +42,10 @@ export function createTranslationService(bridge: () => OfflineTranslationBridge)
       await bridge().deleteOfflineModel(language);
       cache.clear();
     }),
-    async prepare(text: string, target: string): Promise<TranslationPlan> {
-      const plan = await bridge().getTranslationPlan?.(text, target);
+    subscribeModels: (listener: () => void) => { modelListeners.add(listener); return () => { modelListeners.delete(listener); }; },
+    async prepare(text: string, target: string, source?: string): Promise<TranslationPlan> {
+      const plan = source ? { sourceLanguage: source, targetLanguage: target, shouldTranslate: source !== target }
+        : await bridge().getTranslationPlan?.(text, target);
       if (!plan) throw new Error('OFFLINE_TRANSLATION_UNAVAILABLE');
       const installed = plan.shouldTranslate ? await service.models() : [];
       return { ...plan, missingModels: requiredModels(plan.sourceLanguage, target).filter(code => !installed.includes(code)) };
