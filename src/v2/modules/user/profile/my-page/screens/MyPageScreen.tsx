@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../../shared/translation/TranslationAttributionGroup';
 import CalendarScrollView from '../../../../../shared/components/CalendarScrollView';
 import { useAppDialog } from '../../../../../shared/components/AppDialogProvider';
 import { Text as AppText } from '../../../../../shared/components/Typography';
@@ -202,7 +203,7 @@ export default function MyPageScreen({
   };
 
   return (
-    <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-my-page-screen">
+    <TranslationAttributionGroup><Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-my-page-screen">
       <Content testID="v2-my-page-scroll" contentContainerStyle={CONTENT_CONTAINER_STYLE}>
         <TopBar testID="v2-my-page-header">
           <IconButton accessibilityLabel={t('myPage.back')} accessibilityRole="button" hitSlop={8} onPress={onBack}>
@@ -339,6 +340,7 @@ export default function MyPageScreen({
               <SectionTitle>{t('myPage.verifiedPlaces.title')}</SectionTitle>
               <ChevronIcon height={24} width={24} />
             </SectionHeaderRow>
+            <TranslationAttributionNotice />
             {isLoadingReviews ? (
               <PlacesRow testID="v2-my-page-verified-row">
                 {SKELETON_KEYS.map((key) => <VerifiedPlaceCardSkeleton key={key} width={cardWidth} />)}
@@ -390,7 +392,7 @@ export default function MyPageScreen({
           </SectionContent>}
         </Section>
       </Content>
-    </Screen>
+    </Screen></TranslationAttributionGroup>
   );
 }
 

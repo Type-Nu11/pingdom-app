@@ -6,6 +6,8 @@ import styled from 'styled-components/native';
 import AvatarPlaceholder from '../../../shared/assets/icons/avatar-placeholder.svg';
 import { ReviewFeatureTags } from '../../../shared/components';
 import type { MerchantReview } from '../model/types';
+import { useContentTranslation } from '../../../shared/translation/useContentTranslation';
+import ContentTranslationActions from '../../../shared/translation/ContentTranslationActions';
 
 type MerchantReviewCardProps = {
   review: MerchantReview;
@@ -16,6 +18,7 @@ const REVIEW_PHOTO_WIDTH = 242;
 const REVIEW_PHOTO_HEIGHT = 182;
 
 export default function MerchantReviewCard({ review, showDivider = true }: MerchantReviewCardProps) {
+  const translation = useContentTranslation(`merchant-review:${review.id}`, [review.content]);
   return (
     <Card $withDivider={showDivider} testID="v2-merchant-review-card">
       <AuthorRow>
@@ -32,7 +35,8 @@ export default function MerchantReviewCard({ review, showDivider = true }: Merch
         </AuthorText>
       </AuthorRow>
 
-      <Content>{review.content}</Content>
+      <Content {...translation.textActions}>{translation.texts[0]}</Content>
+      <ContentTranslationActions translation={translation} />
 
       {review.photoUrls.length > 0 ? (
         <PhotoScroll horizontal showsHorizontalScrollIndicator={false}>
