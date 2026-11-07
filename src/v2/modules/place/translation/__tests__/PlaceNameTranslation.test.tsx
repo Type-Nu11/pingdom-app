@@ -1,8 +1,9 @@
 import React from 'react';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderWithProviders } from '../../../../app/testing/testProviders';
 import { Text } from '../../../../shared/components/Typography';
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../shared/translation/TranslationAttributionGroup';
 import PlaceNameTranslation from '../PlaceNameTranslation';
 import { offlineTranslation } from '../service';
 
@@ -39,6 +40,19 @@ test('automatically translates the real original on entry without a translation/
   expect(offlineTranslation.download).not.toHaveBeenCalled();
   await manage();
   expect(screen.getByText('서버 장소명')).toBeVisible();
+});
+
+test('목록 안의 장소명과 상품명은 공통 번역 표시만 사용한다', async () => {
+  await renderWithProviders(<TranslationAttributionGroup>
+    <TranslationAttributionNotice />
+    <PlaceNameTranslation original="서버 장소명" />
+    <PlaceNameTranslation original="서버 상품명" />
+  </TranslationAttributionGroup>, { language: 'en' });
+  await waitFor(() => expect(screen.getAllByText('Translated server name')).toHaveLength(2));
+  expect(screen.getAllByLabelText('Translated by Google')).toHaveLength(1);
+  for (const name of screen.getAllByTestId('place-name-translation')) {
+    expect(within(name).queryByLabelText('Translated by Google')).toBeNull();
+  }
 });
 
 test('rerendering while translation is pending does not duplicate the request', async () => {
