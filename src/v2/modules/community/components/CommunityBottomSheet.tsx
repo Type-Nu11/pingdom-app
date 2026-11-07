@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../shared/translation/TranslationAttributionGroup';
 import { useMapSheetScrollToTop, SheetMotionView, clampSheetValue, useSheetMotionStyle } from '../../place/map/sheet';
 import Skeleton from '../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../shared/components/Typography';
@@ -205,7 +206,7 @@ export default function CommunityBottomSheet({
   };
 
   return (
-    <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
+    <TranslationAttributionGroup><GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
       <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={8} innerTestID="v2-community-sheet-inner" testID="community-sheet">
         <HandleArea {...panHandlers}>
           <HandleButton accessibilityLabel={t('community.sheetAdjust')} accessibilityRole="adjustable" onPress={onHandlePress}>
@@ -274,6 +275,7 @@ export default function CommunityBottomSheet({
           </View>
 
           <ListViewport style={snapPoint === 'medium' ? MEDIUM_VIEWPORT_STYLE : undefined}>
+            <TranslationAttributionNotice />
             {categoriesQuery.isError ? (
               // The full error block doesn't fit the 34px chip row, and with no
               // category there is no list to call empty — it takes the list area.
@@ -365,7 +367,7 @@ export default function CommunityBottomSheet({
         position={overflowMenu?.position ?? { top: 0 }}
         visible={overflowMenu !== null}
       />
-    </GlassStyles.BottomSheetContainer>
+    </GlassStyles.BottomSheetContainer></TranslationAttributionGroup>
   );
 }
 
