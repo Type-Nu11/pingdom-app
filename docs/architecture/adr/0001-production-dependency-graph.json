@@ -920,6 +920,7 @@
     {"source":"src/application/navigation/RootNavigator.tsx","target":"src/application/navigation/deepLinkDedupe.ts","typeOnly":false},
     {"source":"src/application/navigation/RootNavigator.tsx","target":"src/v2/shared/theme/index.ts","typeOnly":false},
     {"source":"src/application/navigation/RootNavigator.tsx","target":"src/v2/app/permissions/index.ts","typeOnly":false},
+    {"source":"src/application/navigation/RootNavigator.tsx","target":"src/v2/app/queryClient.ts","typeOnly":false},
     {"source":"src/application/navigation/RootNavigator.tsx","target":"src/v2/shared/components/index.ts","typeOnly":false},
     {"source":"src/application/navigation/runtimeState.ts","target":"src/v2/modules/onboarding/index.ts","typeOnly":true},
     {"source":"src/application/navigation/types.ts","target":"src/v2/modules/user/settings/index.ts","typeOnly":true},
