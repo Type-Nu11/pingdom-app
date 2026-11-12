@@ -1,5 +1,6 @@
 import React from 'react';
-import { screen } from '@testing-library/react-native';
+import { MutationObserver, type QueryClient } from '@tanstack/react-query';
+import { act, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../v2/app/testing/testProviders';
 import { useFcmTokenSync, useForegroundNotifications } from '../../v2/modules/user/notifications/lifecycle';
 import RootNavigator from '../navigation/RootNavigator';
@@ -8,6 +9,7 @@ const mockBootstrap = jest.fn(async () => {});
 const mockHydrate = jest.fn(async () => {});
 const mockMapHydrate = jest.fn(async () => {});
 const mockClearVisitSession = jest.fn();
+let mockProtectedClient: QueryClient;
 let mockSession = { isHydrating: true, isLoggedIn: false, hasAuthenticated: false, bootstrapAuth: mockBootstrap };
 let mockOnboarding: { kind: string; completion?: object } = { kind: 'hydrating' };
 let mockStartupPermissions = { ready: true, notificationsGranted: true };
@@ -25,7 +27,10 @@ jest.mock('../../app/navigation/AuthNavigator', () => ({
 }));
 jest.mock('../../app/navigation/MainNavigator', () => ({
   __esModule: true,
-  default: () => require('react').createElement(require('react-native').Text, null, 'protected map'),
+  default: function MockMainNavigator() {
+    mockProtectedClient = require('@tanstack/react-query').useQueryClient();
+    return require('react').createElement(require('react-native').Text, null, 'protected map');
+  },
 }));
 jest.mock('../../v2/modules/onboarding', () => ({
   ...jest.requireActual('../../v2/modules/onboarding'),
@@ -82,16 +87,53 @@ test('logout/refresh failure removes protected navigation, queries and active vi
   mockOnboarding = { kind: 'completed', completion: { country: 'KR', language: 'ko', birthYear: 2000 } };
   const view = await renderWithProviders(<RootNavigator />);
   expect(await screen.findByText('protected map')).toBeVisible();
-  view.queryClient.setQueryData(['users', 'me'], { username: 'previous-user' });
+  const key = ['users', 'me'];
+  const previousClient = mockProtectedClient;
+  previousClient.setQueryData(key, { username: 'previous-user' });
+  let previousSignal!: AbortSignal;
+  let finishPrevious!: (data: { username: string }) => void;
+  const previous = previousClient.fetchQuery({
+    staleTime: 0,
+    queryKey: key,
+    queryFn: ({ signal }) => {
+      previousSignal = signal;
+      return new Promise<{ username: string }>(resolve => { finishPrevious = resolve; });
+    },
+  }).catch(error => error);
+  let finishMutation!: () => void;
+  const mutation = new MutationObserver(previousClient, {
+    mutationFn: () => new Promise<void>(resolve => { finishMutation = resolve; }),
+    onSuccess: () => { previousClient.setQueryData(key, { username: 'late-mutation' }); },
+  }).mutate();
+  await act(async () => {});
   mockSession = { ...mockSession, isHydrating: true, isLoggedIn: false };
   await view.rerender(<RootNavigator />);
   expect(screen.queryByText('protected map')).toBeNull();
-  expect(view.queryClient.getQueryCache().getAll()).toHaveLength(0);
+  expect(previousClient.getQueryCache().getAll()).toHaveLength(0);
   expect(mockClearVisitSession).toHaveBeenCalledTimes(1);
   mockSession = { ...mockSession, isHydrating: false };
   await view.rerender(<RootNavigator />);
   expect(await screen.findByText('auth landing')).toBeVisible();
   expect(screen.queryByText('first onboarding')).toBeNull();
+  expect(previousSignal.aborted).toBe(true);
+
+  mockSession = { ...mockSession, isLoggedIn: true };
+  await view.rerender(<RootNavigator />);
+  const nextClient = mockProtectedClient;
+  expect(nextClient).not.toBe(previousClient);
+  expect(nextClient.getQueryData(key)).toBeUndefined();
+  await nextClient.fetchQuery({
+    queryKey: key,
+    queryFn: async () => ({ username: 'next-user' }),
+  });
+  await act(async () => {
+    finishPrevious({ username: 'late-previous-user' });
+    finishMutation();
+    await Promise.all([previous, mutation]);
+  });
+  expect(previousClient.getQueryData(key)).toEqual({ username: 'late-mutation' });
+  expect(nextClient.getQueryData(key)).toEqual({ username: 'next-user' });
+  previousClient.clear();
 });
 
 

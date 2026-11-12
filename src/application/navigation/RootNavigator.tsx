@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { clearActiveForegroundVisitVerificationSession } from '../../v2/modules/place/visit-verification/session';
 import {
   createNavigationContainerRef,
@@ -37,10 +37,23 @@ import {
 import { claimDeepLinkEvent, type DeepLinkEventReceipt } from './deepLinkDedupe';
 import { useAppNavigationTheme } from '../../v2/shared/theme';
 import { useStartupPermissions } from '../../v2/app/permissions';
+import { createQueryClient } from '../../v2/app/queryClient';
 import { AppLoadingScreen } from '../../v2/shared/components';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+function AuthenticatedMainNavigator() {
+  const [queryClient] = useState(createQueryClient);
+  // In-flight mutations retain their original client even after logout.
+  useEffect(() => () => queryClient.clear(), [queryClient]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MainNavigator />
+    </QueryClientProvider>
+  );
+}
 
 export default function RootNavigator() {
   const navigationTheme = useAppNavigationTheme();
@@ -156,7 +169,7 @@ export default function RootNavigator() {
       <Stack.Navigator screenOptions={{ animation: 'none', headerShown: false }}>
         {rootRouteName === ROOT_ROUTES.Main ? (
           <Stack.Screen
-            component={MainNavigator}
+            component={AuthenticatedMainNavigator}
             navigationKey="authenticated"
             name={ROOT_ROUTES.Main}
           />
