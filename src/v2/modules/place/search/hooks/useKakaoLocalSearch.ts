@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   getAddressFromCoordinate,
@@ -18,74 +18,62 @@ export const useKakaoLocalSearch = () => {
   const [searchResults, setSearchResults] = useState<KakaoLocalSearchItem[]>([]);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [searchStatusMessage, setSearchStatusMessage] = useState('');
-  const addressRequestIdRef = useRef(0);
-  const searchRequestIdRef = useRef(0);
+  const addressRequest = useRef<AbortController | null>(null);
+  const searchRequest = useRef<AbortController | null>(null);
+
+  useEffect(() => () => {
+    addressRequest.current?.abort();
+    searchRequest.current?.abort();
+  }, []);
 
   const clearSearchResults = () => {
+    searchRequest.current?.abort();
+    searchRequest.current = null;
+    setIsSearchingAddress(false);
     setSearchResults([]);
     setSearchStatusMessage('');
   };
 
   const resolveAddressFromCoordinate = async (lat: number, lng: number) => {
-    const requestId = ++addressRequestIdRef.current;
+    addressRequest.current?.abort();
+    const request = new AbortController();
+    addressRequest.current = request;
 
     try {
-      const nextAddress = await getAddressFromCoordinate(lat, lng);
-
-      if (requestId !== addressRequestIdRef.current) {
-        return null;
-      }
-
-      return nextAddress || formatCoordinateAddress(lat, lng);
-    } catch {
-      if (requestId !== addressRequestIdRef.current) {
-        return null;
-      }
-
-      return formatCoordinateAddress(lat, lng);
+      const address = await getAddressFromCoordinate(lat, lng, request.signal);
+      return request.signal.aborted ? null : address || formatCoordinateAddress(lat, lng);
+    } finally {
+      if (addressRequest.current === request) addressRequest.current = null;
     }
   };
 
   const searchPlaces = async (query: string, options: SearchPlacesOptions) => {
+    clearSearchResults();
     const trimmedQuery = query.trim();
-
-    if (isSearchingAddress) {
-      return;
-    }
 
     if (!trimmedQuery) {
       setSearchStatusMessage(t('map.search.statusPlaceholder'));
       return;
     }
 
-    const requestId = ++searchRequestIdRef.current;
+    const request = new AbortController();
+    searchRequest.current = request;
     setIsSearchingAddress(true);
-    setSearchResults([]);
-    setSearchStatusMessage('');
 
     try {
-      const places = await searchKakaoLocalPlaces(trimmedQuery, {
-        centerLat: options.centerLat,
-        centerLng: options.centerLng,
-      });
-
-      if (requestId !== searchRequestIdRef.current) {
-        return;
-      }
-
+      const places = await searchKakaoLocalPlaces(trimmedQuery, { ...options, signal: request.signal });
+      if (request.signal.aborted) return;
       if (places.length === 0) {
         setSearchStatusMessage(t('map.search.empty'));
         return;
       }
 
       setSearchResults(places);
-      setSearchStatusMessage('');
     } catch {
-      if (requestId === searchRequestIdRef.current) {
-        setSearchStatusMessage(t('map.search.failed'));
-      }
+      if (!request.signal.aborted) setSearchStatusMessage(t('map.search.failed'));
     } finally {
-      if (requestId === searchRequestIdRef.current) {
+      if (!request.signal.aborted) {
+        searchRequest.current = null;
         setIsSearchingAddress(false);
       }
     }
