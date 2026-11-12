@@ -1,3 +1,5 @@
+import { InfiniteQueryObserver, QueryClient } from '@tanstack/react-query';
+
 import {
   communityQueryKeys,
   createCommunityFeedQueryOptions,
@@ -83,4 +85,34 @@ describe('createCountriesQueryOptions', () => {
     await expect(options.queryFn({})).resolves.toEqual(['KR', 'US']);
     expect(options.queryKey).toEqual(communityQueryKeys.countries);
   });
+});
+
+test('changing the feed filter and leaving abort requests without caching late pages', async () => {
+  const api = createApi();
+  const requests: Array<{ signal: AbortSignal; finish: (data: ReturnType<typeof page>) => void }> = [];
+  api.listPosts.mockImplementation((_params, signal: AbortSignal) => (
+    new Promise(resolve => { requests.push({ signal, finish: resolve }); })
+  ));
+  const client = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity, retry: false } } });
+  const previous = createCommunityFeedQueryOptions({ categoryId: null, countryCode: 'KR' }, api);
+  const next = createCommunityFeedQueryOptions({ categoryId: null, countryCode: 'JP' }, api);
+  const observer = new InfiniteQueryObserver(client, previous);
+  const unsubscribe = observer.subscribe(() => {});
+
+  try {
+    observer.setOptions(next);
+    expect(api.listPosts).toHaveBeenCalledTimes(2);
+    expect(api.listPosts).toHaveBeenLastCalledWith({ countryCode: 'JP', page: 1 }, requests[1].signal);
+    expect(requests[0].signal.aborted).toBe(true);
+    unsubscribe();
+    expect(requests[1].signal.aborted).toBe(true);
+
+    requests.forEach(request => request.finish(page()));
+    await Promise.resolve();
+    expect(client.getQueryData(previous.queryKey)).toBeUndefined();
+    expect(client.getQueryData(next.queryKey)).toBeUndefined();
+  } finally {
+    observer.destroy();
+    client.clear();
+  }
 });
