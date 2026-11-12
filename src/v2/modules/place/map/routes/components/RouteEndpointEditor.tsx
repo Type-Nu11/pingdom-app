@@ -1,3 +1,5 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../../shared/translation/TranslationAttributionGroup';
+import TranslatedPlaceName from '../../../../../shared/translation/TranslatedPlaceName';
 import Skeleton from '../../../../../shared/components/Skeleton';
 import React, { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, ScrollView, View } from 'react-native';
@@ -60,20 +62,24 @@ export default function RouteEndpointEditor(props: Props) {
     </Pressable>;
   }
   const savedPlaces = saved.places.filter(hasRouteDestinationCoordinates);
-  const savedCard = (p: typeof savedPlaces[number], fill = false) => <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={p.name}
-    testID={`route-saved-place-${p.id}`}
-    onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude, category: toMarkerCategory(p.category) })}
-    style={{ width: fill ? undefined : 150, flex: fill ? 1 : undefined, minWidth: 0, minHeight: 112,
-      padding: 12, borderRadius: 12, gap: 6, backgroundColor: theme.colors.surfaceElevated,
-      borderWidth: 1, borderColor: theme.colors.border, boxShadow: `0px 4px 12px 0px ${theme.colors.shadowFloat}` }}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.primaryTint, alignItems: 'center', justifyContent: 'center' }}><StarIcon /></View>
-      {typeof p.distanceMeters === 'number' && Number.isFinite(p.distanceMeters) && p.distanceMeters >= 0 && <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.colors.labelAssistive, fontSize: 12 }}>{formatDistance(p.distanceMeters, i18n.resolvedLanguage ?? 'en')}</Text>}
-    </View>
-    <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{p.name}</Text>
-    <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{p.category ? t(`map.categories.${toMarkerCategory(p.category)}`) : p.address}</Text>
-  </Pressable>;
-  return <View testID="route-endpoint-editor" style={{ position: 'absolute', left: 8, right: 8, bottom: Math.max(8, props.bottomInset), height: Math.min(558, props.maxHeight), boxShadow: theme.liquidGlass.sheet.shadow }}>
+  const savedCard = (p: typeof savedPlaces[number], fill = false) => (
+    <TranslatedPlaceName key={p.id} name={p.name}>{(name, actions) => (
+      <Pressable {...actions} accessibilityRole="button" accessibilityLabel={name}
+        testID={`route-saved-place-${p.id}`}
+        onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude, category: toMarkerCategory(p.category) })}
+        style={{ width: fill ? undefined : 150, flex: fill ? 1 : undefined, minWidth: 0, minHeight: 112,
+          padding: 12, borderRadius: 12, gap: 6, backgroundColor: theme.colors.surfaceElevated,
+          borderWidth: 1, borderColor: theme.colors.border, boxShadow: `0px 4px 12px 0px ${theme.colors.shadowFloat}` }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+          <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.primaryTint, alignItems: 'center', justifyContent: 'center' }}><StarIcon /></View>
+          {typeof p.distanceMeters === 'number' && Number.isFinite(p.distanceMeters) && p.distanceMeters >= 0 && <Text numberOfLines={1} style={{ flexShrink: 1, color: theme.colors.labelAssistive, fontSize: 12 }}>{formatDistance(p.distanceMeters, i18n.resolvedLanguage ?? 'en')}</Text>}
+        </View>
+        <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{name}</Text>
+        <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{p.category ? t(`map.categories.${toMarkerCategory(p.category)}`) : p.address}</Text>
+      </Pressable>
+    )}</TranslatedPlaceName>
+  );
+  return <TranslationAttributionGroup><View testID="route-endpoint-editor" style={{ position: 'absolute', left: 8, right: 8, bottom: Math.max(8, props.bottomInset), height: Math.min(558, props.maxHeight), boxShadow: theme.liquidGlass.sheet.shadow }}>
     <GlassSurface material={Platform.OS === 'ios' ? 'frosted' : 'liquid'} backdropBlurEnabled={Platform.OS !== 'ios'}
       tintColor={Platform.OS === 'ios' ? theme.colors.backgroundAssistive : theme.liquidGlass.sheet.tint} androidTintColor={theme.liquidGlass.sheet.tint}
       style={{ flex: 1, borderTopLeftRadius: 36, borderTopRightRadius: 36, borderBottomLeftRadius: 48, borderBottomRightRadius: 48, overflow: 'hidden', borderWidth: 1, borderColor: theme.liquidGlass.sheet.rim }}>
@@ -81,6 +87,7 @@ export default function RouteEndpointEditor(props: Props) {
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 16, paddingHorizontal: 16, gap: 12 }}>
         <View accessible={false} style={{ width: 56, height: 5, borderRadius: 7, backgroundColor: theme.colors.secondaryNormal, alignSelf: 'center' }} />
         <RouteHeader editing onShare={props.onShare} onClose={() => { Keyboard.dismiss(); props.onClose(); }} />
+        <TranslationAttributionNotice />
         <View style={{ borderRadius: 20, backgroundColor: raised }}>
           {(['origin', 'destination'] as const).map(role => {
             const point = role === 'origin' ? props.origin : props.destination;
@@ -110,10 +117,16 @@ export default function RouteEndpointEditor(props: Props) {
           {query.trim() !== keyword || search.isLoading ? <Skeleton accessibilityLabel={t('routes.editor.loading')} />
             : search.isError ? <View>{button(t('routes.editor.retry'), () => { void search.refetch(); })}<Text style={{ color: muted }}>{t('routes.editor.searchFailed')}</Text></View>
               : !results.length ? <Text style={{ color: muted }}>{t('routes.editor.emptySearch')}</Text>
-                : results.map(p => <Pressable key={p.id} accessibilityRole="button" onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.coordinate.lat, longitude: p.coordinate.lng, category: toMarkerCategory(p.category) })}
-                  style={{ minHeight: 60, paddingVertical: 12, borderBottomWidth: 1, borderColor: theme.colors.border }}>
-                  <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{p.name}</Text><Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{p.address}</Text>
-                </Pressable>)}
+                : results.map(p => (
+                  <TranslatedPlaceName key={p.id} name={p.name}>{(name, actions) => (
+                    <Pressable {...actions} accessibilityRole="button"
+                      onPress={() => select({ placeId: p.id, name: p.name, address: p.address, latitude: p.coordinate.lat, longitude: p.coordinate.lng, category: toMarkerCategory(p.category) })}
+                      style={{ minHeight: 60, paddingVertical: 12, borderBottomWidth: 1, borderColor: theme.colors.border }}>
+                      <Text numberOfLines={1} style={{ color: ink, fontSize: 16, fontWeight: '500' }}>{name}</Text>
+                      <Text numberOfLines={1} style={{ color: muted, fontSize: 12 }}>{p.address}</Text>
+                    </Pressable>
+                  )}</TranslatedPlaceName>
+                ))}
         </View> : <>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text accessibilityRole="header" style={{ color: ink, fontSize: 18, fontWeight: '700' }}>{t('routes.editor.saved')}</Text>
@@ -134,5 +147,5 @@ export default function RouteEndpointEditor(props: Props) {
         </>}
       </ScrollView>
     </GlassSurface>
-  </View>;
+  </View></TranslationAttributionGroup>;
 }

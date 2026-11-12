@@ -1,3 +1,4 @@
+import TranslatedPlaceName from '../../../../../../shared/translation/TranslatedPlaceName';
 import { Text as AppText } from '../../../../../../shared/components/Typography';
 import React, { useEffect, useState } from 'react';
 import { Image, type GestureResponderEvent } from 'react-native';
@@ -85,7 +86,7 @@ export default function VerifiedPlaceCard({
             </Svg>
           </GradientLayer>
           <TextBlock testID="v2-verified-place-card-text">
-            <Name numberOfLines={2} maxFontSizeMultiplier={2}>{name}</Name>
+            <TranslatedPlaceName name={name}>{(translated, actions) => <Name {...actions} numberOfLines={2} maxFontSizeMultiplier={2}>{translated}</Name>}</TranslatedPlaceName>
             <Address numberOfLines={1} maxFontSizeMultiplier={2}>{address}</Address>
           </TextBlock>
           <FavoriteButton
