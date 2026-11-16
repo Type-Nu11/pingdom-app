@@ -94,8 +94,6 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     lastRecognizedText = key;
     lastSpeechProgressMs = speechProgressMs;
     if (transcriptDeadline !== undefined) clearTimeout(transcriptDeadline);
-    if (noInputDeadline !== undefined) clearTimeout(noInputDeadline);
-    noInputDeadline = undefined;
     transcriptDeadline = setTimeout(finishAtSilence, VOICE_SILENCE_MS);
   };
   let finalizedText = '';
@@ -113,6 +111,8 @@ export function createVoiceInputController(adapter: SpeechInputAdapter, onFinalI
     epoch += 1;
     if (deadline) clearTimeout(deadline);
     deadline = undefined;
+    if (noInputDeadline !== undefined) clearTimeout(noInputDeadline);
+    noInputDeadline = undefined;
     if (transcriptDeadline !== undefined) clearTimeout(transcriptDeadline);
     transcriptDeadline = undefined;
     lastRecognizedText = '';

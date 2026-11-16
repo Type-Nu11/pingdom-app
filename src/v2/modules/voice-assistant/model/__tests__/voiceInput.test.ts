@@ -92,6 +92,25 @@ test('no recognized input closes the microphone after eight seconds', async () =
   expect(x.callback).not.toHaveBeenCalled();
 });
 
+test('반복 취소와 백그라운드 전환 직후에는 음성 입력 타이머가 남지 않는다', async () => {
+  jest.useFakeTimers();
+  const x = setup();
+  for (let cycle = 1; cycle <= 3; cycle += 1) {
+    await x.controller.start('ko-KR');
+    expect(jest.getTimerCount()).toBeGreaterThan(0);
+
+    x.controller.cancel();
+    x.controller.setForeground(false);
+    expect(x.session.cancel).toHaveBeenCalledTimes(cycle);
+    expect(x.signal().aborted).toBe(true);
+    expect(jest.getTimerCount()).toBe(0);
+    x.controller.setForeground(true);
+  }
+
+  x.controller.dispose();
+  expect(jest.getTimerCount()).toBe(0);
+});
+
 test('continuous activity and transcript churn cannot keep a microphone open beyond thirty seconds', async () => {
   jest.useFakeTimers(); const x = setup(); await x.controller.start('ko-KR');
   x.emit({ type: 'activity', speaking: true });
