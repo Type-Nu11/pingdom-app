@@ -2,6 +2,7 @@ import { MapSheetScrollToTopProvider } from '../sheet/hooks/useMapSheetScrollToT
 import { useAppDialog } from '../../../../shared/components/AppDialogProvider';
 import { MapSheetBottomNavigation, MapSheetNavigationHiddenProvider, getMapSheetCollapsedVisibleHeight } from '../sheet';
 import CarRoutePreview from '../routes/components/CarRoutePreview';
+import { useMapRouteSelection } from '../routes/hooks/useMapRouteSelection';
 import { DEFAULT_MAP_CENTER, MAP_DISMISSED_ZOOM_LEVEL, MAP_LOCATE_ZOOM_LEVEL, MAP_PREVIEW_ZOOM_LEVEL, selectMapCameraCenter } from '../camera/model/mapCamera';
 import { createViewport } from '../selection/model/mapDiscovery';
 import { env } from '../../../../shared/config';
@@ -103,9 +104,7 @@ import { selectRecommendationClickPayload } from '../../exploration';
 import { selectMapExplorationPlaceIds } from '../selection/utils/mapExplorationPlaceIds';
 import {
   createExternalPlaceMarker,
-  getExternalPlaceKey,
   resolveMapSearchSelection,
-  toExternalRouteDestination,
   type ExternalMapPlace,
 } from '../selection/model/externalPlace';
 import { VisitVerificationMapCta } from '../../visit-verification';
@@ -220,12 +219,6 @@ export default function MapScreen({
   const mapRefreshLock = useRef(false);
   const locateFollowFrame = useRef<number | null>(null);
   const location = useCurrentLocation(isFocused);
-  const [routeEndpointRole, setRouteEndpointRole] = useState<'origin' | 'destination'>('destination');
-  const [emptyRouteOpen, setEmptyRouteOpen] = useState(false);
-  const [routePreviewPlaceId, setRoutePreviewPlaceId] = useState<number | null>(null);
-  const [routeOriginSelection, setRouteOriginSelection] = useState<'currentLocation' | 'manual'>('currentLocation');
-  const [assistantDirectionsPlaceId, setAssistantDirectionsPlaceId] = useState<number | null>(null);
-  const [externalRouteRole, setExternalRouteRole] = useState<'origin' | 'destination' | null>(null);
   const [externalCardHeight, setExternalCardHeight] = useState(EXTERNAL_PLACE_CARD_ESTIMATED_HEIGHT);
   const center = location.coordinate;
   const userLat = center?.lat;
@@ -346,8 +339,6 @@ export default function MapScreen({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [manualCameraCenter, setManualCameraCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused,
-    canQueryBookmarks && profile?.id ? String(profile.id) : null, !isSearchOpen && !emptyRouteOpen);
   const [activeCategory, setActiveCategory] = useState<MapCategoryId>('all');
   const [mapSection, setMapSection] = useState<'community' | 'map' | 'favorites' | 'reservations'>(initialSection);
   const [reservationEntryPlace, setReservationEntryPlace] = useState<DecisionPlace | null>(null);
@@ -427,7 +418,6 @@ export default function MapScreen({
     + MAP_TOP_OVERLAY_METRICS.headerHeight + SHEET_RESTING_GAP;
   const isPlacePreview = mapSection === 'map' && content.type === 'place-preview';
   const externalPlace = mapSection === 'map' && content.type === 'external-place' ? content.place : null;
-  const externalPlaceKey = externalPlace ? getExternalPlaceKey(externalPlace) : null;
   // All bottom-navigation tabs share the map home resting height.
   // Place previews and search retain their separate detail layout.
   const fullSheetHeight = Math.round(viewportHeight);
@@ -472,14 +462,6 @@ export default function MapScreen({
     // Place details keep their own height; only the shared page sheet is remembered.
     if (isBottomNavigationSheet) useMapSheetStore.getState().setSnapPoint(snapPoint);
   }, [isBottomNavigationSheet, snapPoint]);
-  useEffect(() => {
-    if (externalPlaceKey !== null && snapPoint === 'expanded') snapTo('medium');
-  // snapTo is recreated on every render; only the selection and snap point matter here.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalPlaceKey, snapPoint]);
-  useEffect(() => {
-    setExternalRouteRole(null);
-  }, [externalPlaceKey, isFocused]);
   useEffect(() => {
     void syncProfileLanguage(profile?.language);
   }, [profile?.language]);
@@ -619,21 +601,20 @@ export default function MapScreen({
     placeId: selectedPlace.id,
     userLocation: center ? { latitude: center.lat, longitude: center.lng } : null,
   }) : null, [center, selectedPlace]);
-  useEffect(() => { if (!isFocused) setEmptyRouteOpen(false); }, [isFocused]);
+  const routes = useMapRouteSelection({
+    isFocused,
+    previewPlaceId: content.type === 'place-preview' ? content.placeId : undefined,
+    actionPlaceId: selectedPlaceActionTarget?.placeId,
+    externalPlace,
+  });
+  const { emptyRouteOpen, externalPlaceKey, registeredRoute, requestAssistantDirections } = routes;
   useEffect(() => {
-    setRoutePreviewPlaceId(null);
-  }, [selectedPlaceActionTarget?.placeId, isFocused]);
-  useEffect(() => {
-    if (assistantDirectionsPlaceId === null) return;
-    if (!isFocused || content.type !== 'place-preview' || content.placeId !== assistantDirectionsPlaceId) {
-      setAssistantDirectionsPlaceId(null);
-    } else if (selectedPlaceActionTarget?.placeId === assistantDirectionsPlaceId) {
-      setRouteEndpointRole('destination');
-      setRouteOriginSelection('manual');
-      setRoutePreviewPlaceId(assistantDirectionsPlaceId);
-      setAssistantDirectionsPlaceId(null);
-    }
-  }, [assistantDirectionsPlaceId, content, isFocused, selectedPlaceActionTarget?.placeId]);
+    if (externalPlaceKey !== null && snapPoint === 'expanded') snapTo('medium');
+  // snapTo is recreated on every render; only the selection and snap point matter here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalPlaceKey, snapPoint]);
+  const assistant = useMapAssistantEntry(env.featureFlags.voiceAssistant, isFocused,
+    canQueryBookmarks && profile?.id ? String(profile.id) : null, !isSearchOpen && !emptyRouteOpen);
   const handlePlaceActionFeedback = useCallback((feedback: PlaceActionFeedback) => {
     dialog.show(t(PLACE_ACTION_FEEDBACK_KEYS[feedback]));
   }, [dialog, t]);
@@ -641,18 +622,6 @@ export default function MapScreen({
     busyAction: placeActionBusy,
     share: shareSelectedPlace,
   } = usePlaceActions(selectedPlaceActionTarget, { onFeedback: handlePlaceActionFeedback });
-  const handleDirectionsPress = useCallback((place: DecisionPlace) => {
-    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
-    setRouteEndpointRole('destination');
-    setRouteOriginSelection('currentLocation');
-    setRoutePreviewPlaceId(place.id);
-  }, [selectedPlaceActionTarget]);
-  const handleDeparturePress = useCallback((place: DecisionPlace) => {
-    if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
-    setRouteEndpointRole('origin');
-    setRouteOriginSelection('currentLocation');
-    setRoutePreviewPlaceId(place.id);
-  }, [selectedPlaceActionTarget]);
   const handleSharePlace = useCallback((place: DecisionPlace) => {
     if (!selectedPlaceActionTarget || selectedPlaceActionTarget.placeId !== place.id) return;
     void shareSelectedPlace(selectedPlaceActionTarget);
@@ -710,10 +679,6 @@ export default function MapScreen({
   }, [nearbyReservationCandidates, placeIdByAvailabilityId, reservationEntryPlace]);
   const mapSelectedPlace = shouldPresentMapSelection(snapPoint) ? selectedPlace : null;
   const mapExternalPlace = shouldPresentMapSelection(snapPoint) ? externalPlace : null;
-  const externalRouteDestination = useMemo(
-    () => toExternalRouteDestination(externalPlace),
-    [externalPlace],
-  );
   const previewFallbackContentByPlaceId = useMemo<Record<string, MapPreviewFallbackContent> | undefined>(() => {
     if (!selectedPlace || !selectedPlacePresentation) return undefined;
     const operatingSummary = selectedPlacePresentation.operatingSummary
@@ -950,7 +915,7 @@ export default function MapScreen({
       setMapSection('map');
       setActiveCategory('all');
       setContent({ type: 'place-preview', placeId: target.placeId });
-      setAssistantDirectionsPlaceId(target.placeId);
+      requestAssistantDirections(target.placeId);
       jumpTo('medium');
       assistant.close();
     } else if (target.page === 'search') {
@@ -965,7 +930,7 @@ export default function MapScreen({
     else if (!onNavigateAssistantPage?.(target)) return false;
     assistantNavigationLock.current = key;
     return true;
-  }, [assistant.close, handleSearchFocus, jumpTo, openMapSection, onNavigateAssistantPage, snapTo]);
+  }, [assistant.close, handleSearchFocus, jumpTo, openMapSection, onNavigateAssistantPage, requestAssistantDirections, snapTo]);
   const handleMapRefresh = useCallback(async () => {
     if (mapRefreshLock.current) return;
 
@@ -1142,31 +1107,31 @@ export default function MapScreen({
           onMarkerPress={handleMarkerPress}
           userLat={userLat}
           userLng={userLng}
-          renderingActive={isFocused && snapPoint !== 'expanded' && presentedSnapPoint !== 'expanded' && !emptyRouteOpen && routePreviewPlaceId === null}
-          headingEnabled={isFocused && snapPoint !== 'expanded' && presentedSnapPoint !== 'expanded' && !emptyRouteOpen && routePreviewPlaceId === null}
+          renderingActive={isFocused && snapPoint !== 'expanded' && presentedSnapPoint !== 'expanded' && !emptyRouteOpen && registeredRoute === null}
+          headingEnabled={isFocused && snapPoint !== 'expanded' && presentedSnapPoint !== 'expanded' && !emptyRouteOpen && registeredRoute === null}
           zoomLevel={mapZoomLevel}
         />
       </View>
       {isFocused && emptyRouteOpen && (
         <CarRoutePreview destination={null} location={location} recentSearchOwner={recentSearchOwner}
-          onClose={() => setEmptyRouteOpen(false)} onRefreshLocation={() => { void location.refresh(); }} />
+          onClose={routes.closeEmptyRoute} onRefreshLocation={() => { void location.refresh(); }} />
       )}
-      {isFocused && routePreviewPlaceId !== null && selectedPlaceActionTarget?.placeId === routePreviewPlaceId && (
-        <CarRoutePreview key={`${routeEndpointRole}:${routeOriginSelection}:${routePreviewPlaceId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
-          initialEndpointRole={routeEndpointRole} initialOriginSelection={routeOriginSelection} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
-          onClose={() => setRoutePreviewPlaceId(null)} onRefreshLocation={() => { void location.refresh(); }} />
+      {isFocused && registeredRoute && selectedPlaceActionTarget?.placeId === registeredRoute.placeId && (
+        <CarRoutePreview key={`${registeredRoute.role}:${registeredRoute.originSelection}:${registeredRoute.placeId}:${selectedPlaceActionTarget.latitude}:${selectedPlaceActionTarget.longitude}`}
+          initialEndpointRole={registeredRoute.role} initialOriginSelection={registeredRoute.originSelection} destination={selectedPlaceActionTarget} location={location} recentSearchOwner={recentSearchOwner}
+          onClose={routes.closeRegisteredRoute} onRefreshLocation={() => { void location.refresh(); }} />
       )}
-      {isFocused && externalRouteRole !== null && externalRouteDestination && (
-        <CarRoutePreview key={`${externalRouteRole}:${externalPlaceKey}`}
-          initialEndpointRole={externalRouteRole} destination={externalRouteDestination} location={location} recentSearchOwner={recentSearchOwner}
-          onClose={() => setExternalRouteRole(null)} onRefreshLocation={() => { void location.refresh(); }} />
+      {isFocused && routes.externalRouteRole !== null && routes.externalRouteDestination && (
+        <CarRoutePreview key={`${routes.externalRouteRole}:${externalPlaceKey}`}
+          initialEndpointRole={routes.externalRouteRole} destination={routes.externalRouteDestination} location={location} recentSearchOwner={recentSearchOwner}
+          onClose={routes.closeExternalRoute} onRefreshLocation={() => { void location.refresh(); }} />
       )}
       <LocationStatusOverlay location={location} onRefresh={() => void location.refresh()} />
         <MapTopOverlay
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
           onLocatePress={handleLocatePress}
-          onDirectionsPress={!isSearchOpen ? () => setEmptyRouteOpen(true) : undefined}
+          onDirectionsPress={!isSearchOpen ? routes.openEmptyRoute : undefined}
           directionsDisabled={assistant.isBusy}
           directionsSheetTop={sheetTranslateY}
           directionsRestingTop={snapPoint === 'collapsed' ? collapsedTranslateY : snapPoint === 'expanded' ? expandedTranslateY : mediumTranslateY}
@@ -1353,10 +1318,10 @@ export default function MapScreen({
               });
             }}
             onDetailPress={() => snapTo('expanded')}
-            onDeparturePress={handleDeparturePress}
-            onDirectionsPress={handleDirectionsPress}
-            onExternalDeparturePress={() => setExternalRouteRole('origin')}
-            onExternalDirectionsPress={() => setExternalRouteRole('destination')}
+            onDeparturePress={(place) => routes.openRegisteredRoute(place.id, 'origin')}
+            onDirectionsPress={(place) => routes.openRegisteredRoute(place.id, 'destination')}
+            onExternalDeparturePress={() => routes.openExternalRoute('origin')}
+            onExternalDirectionsPress={() => routes.openExternalRoute('destination')}
             onExternalPlaceLayout={setExternalCardHeight}
             onFilterPress={handleFilterPress}
             onGoNowPress={handleGoNow}

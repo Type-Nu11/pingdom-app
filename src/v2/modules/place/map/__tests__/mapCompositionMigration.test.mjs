@@ -206,7 +206,7 @@ test('production V2 map opens empty directions while retaining the wake-word ass
   const overlay = read('../presentation/components/MapTopOverlay.tsx');
   const settings = read('../../../user/settings/screens/SettingsScreen.tsx');
   assert.match(screen, /useMapAssistantEntry\(env\.featureFlags\.voiceAssistant, isFocused,\s*canQueryBookmarks && profile\?\.id \? String\(profile\.id\) : null, !isSearchOpen && !emptyRouteOpen\)/);
-  assert.match(screen, /onDirectionsPress=\{!isSearchOpen \? \(\) => setEmptyRouteOpen\(true\) : undefined\}/);
+  assert.match(screen, /onDirectionsPress=\{!isSearchOpen \? routes\.openEmptyRoute : undefined\}/);
   assert.match(screen, /directionsSheetTop=\{sheetTranslateY\}/);
   assert.match(screen, /<CarRoutePreview destination=\{null\}/);
   assert.match(screen, /<MapAssistantModal visible=\{assistant\.isOpen\} onClose=\{assistant\.close\}/);
