@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../shared/translation/TranslationAttributionGroup';
 import { useContentDeletion } from '../../../shared/components/useContentDeletion';
 import { canManageCommunityPost } from '../model/postOwnership';
 import { useProfile } from '../../user/profile';
@@ -282,7 +283,7 @@ export default function CommunityDetailScreen({ onBack, onEditPost, onOpenPlace,
   };
 
   return (
-    <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-detail-screen">
+    <TranslationAttributionGroup><Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-community-detail-screen">
       <Header>
         <HeaderIconButton
           Icon={BackButtonIcon}
@@ -295,6 +296,7 @@ export default function CommunityDetailScreen({ onBack, onEditPost, onOpenPlace,
           ? <OwnerContentActions busy={deleteAction.busy} onDelete={deleteAction.confirm} key={postId} onEdit={onEditPost ? () => onEditPost(postId) : undefined} />
           : <HeaderIconButton Icon={MoreButtonIcon} accessibilityLabel={t('community.detail.settings')} accessibilityRole="button" />}
       </Header>
+      <TranslationAttributionNotice />
 
       {postQuery.isLoading ? (
         <Skeleton variant="post" accessibilityLabel={t('experience.common.loading')} testID="v2-community-detail-loading" style={{ padding: 16 }} />
@@ -420,7 +422,7 @@ export default function CommunityDetailScreen({ onBack, onEditPost, onOpenPlace,
           />
         </KeyboardArea>
       )}
-    </Screen>
+    </Screen></TranslationAttributionGroup>
   );
 }
 
