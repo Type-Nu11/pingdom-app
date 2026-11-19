@@ -1,3 +1,5 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../shared/translation/TranslationAttributionGroup';
+import TranslatedPlaceName from '../../../../shared/translation/TranslatedPlaceName';
 import Skeleton from '../../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useMemo, useRef } from 'react';
@@ -141,7 +143,7 @@ function SearchResultGroup({ items, label, onSelect, styles }: {
           style={styles.resultItem}
           onPress={() => onSelect(place)}
         >
-          <AppText numberOfLines={1} style={styles.resultName}>{place.name}</AppText>
+          <TranslatedPlaceName name={place.name}>{(name, actions) => <AppText {...actions} numberOfLines={1} style={styles.resultName}>{name}</AppText>}</TranslatedPlaceName>
           <AppText numberOfLines={1} style={styles.resultAddress}>
             {place.roadAddress || place.address}
           </AppText>
@@ -178,7 +180,7 @@ const MapSearchOverlay = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <TranslationAttributionGroup><SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.searchField}>
           <Pressable
@@ -247,6 +249,7 @@ const MapSearchOverlay = ({
         })}
       </ScrollView>
 
+      <TranslationAttributionNotice />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -306,7 +309,7 @@ const MapSearchOverlay = ({
           <AppText style={styles.statusText}>{searchStatusMessage}</AppText>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaView></TranslationAttributionGroup>
   );
 };
 

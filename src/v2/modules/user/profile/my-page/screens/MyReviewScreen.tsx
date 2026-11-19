@@ -8,12 +8,15 @@ import { Text as AppText } from '../../../../../shared/components/Typography';
 import { ErrorState, HeaderBackButton, LoadingState } from '../../../../../shared/components';
 import OwnerContentActions from '../../../../../shared/components/OwnerContentActions';
 import { useMyReview } from '../../hooks/useProfile';
+import { useContentTranslation } from '../../../../../shared/translation/useContentTranslation';
+import ContentTranslationActions from '../../../../../shared/translation/ContentTranslationActions';
 
 /** Resolve IDs exclusively through the signed-in user's reviews, never another visitor's review. */
 export default function MyReviewScreen({ onBack, reviewId, onEdit }: { onBack: () => void; reviewId: number; onEdit?: (reviewId: number) => void }) {
   const { t, i18n } = useTranslation();
   const query = useMyReview(reviewId);
   const { review } = query;
+  const translation = useContentTranslation(`my-review:${reviewId}`, [review?.content ?? '']);
   const deletion = useDeletePlaceReview(review?.placeId, review?.reviewId);
   const deleteAction = useContentDeletion(() => deletion.mutateAsync(), onBack, reviewId);
   const date = review ? new Date(review.createdAt) : null;
@@ -34,7 +37,8 @@ export default function MyReviewScreen({ onBack, reviewId, onEdit }: { onBack: (
         <Content contentContainerStyle={CONTENT_STYLE}>
           <DateText>{dateLabel}</DateText>
           {review.visibilityStatus === 'HIDDEN' ? <DateText>{t('myPageActivity.reviewHidden')}</DateText> : null}
-          <Body testID="v2-my-review-content">{review.content}</Body>
+          <Body {...translation.textActions} testID="v2-my-review-content">{translation.texts[0]}</Body>
+          <ContentTranslationActions translation={translation} />
           {review.imageUrls.map((uri, index) => (
             <Photo key={`${index}-${uri}`} source={{ uri }} accessibilityLabel={t('myPageActivity.reviewPhoto', { index: index + 1 })} />
           ))}

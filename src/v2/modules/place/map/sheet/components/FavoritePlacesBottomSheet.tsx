@@ -1,6 +1,8 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../../shared/translation/TranslationAttributionGroup';
 import { SheetMotionView, clampSheetValue, useSheetMotionStyle } from '../hooks/useSheetMotionStyle';
 import { useMapSheetScrollToTop } from '../hooks/useMapSheetScrollToTop';
 import MapSheetSurface from './MapSheetSurface';
+import TranslatedPlaceName from '../../../../../shared/translation/TranslatedPlaceName';
 import Skeleton from '../../../../../shared/components/Skeleton';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import UnavailableStateIcon from '../../../../../shared/components/UnavailableStateIcon';
@@ -155,10 +157,10 @@ const FavoritePlaceRow = ({
     >
       <View style={styles.placeHeading}>
         <View style={styles.placeText}>
-          <View style={styles.nameRow}>
-            <AppText accessibilityLabel={place.name} ellipsizeMode="tail" numberOfLines={1} style={styles.placeName}>{place.name}</AppText>
+          <TranslatedPlaceName name={place.name}>{(name, actions) => <View style={styles.nameRow}>
+            <AppText {...actions} accessibilityLabel={name} ellipsizeMode="tail" numberOfLines={1} style={styles.placeName}>{name}</AppText>
             <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.placeCategory}>{t(`map.categories.${getFavoriteCategory(place)}`)}</AppText>
-          </View>
+          </View>}</TranslatedPlaceName>
           <AppText accessibilityLabel={`${formatDistance(place, i18n.language)} · ${place.address}`} ellipsizeMode="tail" numberOfLines={1} style={styles.placeMeta}>
             {formatDistance(place, i18n.language)} · {place.address}
           </AppText>
@@ -254,7 +256,7 @@ export default function FavoritePlacesBottomSheet({
   }, { height: listHeight });
 
   return (
-    <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
+    <TranslationAttributionGroup><GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
       <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={8} innerTestID="favorites-sheet-inner" testID="favorites-sheet">
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable
@@ -302,6 +304,7 @@ export default function FavoritePlacesBottomSheet({
           </View>
 
           <SheetMotionView style={[styles.listViewport, listViewportStyle]}>
+            <TranslationAttributionNotice />
             <ScrollView
               ref={scrollRef}
               testID="favorites-place-scroll"
@@ -368,7 +371,7 @@ export default function FavoritePlacesBottomSheet({
         onOpenReservations={onOpenReservations}
         sheetTranslateY={sheetTranslateY}
       />
-    </GlassStyles.BottomSheetContainer>
+    </GlassStyles.BottomSheetContainer></TranslationAttributionGroup>
   );
 }
 

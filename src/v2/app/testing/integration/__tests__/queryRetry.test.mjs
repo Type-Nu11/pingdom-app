@@ -14,3 +14,7 @@ test('network and unexpected errors remain retryable', () => {
   assert.equal(shouldRetryQuery(0, new ApiError('validation', { status: 400 })), false);
   assert.equal(shouldRetryQuery(0, new ApiError('server unavailable', { status: 503 })), true);
 });
+
+test('a canceled request is never retried', () => {
+  assert.equal(shouldRetryQuery(0, new ApiError('canceled', { code: 'ERR_CANCELED' })), false);
+});

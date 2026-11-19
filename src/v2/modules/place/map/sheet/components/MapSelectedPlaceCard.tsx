@@ -1,4 +1,6 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../../shared/translation/TranslationAttributionGroup';
 import Skeleton from '../../../../../shared/components/Skeleton';
+import TranslatedPlaceName from '../../../../../shared/translation/TranslatedPlaceName';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useState } from 'react';
 import { Image } from 'react-native';
@@ -32,8 +34,9 @@ export default function MapSelectedPlaceCard(props: Props) {
   const matchingPlace = props.place?.id === props.selectedPlaceId ? props.place : null;
 
   return (
-    <Sheet accessibilityLiveRegion="polite" testID="v2-selected-place">
+    <TranslationAttributionGroup><Sheet accessibilityLiveRegion="polite" testID="v2-selected-place">
       <Handle />
+      <TranslationAttributionNotice />
       {props.loading || (!props.error && !matchingPlace) ? (
         <Skeleton variant="place" accessibilityLabel={t('map.card.loading')} style={{ padding: 16 }} />
       ) : props.error ? (
@@ -44,7 +47,7 @@ export default function MapSelectedPlaceCard(props: Props) {
           </RetryButton>
         </CardState>
       ) : matchingPlace ? <Content {...props} place={matchingPlace} /> : null}
-    </Sheet>
+    </Sheet></TranslationAttributionGroup>
   );
 }
 
@@ -59,7 +62,7 @@ function Content({ onDirections, onDismiss, onOpenPlace, onReserve, onShare, pla
     <>
       <HeadingRow>
         <OpenDetails accessibilityHint={t('map.card.openHint')} accessibilityRole="button" onPress={() => onOpenPlace(place.id)} testID="v2-selected-place-open">
-          <TitleLine><Name numberOfLines={1}>{place.name}</Name><Category numberOfLines={1}>{place.category}</Category></TitleLine>
+          <TranslatedPlaceName name={place.name}>{(name, actions) => <TitleLine><Name {...actions} numberOfLines={1}>{name}</Name><Category numberOfLines={1}>{place.category}</Category></TitleLine>}</TranslatedPlaceName>
           <Meta numberOfLines={1}>{place.distanceMeters !== null ? `${formatDistance(place.distanceMeters)} · ` : ''}{place.address}</Meta>
           <Operating $open={place.currentlyOperating === true}>
             {place.currentlyOperating === null ? t('map.card.statusUnknown') : place.currentlyOperating ? t('map.card.open') : t('map.card.closed')}
