@@ -23,11 +23,11 @@ export function useRouteTracking(location: LocationState) {
   useEffect(() => session.dispose, [session]);
   const active = tracking !== null;
   useEffect(() => {
-    if (!active) return;
+    if (!active || !foreground) return;
     setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), 5_000);
     return () => clearInterval(timer);
-  }, [active]);
+  }, [active, foreground]);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', state => {
       setForeground(state === 'active'); setNow(Date.now());
