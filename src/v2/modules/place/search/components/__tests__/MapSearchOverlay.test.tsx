@@ -210,6 +210,27 @@ describe('MapSearchOverlay registered-place search', () => {
     expect(await screen.findByLabelText('카페 검색')).toBeVisible();
   });
 
+  test('이전 검색이 끝나기 전에 변경된 검색어를 제출할 수 있다', async () => {
+    let finishFirst!: () => void;
+    let finishSecond!: () => void;
+    searchPlaces
+      .mockImplementationOnce(() => new Promise<void>(resolve => { finishFirst = resolve; }))
+      .mockImplementationOnce(() => new Promise<void>(resolve => { finishSecond = resolve; }));
+    await renderOverlay();
+    const input = () => screen.getByPlaceholderText('검색하기');
+
+    await fireEvent.changeText(input(), '카페');
+    await fireEvent(input(), 'submitEditing');
+    await fireEvent.changeText(input(), '식당');
+    await fireEvent(input(), 'submitEditing');
+    expect(searchPlaces.mock.calls.map(([keyword]) => keyword)).toEqual(['카페', '식당']);
+
+    await act(async () => { finishFirst(); });
+    await fireEvent(input(), 'submitEditing');
+    expect(searchPlaces).toHaveBeenCalledTimes(2);
+    await act(async () => { finishSecond(); });
+  });
+
   test('빠른 연속 최근 검색 선택은 진행 중인 동일 검색을 중복 실행하지 않는다', async () => {
     let finishSearch: (() => void) | undefined;
     await useRecentSearchStore.getState().activateOwner(recentSearchOwner);

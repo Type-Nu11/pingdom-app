@@ -127,7 +127,7 @@ const MapSearchOverlay = ({
   const { colors } = theme;
   const styles = useMemo(() => createStyles(colors), [colors]);
   const inputRef = useRef<NativeTextInput>(null);
-  const searchRequestInFlight = useRef(false);
+  const searchRequestInFlight = useRef<{ query: string } | null>(null);
   const [query, setQuery] = useState('');
   const [registeredQuery, setRegisteredQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
@@ -187,12 +187,9 @@ const MapSearchOverlay = ({
   );
 
   const handleQueryChange = (nextQuery: string) => {
+    searchRequestInFlight.current = null;
     setQuery(nextQuery);
-
-    if (!nextQuery.trim()) {
-      setHasSearched(false);
-    }
-
+    setHasSearched(false);
     setShowRecommendations(false);
     setRegisteredQuery('');
     clearSearchResults();
@@ -202,37 +199,28 @@ const MapSearchOverlay = ({
     nextQuery = query,
     searchCategory: SearchCategory = activeCategory,
   ) => {
-    if (searchRequestInFlight.current) return;
     const normalizedQuery = nextQuery.trim();
+    if (searchRequestInFlight.current?.query === normalizedQuery) return;
 
-    if (!normalizedQuery) {
-      setHasSearched(false);
-      setRegisteredQuery('');
-      searchRequestInFlight.current = true;
-      try {
-        await searchPlaces(normalizedQuery, searchCoordinates);
-      } finally {
-        searchRequestInFlight.current = false;
+    if (normalizedQuery) {
+      Keyboard.dismiss();
+      setQuery(normalizedQuery);
+      if (recentSearchOwner) {
+        void recordRecentSearch({
+          category: searchCategory === 'all' ? 'art' : searchCategory,
+          query: normalizedQuery,
+        }, recentSearchOwner);
       }
-      return;
     }
 
-    Keyboard.dismiss();
-    setHasSearched(true);
-    setQuery(normalizedQuery);
-    if (recentSearchOwner) {
-      void recordRecentSearch({
-        category: searchCategory === 'all' ? 'art' : searchCategory,
-        query: normalizedQuery,
-      }, recentSearchOwner);
-    }
-
+    setHasSearched(Boolean(normalizedQuery));
     setRegisteredQuery(normalizedQuery);
-    searchRequestInFlight.current = true;
+    const request = { query: normalizedQuery };
+    searchRequestInFlight.current = request;
     try {
       await searchPlaces(normalizedQuery, searchCoordinates);
     } finally {
-      searchRequestInFlight.current = false;
+      if (searchRequestInFlight.current === request) searchRequestInFlight.current = null;
     }
   };
 
@@ -294,11 +282,7 @@ const MapSearchOverlay = ({
               accessibilityLabel={t('map.searchOverlay.clear')}
               hitSlop={8}
               onPress={() => {
-                setQuery('');
-                setHasSearched(false);
-                setShowRecommendations(false);
-                setRegisteredQuery('');
-                clearSearchResults();
+                handleQueryChange('');
                 inputRef.current?.focus();
               }}
             >
