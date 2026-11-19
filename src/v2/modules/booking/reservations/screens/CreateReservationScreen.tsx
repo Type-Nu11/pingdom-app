@@ -1,9 +1,7 @@
 import CalendarScrollView from '../../../../shared/components/CalendarScrollView';
-import Skeleton from '../../../../shared/components/Skeleton';
-import { useCalendarDragSelection } from '../../../../shared/hooks/useCalendarDragSelection';
 import { ApiErrorState, Button } from '../../../../shared/components';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,18 +14,11 @@ import { reservationSubmitErrorKey, shouldRefreshReservationAvailability } from 
 import { useReservationPlaceSummary } from '../hooks/useReservationPlaceSummary';
 import { useAvailabilities, useCreateReservation } from '../hooks/useReservations';
 import {
-  addLocalMonths,
-  availabilityDateKeys,
-  availabilityIncludesDate,
   buildLocalCalendar,
   createReservationIdempotencyKey,
   isAvailabilityBookable,
-  isAvailabilityUpcoming,
-  localDateFromKey,
   localDateKey,
   startOfLocalDay,
-  startOfLocalMonth,
-  type Availability,
 } from '../model/reservationAvailability';
 import {
   BOOKER_NAME_MAX_LENGTH,
@@ -38,16 +29,12 @@ import {
   toBookerRequestFields,
   validateBookerInput,
 } from '../model/reservationBooker';
-import {
-  isSelectableAvailability,
-  selectAvailabilityPresentation,
-  summarizeAvailabilityPresentations,
-  type AvailabilityPresentationSummary,
-} from '../model/reservationProduct';
+import { isSelectableAvailability } from '../model/reservationProduct';
+import { useReservationAvailabilitySelection } from '../hooks/useReservationAvailabilitySelection';
+import ReservationAvailabilitySlots from '../components/ReservationAvailabilitySlots';
 
 const PEOPLE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
-type TimePeriod = 'morning' | 'afternoon';
 
 // Maps the classified create error to submit-copy. Anything unlisted (auth,
 // not-found, generic, …) falls back to the generic retry message.
@@ -63,15 +50,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
   const theme = useTheme();
   const headerIconColors = useHeaderGlassIconColors();
   const now = useRef(providedNow ?? new Date()).current;
-  const initializedFromAvailability = useRef(false);
   const submissionGuard = useRef(false);
-  const [month, setMonth] = useState(() => startOfLocalMonth(now));
-  const [quantity, setQuantity] = useState(2);
-  const [selectedDate, setSelectedDate] = useState<string | null>(() => localDateKey(now));
-  const [selectedAvailabilityId, setSelectedAvailabilityId] = useState<number | null>(null);
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>(
-    now.getHours() < 12 ? 'morning' : 'afternoon',
-  );
   const [bookerName, setBookerName] = useState('');
   const [bookerPhone, setBookerPhone] = useState('');
   const [requestNote, setRequestNote] = useState('');
@@ -88,101 +67,22 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
     setIdempotencyKey(createReservationIdempotencyKey());
   };
 
-  // Only GENERAL place reservations can be selected and submitted today, so the
-  // calendar dots and the nearest-date jump are driven by that subset. TICKET
-  // and CLASS slots still render in the time list as disabled rows.
   const bookerInput = { bookerName, bookerPhone, requestNote };
   const bookerValidation = validateBookerInput(bookerInput);
   const bookerErrorKeyFor = (field: keyof typeof bookerValidation.errors) =>
     showBookerErrors ? bookerValidation.errors[field] : null;
-  const dateDrag = useCalendarDragSelection({
-    onPress: (date: string) => { beginNewReservationIntent(); setSelectedDate(date); setSelectedAvailabilityId(null); },
-    onCommit: (_, endpoint) => { beginNewReservationIntent(); setSelectedDate(endpoint); setSelectedAvailabilityId(null); },
+  const {
+    month, moveMonth, quantity, selectQuantity, dateDrag, selectedDate, availableDates,
+    scheduledDates, remainingCapacityByDate, bookableCount, availabilitySummary,
+    selectedAvailability, selectedAvailabilityId, selectedDateSlots, selectAvailability,
+    timePeriod, setTimePeriod,
+  } = useReservationAvailabilitySelection({
+    availabilityData,
+    isError: availabilities.isError,
+    isPending: availabilities.isPending,
+    now,
+    onIntentChange: beginNewReservationIntent,
   });
-  const bookableAvailabilities = useMemo(
-    () => availabilityData.filter(
-      (item) => isSelectableAvailability(item) && isAvailabilityBookable(item, quantity, now),
-    ),
-    [availabilityData, now, quantity],
-  );
-  const availableDates = useMemo(
-    () => new Set(bookableAvailabilities.flatMap(availabilityDateKeys)),
-    [bookableAvailabilities],
-  );
-  const availabilitySummary = useMemo(
-    () => summarizeAvailabilityPresentations(availabilityData),
-    [availabilityData],
-  );
-  const scheduledDates = useMemo(
-    () => new Set(availabilityData.flatMap(availabilityDateKeys)),
-    [availabilityData],
-  );
-  const remainingCapacityByDate = useMemo(() => {
-    const totals = new Map<string, number>();
-
-    availabilityData.forEach((item) => {
-      if (!isSelectableAvailability(item)
-        || item.status !== 'ACTIVE'
-        || !isAvailabilityUpcoming(item, now)) return;
-
-      const remainingCapacity = Number.isFinite(item.remainingCapacity)
-        ? Math.max(0, item.remainingCapacity)
-        : 0;
-      availabilityDateKeys(item).forEach((dateKey) => {
-        totals.set(dateKey, (totals.get(dateKey) ?? 0) + remainingCapacity);
-      });
-    });
-
-    return totals;
-  }, [availabilityData, now]);
-  const selectedAvailability = availabilityData.find(
-    (item) => item.id === selectedAvailabilityId,
-  );
-  const selectedDateSlots = selectedDate
-    ? availabilityData
-      .filter((item) => availabilityIncludesDate(item, selectedDate))
-      .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())
-    : [];
-  const periodDate = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!selectedDate || selectedDateSlots.length === 0 || periodDate.current === selectedDate) {
-      return;
-    }
-    periodDate.current = selectedDate;
-    setTimePeriod(slotTimePeriod(selectedDateSlots[0]));
-  }, [selectedDate, selectedDateSlots]);
-
-  useEffect(() => {
-    if (initializedFromAvailability.current || availabilities.isPending || availabilities.isError) {
-      return;
-    }
-    const todayKey = localDateKey(now);
-    const nearestDateKey = [...availableDates]
-      .filter((dateKey) => dateKey >= todayKey)
-      .sort()[0]
-      ?? [...scheduledDates]
-        .filter((dateKey) => dateKey >= todayKey)
-        .sort()[0];
-    if (!nearestDateKey) return;
-    const nearestDate = localDateFromKey(nearestDateKey);
-    if (!nearestDate) return;
-    initializedFromAvailability.current = true;
-    setMonth(startOfLocalMonth(nearestDate));
-    setSelectedDate(nearestDateKey);
-    setSelectedAvailabilityId(null);
-  }, [availabilities.isError, availabilities.isPending, availableDates, now, scheduledDates]);
-
-  useEffect(() => {
-    if (selectedAvailabilityId !== null
-      && (!selectedAvailability
-        || !isSelectableAvailability(selectedAvailability)
-        || !isAvailabilityBookable(selectedAvailability, quantity, now)
-        || !selectedDate
-        || !availabilityIncludesDate(selectedAvailability, selectedDate))) {
-      setSelectedAvailabilityId(null);
-    }
-  }, [now, quantity, selectedAvailability, selectedAvailabilityId, selectedDate]);
 
   const hasValidIdempotencyKey = idempotencyKey.length > 0 && idempotencyKey.length <= 100;
   const slotReady = Boolean(
@@ -195,13 +95,6 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
       && !isSubmitting,
   );
   const canSubmit = slotReady && bookerValidation.isValid;
-
-  const moveMonth = (offset: number) => {
-    beginNewReservationIntent();
-    setMonth((current) => addLocalMonths(current, offset));
-    setSelectedDate(null);
-    setSelectedAvailabilityId(null);
-  };
 
   const submit = () => {
     if (!slotReady
@@ -303,7 +196,7 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
 
         <PeopleSection><SectionTitle>{t('reservation.create.people')}</SectionTitle>
           <Horizontal horizontal showsHorizontalScrollIndicator={false}>
-            {PEOPLE.map((count) => <Choice key={count} $selected={quantity === count} accessibilityRole="button" accessibilityState={{ selected: quantity === count }} onPress={() => { beginNewReservationIntent(); setQuantity(count); }}><ChoiceText $selected={quantity === count}>{t('reservation.create.peopleCount', { count })}</ChoiceText></Choice>)}
+            {PEOPLE.map((count) => <Choice key={count} $selected={quantity === count} accessibilityRole="button" accessibilityState={{ selected: quantity === count }} onPress={() => selectQuantity(count)}><ChoiceText $selected={quantity === count}>{t('reservation.create.peopleCount', { count })}</ChoiceText></Choice>)}
           </Horizontal>
         </PeopleSection>
 
@@ -339,29 +232,24 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
 
         <Section><SectionTitle>{t('reservation.create.time')}</SectionTitle>
           {availabilities.isError ? <ApiErrorState error={availabilities.error} busy={availabilities.isFetching} onRetry={() => availabilities.refetch({ cancelRefetch: false })} /> : null}
-          {renderAvailabilityState({
-            availabilityData,
-            bookableCount: bookableAvailabilities.length,
-            isError: availabilities.isError && !availabilities.data,
-            isPending: availabilities.isPending,
-            onRetry: () => { void availabilities.refetch(); },
-            placeName: route.params.placeName ?? detail.data?.name ?? t('reservation.create.loadingPlace'),
-            quantity,
-            selectedAvailabilityId,
-            selectedDate,
-            selectedDateSlots,
-            setSelectedAvailabilityId: (id) => {
-              beginNewReservationIntent();
-              setSelectedAvailabilityId(id);
-            },
-            setTimePeriod,
-            summary: availabilitySummary,
-            t,
-            timePeriod,
-            language: i18n.language,
-            now,
-            themeColor: theme.colors.primary,
-          })}
+          <ReservationAvailabilitySlots
+            availabilityData={availabilityData}
+            bookableCount={bookableCount}
+            isError={availabilities.isError && !availabilities.data}
+            isPending={availabilities.isPending}
+            language={i18n.language}
+            now={now}
+            onChangeTimePeriod={setTimePeriod}
+            onSelectAvailability={selectAvailability}
+            placeName={route.params.placeName ?? detail.data?.name ?? t('reservation.create.loadingPlace')}
+            quantity={quantity}
+            selectedAvailabilityId={selectedAvailabilityId}
+            selectedDate={selectedDate}
+            selectedDateSlots={selectedDateSlots}
+            summary={availabilitySummary}
+            t={t}
+            timePeriod={timePeriod}
+          />
         </Section>
 
         <SubmitSection>
@@ -451,156 +339,6 @@ export default function CreateReservationScreen({ navigation, now: providedNow, 
 }
 
 
-type AvailabilityStateProps = {
-  availabilityData: Availability[];
-  bookableCount: number;
-  isError: boolean;
-  isPending: boolean;
-  language: string;
-  now: Date;
-  onRetry: () => void;
-  placeName: string;
-  quantity: number;
-  selectedAvailabilityId: number | null;
-  selectedDate: string | null;
-  selectedDateSlots: Availability[];
-  setSelectedAvailabilityId: (id: number) => void;
-  setTimePeriod: (period: TimePeriod) => void;
-  summary: AvailabilityPresentationSummary;
-  t: (key: string, options?: Record<string, unknown>) => string;
-  themeColor: string;
-  timePeriod: TimePeriod;
-};
-
-function renderAvailabilityState(props: AvailabilityStateProps) {
-  const { t } = props;
-  if (props.isPending) return <Skeleton variant="slots" accessibilityLabel={t('reservation.create.availabilityLoading')} style={{ paddingVertical: 16 }} />;
-  if (props.isError) return null;
-  if (props.availabilityData.length === 0) return <StateBox><Helper>{t('reservation.create.availabilityEmpty')}</Helper></StateBox>;
-  // Availabilities exist, but none is a GENERAL place reservation. Say so
-  // explicitly instead of reusing the empty or capacity copy, and never present
-  // a TICKET/CLASS or unknown-type slot as a place booking.
-  if (props.summary.place === 0) {
-    const key = props.summary.blockedProduct > 0
-      ? 'reservation.create.productInfoUnavailable'
-      : 'reservation.create.unknownReservationType';
-    return <StateBox><Helper>{t(key)}</Helper></StateBox>;
-  }
-  if (!props.selectedDate) return <StateBox><Helper>{t('reservation.create.selectAvailableDate')}</Helper></StateBox>;
-  if (props.selectedDateSlots.length === 0) return <StateBox><Helper>{t('reservation.create.noTimes')}</Helper></StateBox>;
-
-  // A GENERAL slot exists somewhere, but this date also carries TICKET/CLASS or
-  // unknown-type slots. Surface the reason as visible copy, not only per row.
-  const blockedKinds = new Set(
-    props.selectedDateSlots
-      .map((slot) => selectAvailabilityPresentation(slot).kind)
-      .filter((kind) => kind !== 'place'),
-  );
-  const blockedNoticeKey = blockedKinds.has('blockedProduct')
-    ? 'reservation.create.productInfoUnavailable'
-    : blockedKinds.has('unknownType')
-      ? 'reservation.create.unknownReservationType'
-      : null;
-  const periodSlots = props.selectedDateSlots.filter(
-    (slot) => slotTimePeriod(slot) === props.timePeriod,
-  );
-
-  return <AvailabilityContent>
-    <TimePeriodTabs>
-      {(['morning', 'afternoon'] as const).map((period) => (
-        <TimePeriodButton
-          key={period}
-          $selected={props.timePeriod === period}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: props.timePeriod === period }}
-          onPress={() => props.setTimePeriod(period)}
-        >
-          <TimePeriodLabel $selected={props.timePeriod === period}>
-            {t(`reservation.create.${period}`)}
-          </TimePeriodLabel>
-        </TimePeriodButton>
-      ))}
-      <TimePeriodRule />
-    </TimePeriodTabs>
-    {props.bookableCount === 0 ? <StateBox><Helper>{t('reservation.create.noCapacityForQuantity', { count: props.quantity })}</Helper></StateBox> : null}
-    {blockedNoticeKey ? <StateBox><Helper>{t(blockedNoticeKey)}</Helper></StateBox> : null}
-    {periodSlots.length === 0 ? <PeriodEmpty>{t('reservation.create.noTimesInPeriod')}</PeriodEmpty> : null}
-    <TimeOptionScroll horizontal showsHorizontalScrollIndicator={false}>{periodSlots.map((slot) => {
-      const presentation = selectAvailabilityPresentation(slot);
-      const timeRange = formatTimeRange(slot, props.language);
-      const timeLabel = formatSlotLabel(slot, props.language);
-
-      if (presentation.kind !== 'place') {
-        // TICKET/CLASS without a product name, or an unrecognised type: a
-        // disabled pill that names only the time and its reason, so it is never
-        // mistaken for a bookable place slot and never leaks the raw product
-        // type or id.
-        const notice = t(presentation.reasonKey);
-        return (
-          <SlotButton
-            key={slot.id}
-            $bookable={false}
-            $selected={false}
-            accessibilityLabel={`${timeRange}. ${notice}`}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: true, selected: false }}
-            disabled
-            testID={`v2-availability-${slot.id}`}
-          >
-            <SlotLabel $bookable={false} $selected={false}>{timeLabel}</SlotLabel>
-          </SlotButton>
-        );
-      }
-
-      const bookable = isAvailabilityBookable(slot, props.quantity, props.now);
-      const selected = props.selectedAvailabilityId === slot.id;
-      const reason = availabilityReason(slot, props.quantity, props.now, t);
-      const accessibilityLabel = `${timeRange} · ${props.placeName}. ${reason}`;
-      return <SlotButton key={slot.id} $bookable={bookable} $selected={selected} accessibilityLabel={accessibilityLabel} accessibilityRole="button" accessibilityState={{ disabled: !bookable, selected }} disabled={!bookable} onPress={() => props.setSelectedAvailabilityId(slot.id)} testID={`v2-availability-${slot.id}`}><SlotLabel $bookable={bookable} $selected={selected}>{timeLabel}</SlotLabel>{!bookable ? <SlotReason $bookable={bookable} $selected={selected}>{reason}</SlotReason> : null}</SlotButton>;
-    })}</TimeOptionScroll>
-  </AvailabilityContent>;
-}
-
-function slotTimePeriod(availability: Availability): TimePeriod {
-  return new Date(availability.startsAt).getHours() < 12 ? 'morning' : 'afternoon';
-}
-
-function formatSlotLabel(availability: Availability, language: string): string {
-  return new Intl.DateTimeFormat(language, {
-    hour: '2-digit',
-    hourCycle: 'h23',
-    minute: '2-digit',
-  }).format(new Date(availability.startsAt));
-}
-
-function availabilityReason(availability: Availability, quantity: number, now: Date, t: AvailabilityStateProps['t']): string {
-  if (availability.status !== 'ACTIVE') return t('reservation.create.slotInactive');
-  if (!isAvailabilityUpcoming(availability, now)) return t('reservation.create.slotPast');
-  if (availability.remainingCapacity < quantity) return t('reservation.create.slotInsufficient', { count: availability.remainingCapacity });
-  return t('reservation.create.slotAvailable', { count: availability.remainingCapacity });
-}
-
-function formatTimeRange(availability: Availability, language: string): string {
-  const startsAt = new Date(availability.startsAt);
-  const endsAt = new Date(availability.endsAt);
-  if (localDateKey(startsAt) === localDateKey(endsAt)) {
-    const timeFormatter = new Intl.DateTimeFormat(language, {
-      hour: '2-digit',
-      hourCycle: 'h23',
-      minute: '2-digit',
-    });
-    return `${timeFormatter.format(startsAt)}–${timeFormatter.format(endsAt)}`;
-  }
-  const dateTimeFormatter = new Intl.DateTimeFormat(language, {
-    day: 'numeric',
-    hour: '2-digit',
-    hourCycle: 'h23',
-    minute: '2-digit',
-    month: 'short',
-  });
-  return `${dateTimeFormatter.format(startsAt)}–${dateTimeFormatter.format(endsAt)}`;
-}
-
 const Screen = styled(SafeAreaView)`flex: 1; background-color: ${({ theme }) => theme.colors.background};`;
 const Header = styled.View`height: 64px; flex-direction: row; align-items: center; padding: 0 ${({ theme }) => theme.spacing.md}px; border-bottom-width: 1px; border-bottom-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const BackButton = styled.Pressable`width: 44px; height: 44px; align-items: center; justify-content: center;`;
@@ -634,26 +372,14 @@ const DayCell = styled.View`width: 14.285%; height: 44px; align-items: center; j
 const DayButton = styled.Pressable<{ $selected: boolean }>`width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primaryAction : 'transparent'};`;
 const DayText = styled(AppText)<{ $available: boolean; $selected: boolean; $weekday: number }>`color: ${({ $available, $selected, $weekday, theme }) => $selected ? theme.colors.onPrimary : !$available ? theme.colors.disabled : $weekday === 0 ? theme.colors.calendarSunday : $weekday === 6 ? theme.colors.calendarSaturday : theme.colors.text}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ $available, $selected }) => $available || $selected ? '700' : '400'};`;
 const DayCapacity = styled(AppText)<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.onPrimary : theme.colors.textMuted}; font-size: 9px; line-height: 10px;`;
-const StateBox = styled.View`min-height: 72px; align-items: center; justify-content: center; gap: ${({ theme }) => theme.spacing.sm}px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.surfaceMuted};`;
 const RetryButton = styled.Pressable`padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ theme }) => theme.colors.primarySoft};`;
 const RetryText = styled(AppText)`color: ${({ theme }) => theme.colors.primary}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
-const TimeOptionScroll = styled.ScrollView`flex-grow: 0;`;
-const AvailabilityContent = styled.View`gap: ${({ theme }) => theme.spacing.sm}px;`;
-const TimePeriodTabs = styled.View`height: 38px; flex-direction: row; align-items: flex-start; position: relative;`;
-const TimePeriodButton = styled.Pressable<{ $selected: boolean }>`height: 38px; justify-content: flex-start; margin-right: ${({ theme }) => theme.spacing.lg}px; border-bottom-width: 2px; border-bottom-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'}; z-index: 1;`;
-const TimePeriodLabel = styled(AppText)<{ $selected: boolean }>`color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const TimePeriodRule = styled.View`position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background-color: ${({ theme }) => theme.colors.border};`;
-const PeriodEmpty = styled(AppText)`padding: ${({ theme }) => theme.spacing.sm}px 0; color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const Field = styled.View`gap: 2px;`;
 const FieldLabel = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: 12px;`;
 const FieldInput = styled(AppTextInput)`height: 46px; padding: 0; border-bottom-width: 1px; border-bottom-color: ${({ theme }) => theme.colors.border}; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
 const NoteInput = styled(AppTextInput)`min-height: 96px; margin-top: 6px; padding: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.md}px; background-color: ${({ theme }) => theme.colors.inputBackground}; color: ${({ theme }) => theme.colors.text}; font-size: ${({ theme }) => theme.typography.body.fontSize}px;`;
 const FieldHint = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
 const FieldError = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px;`;
-const SlotButton = styled.Pressable<{ $bookable: boolean; $selected: boolean }>`min-width: 56px; min-height: 34px; align-items: center; justify-content: center; margin-right: ${({ theme }) => theme.spacing.sm}px; padding: 6px 12px; border-width: 1px; border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : 'transparent'}; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surfaceMuted}; opacity: ${({ $bookable }) => $bookable ? 1 : 0.48};`;
-const SlotLabel = styled(AppText)<{ $bookable: boolean; $selected: boolean }>`color: ${({ $bookable, $selected, theme }) => $selected ? theme.colors.primary : $bookable ? theme.colors.textMuted : theme.colors.textDisabled}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; font-weight: ${({ $selected, theme }) => $selected ? theme.typography.label.fontWeight : theme.typography.caption.fontWeight};`;
-const SlotReason = styled(AppText)<{ $bookable: boolean; $selected: boolean }>`margin-top: 2px; color: ${({ $bookable, $selected, theme }) => $selected ? theme.colors.primary : $bookable ? theme.colors.textAlternative : theme.colors.textDisabled}; font-size: 10px;`;
-const Helper = styled(AppText)`color: ${({ theme }) => theme.colors.textMuted}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
 const ErrorText = styled(AppText)`color: ${({ theme }) => theme.colors.danger}; font-size: ${({ theme }) => theme.typography.caption.fontSize}px; text-align: center;`;
 const SubmitButton = styled.Pressable<{ $enabled: boolean }>`height: 56px; align-items: center; justify-content: center; margin-top: ${({ theme }) => theme.spacing.md}px; border-radius: ${({ theme }) => theme.radius.full}px; background-color: ${({ $enabled, theme }) => $enabled ? theme.colors.primaryAction : theme.colors.disabled};`;
 const SubmitLabel = styled(AppText)<{ $enabled: boolean }>`color: ${({ $enabled, theme }) => $enabled ? theme.colors.onPrimary : theme.colors.onDisabled}; font-size: ${({ theme }) => theme.typography.body.fontSize}px; font-weight: ${({ theme }) => theme.typography.label.fontWeight};`;
