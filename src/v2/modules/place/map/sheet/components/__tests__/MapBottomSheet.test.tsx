@@ -4,9 +4,10 @@ import { useSharedValue } from 'react-native-reanimated';
 import { MapSheetScrollToTopProvider } from '../../hooks/useMapSheetScrollToTop';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import React from 'react';
-import { Animated, PanResponder, PixelRatio, Platform, ScrollView, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
+import { Animated, NativeModules, PanResponder, PixelRatio, Platform, ScrollView, Text, type GestureResponderHandlers, type GestureResponderEvent, type PanResponderGestureState } from 'react-native';
 
 import { renderWithProviders } from '../../../../../../app/testing/testProviders';
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../../../shared/translation/TranslationAttributionGroup';
 import { darkColors, lightColors } from '../../../../../../shared/theme';
 import type { ReviewReasonKey } from '../../../../../../shared/api/reviewReasons';
 import { runTimingMotion } from '../../../../../../shared/motion';
@@ -186,7 +187,7 @@ describe('MapBottomSheet recommendations', () => {
     expect(screen.getByRole('button', { name: '추천 장소 1 사진 1 상세 보기' })).toHaveStyle({ width: 242, height: 182 });
     expect(screen.getByRole('button', { name: '추천 장소 1 사진 2 상세 보기' })).toHaveStyle({ width: 242, height: 182 });
     expect(screen.getByTestId('place-preview-content')).toHaveStyle({ rowGap: 14 });
-    expect(within(screen.getByTestId('place-preview-photos-section')).getByTestId('place-preview-translation-attribution')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('place-preview-photos-section')).queryByTestId('place-preview-translation-attribution')).toBeNull();
     expect(within(screen.getByTestId('place-name-translation')).queryByLabelText('Translated by Google')).toBeNull();
     await user.press(screen.getByRole('button', { name: '추천 장소 1 사진 2 상세 보기' }));
     expect(screen.getByTestId('place-photo-viewer')).toBeVisible();
@@ -2043,6 +2044,58 @@ function reviewHighlightsSheet(fallback: MapPreviewFallbackContent) {
     recommendationPlaces={[]} recommendationsState="ready" selectedPlace={selectedPlace}
     sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint="expanded" />;
 }
+
+test('장소 카드 번역 표시는 목록에 한 번만 나오고 원래 장소 ID로 열린다', async () => {
+  const previous = NativeModules.MLKitTranslation;
+  NativeModules.MLKitTranslation = {
+    getTranslationPlan: jest.fn(), getOfflineModels: async () => ['ko', 'ja'],
+    translate: jest.fn(), translateOffline: async (text: string) => `日本語:${text}`,
+  };
+  try {
+    const onOpen = jest.fn();
+    const place = { ...places[0], name: '자동 번역 카드 장소' };
+    const secondPlace = { ...places[1], name: '두 번째 자동 번역 카드 장소' };
+    const view = await renderWithProviders(<TranslationAttributionGroup>
+      <TranslationAttributionNotice />
+      <RecommendationFeaturedCard bookmarked={false} pending={false}
+        place={place} onPress={() => onOpen(place.id)} onToggleBookmark={jest.fn()} />
+      <RecommendationFeaturedCard bookmarked={false} pending={false}
+        place={secondPlace} onPress={jest.fn()} onToggleBookmark={jest.fn()} />
+    </TranslationAttributionGroup>, { language: 'ja' });
+    expect(await screen.findByText('日本語:자동 번역 카드 장소')).toBeVisible();
+    expect(await screen.findByText('日本語:두 번째 자동 번역 카드 장소')).toBeVisible();
+    expect(screen.getAllByLabelText('Translated by Google')).toHaveLength(1);
+    expect(within(screen.getByTestId(`recommendation-card-${place.id}`)).queryByLabelText('Translated by Google')).toBeNull();
+    await view.user.longPress(screen.getByText('日本語:자동 번역 카드 장소'));
+    expect(onOpen).not.toHaveBeenCalled();
+    await view.user.press(screen.getByRole('button', { name: '原文を表示' }));
+    expect(screen.getByText('자동 번역 카드 장소')).toBeVisible();
+    expect(screen.getAllByLabelText('Translated by Google')).toHaveLength(1);
+    await view.user.press(screen.getByTestId(`recommendation-card-${place.id}`));
+    expect(onOpen).toHaveBeenCalledWith(place.id);
+    expect(place.name).toBe('자동 번역 카드 장소');
+  } finally { NativeModules.MLKitTranslation = previous; }
+});
+
+test('장소 리뷰 본문은 자동 번역하고 길게 눌러 원문을 볼 수 있으며 작성자를 유지한다', async () => {
+  const previous = NativeModules.MLKitTranslation;
+  NativeModules.MLKitTranslation = {
+    getTranslationPlan: async () => ({ sourceLanguage: 'en', targetLanguage: 'ko', shouldTranslate: true }),
+    getOfflineModels: async () => ['ko'], translate: async (text: string) => ({ translatedText: `자동번역:${text}` }),
+  };
+  try {
+    const original = 'A helpful place review for automatic translation';
+    const view = await renderWithProviders(reviewHighlightsSheet({
+      amenities: [], imageUrls: [], statusDescription: '', statusEmphasis: '', reviewState: 'ready',
+      reviewCount: 1, reviews: [{ author: '원문 리뷰 작성자', createdAt: '2026-10-22', text: original, reasons: [], reviewId: 9911 }],
+    }));
+    const translated = await screen.findByText(`자동번역:${original}`);
+    expect(screen.getByText('원문 리뷰 작성자')).toBeVisible();
+    await view.user.longPress(translated);
+    await view.user.press(screen.getByRole('button', { name: '원문 보기' }));
+    expect(screen.getByText(original)).toBeVisible();
+  } finally { NativeModules.MLKitTranslation = previous; }
+});
 
 test.each(['LIGHT', 'DARK'] as const)('%s 리뷰 탭은 추천 집계와 정확한 비율을 보여주며 부분 집계임을 알린다', async appearancePreference => {
   await renderWithProviders(reviewHighlightsSheet({

@@ -18,8 +18,6 @@ test('외국어 제목과 미리보기를 한국어로 번역하고 원문으로
   const { user } = await renderWithProviders(<PostCard now={new Date()} onOpenOverflow={jest.fn()} onPress={onPress}
     post={{ postId: 901, title: '大邱旅行', contentPreview: '这是一次愉快的旅行。' }} />, { language: 'ko' });
   expect(screen.queryByRole('button', { name: '번역하기' })).toBeNull();
-  await user.longPress(screen.getByRole('button', { name: '大邱旅行' }));
-  await user.press(screen.getByRole('button', { name: '번역하기' }));
   expect(await screen.findByText('대구 여행')).toBeVisible();
   expect(screen.getByText('즐거운 여행이었습니다.')).toBeVisible();
   expect(translate).toHaveBeenCalledWith('大邱旅行', 'zh', 'ko', false);

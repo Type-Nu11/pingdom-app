@@ -32,7 +32,7 @@ let availabilityRows: AvailabilityList;
 const originalState = AppState.currentState;
 beforeEach(() => {
   AppState.currentState = 'active';
-  jest.spyOn(Date, 'now').mockReturnValue(now);
+  jest.useFakeTimers({ now, advanceTimers: true });
   stored = null; requests = []; rows = []; quoteCalls = 0; loseFirstResponse = false;
   availabilityRows = [slot, { ...slot, id: 11, remainingCapacity: 1, startsAt: '2026-11-12T05:00:00Z', endsAt: '2026-11-12T06:00:00Z' }];
   jest.mocked(Keychain.getGenericPassword).mockImplementation(async () => stored ? { username: 'intent', password: stored, service: 'test', storage: 'test' } as never : false);
@@ -60,6 +60,7 @@ beforeEach(() => {
     return result as never;
   });
 });
+afterEach(() => { jest.useRealTimers(); });
 afterAll(() => { AppState.currentState = originalState; });
 
 test.each([null, undefined])('일정의 선택적 예약 조건이 %s여도 일반 예약과 동일하게 일정을 표시한다', async reservationTerms => {
