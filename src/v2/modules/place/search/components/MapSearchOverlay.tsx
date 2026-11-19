@@ -1,3 +1,5 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../shared/translation/TranslationAttributionGroup';
+import TranslatedPlaceName from '../../../../shared/translation/TranslatedPlaceName';
 import Skeleton from '../../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -261,7 +263,7 @@ const MapSearchOverlay = ({
         : null;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <TranslationAttributionGroup><SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.searchField}>
           <Pressable
@@ -334,6 +336,7 @@ const MapSearchOverlay = ({
         })}
       </ScrollView>
 
+      <TranslationAttributionNotice />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -417,7 +420,7 @@ const MapSearchOverlay = ({
                 style={styles.resultItem}
                 onPress={() => handleSelect(toRegisteredSelection(item))}
               >
-                <AppText numberOfLines={1} style={styles.resultName}>{item.name}</AppText>
+                <TranslatedPlaceName name={item.name}>{(name, actions) => <AppText {...actions} numberOfLines={1} style={styles.resultName}>{name}</AppText>}</TranslatedPlaceName>
                 <AppText numberOfLines={1} style={styles.resultAddress}>
                   {item.address}
                 </AppText>
@@ -436,7 +439,7 @@ const MapSearchOverlay = ({
                 style={styles.resultItem}
                 onPress={() => handleSelect(toKakaoSelection(item))}
               >
-                <AppText numberOfLines={1} style={styles.resultName}>{item.name}</AppText>
+                <TranslatedPlaceName name={item.name}>{(name, actions) => <AppText {...actions} numberOfLines={1} style={styles.resultName}>{name}</AppText>}</TranslatedPlaceName>
                 <AppText numberOfLines={1} style={styles.resultAddress}>
                   {item.roadAddress || item.address}
                 </AppText>
@@ -457,7 +460,7 @@ const MapSearchOverlay = ({
           <AppText style={styles.statusText}>{searchStatusMessage}</AppText>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaView></TranslationAttributionGroup>
   );
 };
 
