@@ -50,19 +50,23 @@ export function configureApiAccessTokenProvider(provider: ApiAccessTokenProvider
   };
 }
 
+function assertNotCanceled(signal?: AbortSignal) {
+  if (signal?.aborted) throw new axios.CanceledError();
+}
+
 async function withAuthorization(
   options: GetRequestOptions | MutationRequestOptions,
 ): Promise<(GetRequestOptions | MutationRequestOptions) & {
   headers: Record<string, string>;
 }> {
+  assertNotCanceled(options.signal);
   const token = (await accessTokenProvider())?.replace(/^Bearer\s+/i, '').trim();
+  const headers = await withDeviceRequestHeaders(token
+    ? { ...options.headers, Authorization: `Bearer ${token}` }
+    : options.headers);
+  assertNotCanceled(options.signal);
 
-  return {
-    ...options,
-    headers: await withDeviceRequestHeaders(token
-      ? { ...options.headers, Authorization: `Bearer ${token}` }
-      : options.headers),
-  };
+  return { ...options, headers };
 }
 
 async function putWithFetchFallback<TResponse, TBody>(
@@ -71,12 +75,14 @@ async function putWithFetchFallback<TResponse, TBody>(
   options: MutationRequestOptions,
 ): Promise<TResponse> {
   const authorizedOptions = await withAuthorization(options);
+  assertNotCanceled(options.signal);
   const fallbackController = new AbortController();
   const forwardAbort = () => fallbackController.abort();
   const timeoutId = setTimeout(() => fallbackController.abort(), FETCH_FALLBACK_TIMEOUT_MS);
   options.signal?.addEventListener('abort', forwardAbort, { once: true });
 
   let response: Response;
+  let responseText: string;
 
   try {
     response = await fetch(`${env.apiBaseUrl}${path}`, {
@@ -89,8 +95,11 @@ async function putWithFetchFallback<TResponse, TBody>(
       method: 'PUT',
       signal: fallbackController.signal,
     });
+    responseText = await response.text();
+    assertNotCanceled(fallbackController.signal);
   } catch (error) {
-    if (fallbackController.signal.aborted && !options.signal?.aborted) {
+    assertNotCanceled(options.signal);
+    if (fallbackController.signal.aborted) {
       throw new ApiError(
         `PUT 요청이 ${FETCH_FALLBACK_TIMEOUT_MS / 1_000}초 안에 응답하지 않았습니다.`,
         { code: 'REQUEST_TIMEOUT' },
@@ -103,7 +112,6 @@ async function putWithFetchFallback<TResponse, TBody>(
     options.signal?.removeEventListener('abort', forwardAbort);
   }
 
-  const responseText = await response.text();
   let responseData: unknown;
 
   try {

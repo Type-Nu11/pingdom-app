@@ -1,3 +1,5 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../shared/translation/TranslationAttributionGroup';
+import TranslatedPlaceName from '../../../../shared/translation/TranslatedPlaceName';
 import Skeleton from '../../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -125,7 +127,7 @@ const MapSearchOverlay = ({
   const { colors } = theme;
   const styles = useMemo(() => createStyles(colors), [colors]);
   const inputRef = useRef<NativeTextInput>(null);
-  const searchRequestInFlight = useRef(false);
+  const searchRequestInFlight = useRef<{ query: string } | null>(null);
   const [query, setQuery] = useState('');
   const [registeredQuery, setRegisteredQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
@@ -185,12 +187,9 @@ const MapSearchOverlay = ({
   );
 
   const handleQueryChange = (nextQuery: string) => {
+    searchRequestInFlight.current = null;
     setQuery(nextQuery);
-
-    if (!nextQuery.trim()) {
-      setHasSearched(false);
-    }
-
+    setHasSearched(false);
     setShowRecommendations(false);
     setRegisteredQuery('');
     clearSearchResults();
@@ -200,37 +199,28 @@ const MapSearchOverlay = ({
     nextQuery = query,
     searchCategory: SearchCategory = activeCategory,
   ) => {
-    if (searchRequestInFlight.current) return;
     const normalizedQuery = nextQuery.trim();
+    if (searchRequestInFlight.current?.query === normalizedQuery) return;
 
-    if (!normalizedQuery) {
-      setHasSearched(false);
-      setRegisteredQuery('');
-      searchRequestInFlight.current = true;
-      try {
-        await searchPlaces(normalizedQuery, searchCoordinates);
-      } finally {
-        searchRequestInFlight.current = false;
+    if (normalizedQuery) {
+      Keyboard.dismiss();
+      setQuery(normalizedQuery);
+      if (recentSearchOwner) {
+        void recordRecentSearch({
+          category: searchCategory === 'all' ? 'art' : searchCategory,
+          query: normalizedQuery,
+        }, recentSearchOwner);
       }
-      return;
     }
 
-    Keyboard.dismiss();
-    setHasSearched(true);
-    setQuery(normalizedQuery);
-    if (recentSearchOwner) {
-      void recordRecentSearch({
-        category: searchCategory === 'all' ? 'art' : searchCategory,
-        query: normalizedQuery,
-      }, recentSearchOwner);
-    }
-
+    setHasSearched(Boolean(normalizedQuery));
     setRegisteredQuery(normalizedQuery);
-    searchRequestInFlight.current = true;
+    const request = { query: normalizedQuery };
+    searchRequestInFlight.current = request;
     try {
       await searchPlaces(normalizedQuery, searchCoordinates);
     } finally {
-      searchRequestInFlight.current = false;
+      if (searchRequestInFlight.current === request) searchRequestInFlight.current = null;
     }
   };
 
@@ -261,7 +251,7 @@ const MapSearchOverlay = ({
         : null;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <TranslationAttributionGroup><SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.searchField}>
           <Pressable
@@ -292,11 +282,7 @@ const MapSearchOverlay = ({
               accessibilityLabel={t('map.searchOverlay.clear')}
               hitSlop={8}
               onPress={() => {
-                setQuery('');
-                setHasSearched(false);
-                setShowRecommendations(false);
-                setRegisteredQuery('');
-                clearSearchResults();
+                handleQueryChange('');
                 inputRef.current?.focus();
               }}
             >
@@ -334,6 +320,7 @@ const MapSearchOverlay = ({
         })}
       </ScrollView>
 
+      <TranslationAttributionNotice />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -417,7 +404,7 @@ const MapSearchOverlay = ({
                 style={styles.resultItem}
                 onPress={() => handleSelect(toRegisteredSelection(item))}
               >
-                <AppText numberOfLines={1} style={styles.resultName}>{item.name}</AppText>
+                <TranslatedPlaceName name={item.name}>{(name, actions) => <AppText {...actions} numberOfLines={1} style={styles.resultName}>{name}</AppText>}</TranslatedPlaceName>
                 <AppText numberOfLines={1} style={styles.resultAddress}>
                   {item.address}
                 </AppText>
@@ -436,7 +423,7 @@ const MapSearchOverlay = ({
                 style={styles.resultItem}
                 onPress={() => handleSelect(toKakaoSelection(item))}
               >
-                <AppText numberOfLines={1} style={styles.resultName}>{item.name}</AppText>
+                <TranslatedPlaceName name={item.name}>{(name, actions) => <AppText {...actions} numberOfLines={1} style={styles.resultName}>{name}</AppText>}</TranslatedPlaceName>
                 <AppText numberOfLines={1} style={styles.resultAddress}>
                   {item.roadAddress || item.address}
                 </AppText>
@@ -457,7 +444,7 @@ const MapSearchOverlay = ({
           <AppText style={styles.statusText}>{searchStatusMessage}</AppText>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaView></TranslationAttributionGroup>
   );
 };
 

@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../shared/translation/TranslationAttributionGroup';
 import { Text as AppText } from '../../../shared/components/Typography';
 import React from 'react';
 import { Image } from 'react-native';
@@ -47,7 +48,7 @@ export default function MerchantMyPageScreen({
   const headerIconColors = useHeaderGlassIconColors();
 
   return (
-    <Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-merchant-my-page-screen">
+    <TranslationAttributionGroup><Screen edges={['top', 'right', 'bottom', 'left']} testID="v2-merchant-my-page-screen">
       <Content contentContainerStyle={CONTENT_CONTAINER_STYLE}>
         <TopBar>
           <IconButton
@@ -136,6 +137,7 @@ export default function MerchantMyPageScreen({
             <SectionHeaderRow>
               <SectionTitle>{t('merchantMyPage.reviews.title')}</SectionTitle>
             </SectionHeaderRow>
+            <TranslationAttributionNotice />
 
             {reviews.length > 0 ? (
               <>
@@ -172,7 +174,7 @@ export default function MerchantMyPageScreen({
           </SectionInner>
         </LastSection>
       </Content>
-    </Screen>
+    </Screen></TranslationAttributionGroup>
   );
 }
 

@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../shared/translation/TranslationAttributionGroup';
 import { useMapSheetScrollToTop, SheetMotionView, clampSheetValue, useSheetMotionStyle } from '../../../place/map/sheet';
 import Skeleton from '../../../../shared/components/Skeleton';
 import { ApiErrorState } from '../../../../shared/components';
@@ -230,7 +231,7 @@ export default function ReservationBottomSheet({
   }, { opacity });
 
   return (
-    <GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
+    <TranslationAttributionGroup><GlassStyles.BottomSheetContainer style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}>
       <GlassStyles.MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} contentInset={8} innerTestID="reservation-sheet-inner" testID="reservations-sheet">
         <View style={styles.handleArea} {...panHandlers}>
           <Pressable accessibilityLabel={t('reservation.list.panelAdjust')} accessibilityRole="adjustable" onPress={onHandlePress} style={styles.handleButton}>
@@ -246,6 +247,7 @@ export default function ReservationBottomSheet({
             <AppText style={styles.subtitle}>{t('reservation.list.nearbySubtitle')}</AppText>
           </View>
           <View style={[styles.listViewport, snapPoint === 'medium' && styles.listViewportMedium]}>
+            <TranslationAttributionNotice />
             <ScrollView ref={scrollRef} testID="reservation-place-scroll" contentContainerStyle={styles.listContent} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {nearbyError ? <ApiErrorState error={nearbyError} busy={nearbyBusy} onRetry={onRetryNearby} /> : null}
               {nearbyPlaces.length > 0 || !nearbyError ? <NearbyReservationRail
@@ -300,7 +302,7 @@ export default function ReservationBottomSheet({
         onOpenRecommendations={onOpenRecommendations}
         sheetTranslateY={sheetTranslateY}
       />
-    </GlassStyles.BottomSheetContainer>
+    </GlassStyles.BottomSheetContainer></TranslationAttributionGroup>
   );
 }
 

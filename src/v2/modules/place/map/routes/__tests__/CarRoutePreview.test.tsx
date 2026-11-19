@@ -275,6 +275,17 @@ test.each([true, false])('permission denial supports direct origin input (canAsk
   expect(findCarRoute).toHaveBeenCalledWith(expect.objectContaining({ name: 'Saved cafe' }), destination, expect.any(AbortSignal));
 });
 
+test('long pressing a saved place opens translation without selecting the endpoint', async () => {
+  const { user } = await renderWithProviders(<CarRoutePreview {...props}
+    location={{ status: 'denied', coordinate: null, canAskAgain: false }} />, { language: 'en' });
+
+  await user.press(screen.getByTestId('route-direct-input'));
+  await user.longPress(screen.getByRole('button', { name: 'Saved cafe' }));
+
+  expect(await screen.findByRole('header', { name: 'Translation' })).toBeVisible();
+  expect(findCarRoute).not.toHaveBeenCalled();
+});
+
 test('loading shows CTA and bar skeletons and keeps cancel available', async () => {
   jest.mocked(findCarRoute).mockImplementation(() => new Promise(() => {}));
   const { user } = await renderWithProviders(<CarRoutePreview {...props} />, { language: 'en' });
