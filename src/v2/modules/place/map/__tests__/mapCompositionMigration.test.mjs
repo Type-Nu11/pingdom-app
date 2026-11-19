@@ -133,31 +133,33 @@ test('expanded sheet stops below the search header and temporarily hides map cat
 });
 
 test('resting map content disables vertical scrolling while preserving nested horizontal lists', () => {
-  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+  const homeFeeds = read('../sheet/components/MapHomeFeeds.tsx');
 
-  assert.match(bottomSheet, /testID="expanded-home-scroll"/);
-  assert.match(bottomSheet, /scrollEnabled=\{expandedInteractionsEnabled \|\| restingScrollEnabled\}/);
-  assert.match(bottomSheet, /scrollRef\.current\?\.scrollTo\(\{ animated: false, y: 0 \}\)/);
-  assert.match(bottomSheet, /<ScrollView[\s\S]*?horizontal[\s\S]*?nestedScrollEnabled/);
+  assert.match(homeFeeds, /testID="expanded-home-scroll"/);
+  assert.match(homeFeeds, /scrollEnabled=\{expandedInteractionsEnabled \|\| restingScrollEnabled\}/);
+  assert.match(homeFeeds, /scrollRef\.current\?\.scrollTo\(\{ animated: false, y: 0 \}\)/);
+  assert.match(homeFeeds, /<ScrollView[\s\S]*?horizontal[\s\S]*?nestedScrollEnabled/);
 });
 
 test('the small visible handle keeps resting sheet content available as a drag surface', () => {
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+  const styles = read('../sheet/styles/MapBottomSheet.styles.ts');
 
-  assert.match(bottomSheet, /handleArea: \{[^}]*height: 20/);
-  assert.match(bottomSheet, /handle: \{[^}]*height: 5[^}]*width: 56/);
+  assert.match(styles, /handleArea: \{[^}]*height: 20/);
+  assert.match(styles, /handle: \{[^}]*height: 5[^}]*width: 56/);
   assert.match(bottomSheet, /\{\.\.\.panHandlers\}[\s\S]*?testID="map-sheet-handle-target"/);
   assert.match(bottomSheet, /\{\.\.\.\(snapPoint === 'expanded' \|\| restingScrollEnabled \? \{\} : panHandlers\)\}/);
   assert.doesNotMatch(bottomSheet, /hitSlop=\{content\.type === 'place-preview'/);
-  assert.doesNotMatch(bottomSheet, /handleGestureTarget/);
+  assert.doesNotMatch(styles, /handleGestureTarget/);
   assert.match(bottomSheet, /testID="map-sheet-handle-target"/);
 });
 
 test('place preview keeps header actions tappable and aligns category beside the title', () => {
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+  const styles = read('../sheet/styles/MapBottomSheet.styles.ts');
 
   assert.match(bottomSheet, /<View \{\.\.\.sheetPanHandlers\} style=\{styles\.previewHeader\}/);
-  assert.match(bottomSheet, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
+  assert.match(styles, /previewTitleRow: \{ alignItems: 'center', flexDirection: 'row'/);
   // Figma Component 18: 16px star inside a 32px circle.
   assert.match(bottomSheet, /BookmarkStar selected=\{bookmarked\} size=\{16\}/);
   assert.match(bottomSheet, /t\('map\.detail\.reviewCount'/);
@@ -166,10 +168,11 @@ test('place preview keeps header actions tappable and aligns category beside the
 
 test('place actions retain selection across sheet expansion and expanded detail removes every radius', () => {
   const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+  const styles = read('../sheet/styles/MapBottomSheet.styles.ts');
 
   assert.match(bottomSheet, /activePreviewAction/);
   // Figma PingSelected chips (5191:39647): selected Glass/Selected + Glass/SelectedStroke.
-  assert.match(bottomSheet, /previewActionChipActive: \{ backgroundColor: glass\.category\.activeTint, borderColor: glass\.category\.activeBorder/);
+  assert.match(styles, /previewActionChipActive: \{ backgroundColor: glass\.category\.activeTint, borderColor: glass\.category\.activeBorder/);
   assert.match(bottomSheet, /activeAction=\{activePreviewAction\}/);
   assert.match(bottomSheet, /<MapSheetSurface[^>]*opaque=\{isExpandedPlaceDetail\}/);
   const surface = read('../sheet/components/MapSheetSurface.tsx');
@@ -187,14 +190,14 @@ test('the production map detail uses the compact Offer list before menus', () =>
 });
 
 test('expanded place detail keeps the design photo ratio, short tab accent, and section bands', () => {
-  const bottomSheet = read('../sheet/components/MapBottomSheet.tsx');
+  const styles = read('../sheet/styles/MapBottomSheet.styles.ts');
   const coupon = read('../../../booking/offers-coupons/components/PlaceCouponCta.tsx');
   const menu = read('../../menus/components/PlaceMenuSection.tsx');
 
-  assert.match(bottomSheet, /detailPhoto: \{[^}]*height: 182[^}]*width: 242/);
-  assert.match(bottomSheet, /detailPhotoPrimary: \{[^}]*width: 242/);
-  assert.match(bottomSheet, /detailTabIndicator: \{[^}]*height: 2[^}]*width: 40/);
-  assert.doesNotMatch(bottomSheet, /detailInfoBlock: \{[^}]*borderBottom/);
+  assert.match(styles, /detailPhoto: \{[^}]*height: 182[^}]*width: 242/);
+  assert.match(styles, /detailPhotoPrimary: \{[^}]*width: 242/);
+  assert.match(styles, /detailTabIndicator: \{[^}]*height: 2[^}]*width: 40/);
+  assert.doesNotMatch(styles, /detailInfoBlock: \{[^}]*borderBottom/);
   assert.match(coupon, /const CompactSection = styled\.View`[^`]*border-top-width: 8px/);
   assert.doesNotMatch(coupon, /const CompactSection = styled\.View`[^`]*border-bottom-width/);
   assert.match(menu, /const Section = styled\.View(?:<[^`]+>)?`[^`]*border-top-width: 8px/);
