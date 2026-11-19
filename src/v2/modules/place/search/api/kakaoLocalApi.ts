@@ -54,6 +54,7 @@ export type KakaoLocalSearchItem = {
 type SearchKakaoLocalPlacesOptions = {
   centerLat?: number;
   centerLng?: number;
+  signal?: AbortSignal;
 };
 
 const KAKAO_LOCAL_BASE_URL = 'https://dapi.kakao.com/v2/local';
@@ -64,13 +65,23 @@ const kakaoHeaders = {
 
 const KAKAO_FETCH_TIMEOUT_MS = 8000;
 
-function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = KAKAO_FETCH_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+async function fetchKakaoJson<T>(url: string, signal?: AbortSignal): Promise<T | undefined> {
+  if (signal?.aborted) return undefined;
 
-  return fetch(url, { ...options, signal: controller.signal }).finally(() => {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  const timeoutId = setTimeout(abort, KAKAO_FETCH_TIMEOUT_MS);
+  signal?.addEventListener('abort', abort, { once: true });
+
+  try {
+    const response = await fetch(url, { headers: kakaoHeaders, signal: controller.signal });
+    if (!response.ok || controller.signal.aborted) return undefined;
+    const data = await response.json() as T;
+    return controller.signal.aborted ? undefined : data;
+  } finally {
     clearTimeout(timeoutId);
-  });
+    signal?.removeEventListener('abort', abort);
+  }
 }
 
 const parseCoordinate = (value?: string) => {
@@ -95,7 +106,7 @@ const uniqueByCoordinateAndName = (items: KakaoLocalSearchItem[]) => {
   });
 };
 
-export const getAddressFromCoordinate = async (lat: number, lng: number) => {
+export const getAddressFromCoordinate = async (lat: number, lng: number, signal?: AbortSignal) => {
   if (!hasKakaoRestApiKey()) {
     return '';
   }
@@ -107,16 +118,10 @@ export const getAddressFromCoordinate = async (lat: number, lng: number) => {
   });
 
   try {
-    const response = await fetchWithTimeout(`${KAKAO_LOCAL_BASE_URL}/geo/coord2address.json?${params}`, {
-      headers: kakaoHeaders,
-    });
-
-    if (!response.ok) {
-      return '';
-    }
-
-    const data = await response.json() as KakaoCoordToAddressResponse;
-    const address = data.documents?.[0];
+    const data = await fetchKakaoJson<KakaoCoordToAddressResponse>(
+      `${KAKAO_LOCAL_BASE_URL}/geo/coord2address.json?${params}`, signal,
+    );
+    const address = data?.documents?.[0];
 
     return address?.road_address?.address_name ?? address?.address?.address_name ?? '';
   } catch {
@@ -140,16 +145,10 @@ const searchKakaoKeywordPlaces = async (
     params.set('sort', 'distance');
   }
 
-  const response = await fetchWithTimeout(`${KAKAO_LOCAL_BASE_URL}/search/keyword.json?${params}`, {
-    headers: kakaoHeaders,
-  });
-
-  if (!response.ok) {
-    return [];
-  }
-
-  const data = await response.json() as KakaoKeywordSearchResponse;
-  const items = data.documents?.flatMap<KakaoLocalSearchItem>((document) => {
+  const data = await fetchKakaoJson<KakaoKeywordSearchResponse>(
+    `${KAKAO_LOCAL_BASE_URL}/search/keyword.json?${params}`, options?.signal,
+  );
+  const items = data?.documents?.flatMap<KakaoLocalSearchItem>((document) => {
     const lng = parseCoordinate(document.x);
     const lat = parseCoordinate(document.y);
 
@@ -189,22 +188,16 @@ const shouldRetryKeywordSearchWithoutCenter = (
   && options.centerLng !== undefined
 );
 
-const searchKakaoAddresses = async (query: string) => {
+const searchKakaoAddresses = async (query: string, signal?: AbortSignal) => {
   const params = new URLSearchParams({
     query,
     size: '10',
   });
 
-  const response = await fetchWithTimeout(`${KAKAO_LOCAL_BASE_URL}/search/address.json?${params}`, {
-    headers: kakaoHeaders,
-  });
-
-  if (!response.ok) {
-    return [];
-  }
-
-  const data = await response.json() as KakaoAddressSearchResponse;
-  const items = data.documents?.flatMap<KakaoLocalSearchItem>((document, index) => {
+  const data = await fetchKakaoJson<KakaoAddressSearchResponse>(
+    `${KAKAO_LOCAL_BASE_URL}/search/address.json?${params}`, signal,
+  );
+  const items = data?.documents?.flatMap<KakaoLocalSearchItem>((document, index) => {
     const lng = parseCoordinate(document.x);
     const lat = parseCoordinate(document.y);
 
@@ -247,14 +240,16 @@ export const searchKakaoLocalPlaces = async (
   try {
     const [nearbyKeywordResults, addressResults] = await Promise.all([
       searchKakaoKeywordPlaces(trimmedQuery, options),
-      searchKakaoAddresses(trimmedQuery),
+      searchKakaoAddresses(trimmedQuery, options?.signal),
     ]);
+    if (options?.signal?.aborted) return [];
     const fallbackKeywordResults = shouldRetryKeywordSearchWithoutCenter(
       nearbyKeywordResults,
       options
     )
-      ? await searchKakaoKeywordPlaces(trimmedQuery)
+      ? await searchKakaoKeywordPlaces(trimmedQuery, { signal: options?.signal })
       : [];
+    if (options?.signal?.aborted) return [];
     const mergedResults = uniqueByCoordinateAndName([
       ...nearbyKeywordResults,
       ...fallbackKeywordResults,
