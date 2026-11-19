@@ -1,3 +1,5 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../shared/translation/TranslationAttributionGroup';
+import TranslatedPlaceName from '../../../../shared/translation/TranslatedPlaceName';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
@@ -42,7 +44,7 @@ export default function MapDiscoverySearch({
   const theme = useTheme();
 
   return (
-    <Panel>
+    <TranslationAttributionGroup><Panel>
       <SearchRow>
         <SearchInput
           accessibilityLabel={t('map.search.accessibilityLabel')}
@@ -85,6 +87,8 @@ export default function MapDiscoverySearch({
       </FilterScroll>
 
       {results.length > 0 ? (
+        <>
+        <TranslationAttributionNotice />
         <Results testID="v2-map-search-results">
           {results.slice(0, 6).map((place) => (
             <ResultRow
@@ -93,7 +97,7 @@ export default function MapDiscoverySearch({
               onPress={() => onSelectPlace(place)}
             >
               <ResultText>
-                <ResultName>{place.name}</ResultName>
+                <TranslatedPlaceName name={place.name}>{(name, actions) => <ResultName {...actions}>{name}</ResultName>}</TranslatedPlaceName>
                 <ResultAddress numberOfLines={1}>{place.address}</ResultAddress>
               </ResultText>
               {place.distanceMeters !== null ? (
@@ -104,8 +108,9 @@ export default function MapDiscoverySearch({
             </ResultRow>
           ))}
         </Results>
+        </>
       ) : null}
-    </Panel>
+    </Panel></TranslationAttributionGroup>
   );
 }
 

@@ -1,3 +1,4 @@
+import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../../shared/translation/TranslationAttributionGroup';
 import { SheetMotionView, clampSheetValue, useSheetMotionStyle } from '../hooks/useSheetMotionStyle';
 import { useSheetScrollHandoff } from '../hooks/useSheetScrollHandoff';
 import { useContentDeletion } from '../../../../../shared/components/useContentDeletion';
@@ -7,6 +8,9 @@ import OwnerContentActions from '../../../../../shared/components/OwnerContentAc
 import TranslationAttribution, { useTranslationAttribution } from '../../../translation/TranslationAttribution';
 import { liquidGlass } from '../../../../../shared/theme/liquidGlass';
 import PlaceNameTranslation from '../../../translation/PlaceNameTranslation';
+import TranslatedPlaceName from '../../../../../shared/translation/TranslatedPlaceName';
+import { useContentTranslation } from '../../../../../shared/translation/useContentTranslation';
+import ContentTranslationActions from '../../../../../shared/translation/ContentTranslationActions';
 import Skeleton, { SkeletonGroup, SkeletonBlock } from '../../../../../shared/components/Skeleton';
 import DetailBackAsset from '../../../../../../assets/v2/icons/place/detail-back.svg';
 import DetailBookmarkAsset from '../../../../../../assets/v2/icons/place/detail-bookmark.svg';
@@ -221,7 +225,7 @@ const ResultRow = ({
   <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && styles.pressed]}>
     <View style={styles.resultThumbnail}><UnavailableStateIcon size={40} /></View>
     <View style={styles.resultTextBody}>
-      <AppText numberOfLines={1} style={styles.resultName}>{place.name}</AppText>
+      <TranslatedPlaceName name={place.name}>{(name, actions) => <AppText {...actions} numberOfLines={1} style={styles.resultName}>{name}</AppText>}</TranslatedPlaceName>
       <AppText numberOfLines={1} style={styles.resultAddress}>{place.address}</AppText>
     </View>
     <AppText style={styles.resultDistance}>{formatDistance(place, i18n.language)}</AppText>
@@ -694,6 +698,7 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
 }) => {
   const { t } = useTranslation();
   const styles = useMapSheetStyles();
+  const translation = useContentTranslation(`place-review:${review.placeId}:${review.reviewId ?? review.createdAt}`, [review.text]);
 
   const deletion = useDeletePlaceReview(review.placeId, review.reviewId);
   const deleteAction = useContentDeletion(() => deletion.mutateAsync(), undefined, `${review.placeId}:${review.reviewId}`);
@@ -708,12 +713,14 @@ const DetailReviewItem = ({ onOpenImages, placeName, review, variant }: {
         {review.isOwnReview ? <OwnerContentActions busy={deleteAction.busy} onDelete={review.placeId && review.reviewId ? deleteAction.confirm : undefined} key={`${placeName}-${review.reviewId ?? review.createdAt}-${review.text}`} onEdit={review.onEdit} /> : null}
       </View>
       <AppText
+        {...translation.textActions}
         ellipsizeMode="tail"
         numberOfLines={variant === 'summary' ? 2 : undefined}
         style={styles.detailReviewText}
       >
-        {review.text}
+        {translation.texts[0]}
       </AppText>
+      <ContentTranslationActions translation={translation} />
       {review.imageUrls?.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.detailReviewImageStrip} contentContainerStyle={styles.detailReviewImageGrid}>
           {review.imageUrls.map((url, photoIndex) => (
@@ -890,6 +897,7 @@ const ExpandedPlaceContent = ({
         </Pressable>
       </View>
 
+    <TranslationAttributionNotice />
     <View {...scrollHandoff.panHandlers} style={styles.sheetContent} testID="map-expanded-place-drag">
     <GlassStyles.ExpandedPlaceScroll
       bounces={false}
@@ -1376,7 +1384,7 @@ export default function MapBottomSheet({
     };
   }, { opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] });
   return (
-    <GlassStyles.BottomSheetContainer
+    <TranslationAttributionGroup><GlassStyles.BottomSheetContainer
       style={{ height, transform: parentOwnsMotion ? undefined : [{ translateY: sheetTranslateY }] }}
     >
       <MapSheetSurface sheetChromeBottom={sheetChromeBottom} expandedTranslateY={expandedTranslateY} mediumTranslateY={mediumTranslateY} opaque={isExpandedPlaceDetail} expandsToFullScreen={content.type === 'place-preview'} contentInset={content.type === 'place-preview' || content.type === 'external-place' ? 0 : 8} testID="map-sheet">
@@ -1408,6 +1416,7 @@ export default function MapBottomSheet({
         testID="map-sheet-content"
       >
       {/* Keep loaded place data available when an offline refresh fails. */}
+      {!isExpandedPlaceDetail && content.type !== 'home' ? <TranslationAttributionNotice /> : null}
       {content.type === 'place-preview' && detailError && !selectedPlace ? <ApiErrorState error={detailError} busy={detailBusy} onRetry={onRetryDetail} onBack={onBackHome} /> : null}
       {content.type === 'place-preview' && !selectedPlace ? (detailError ? null : <LoadingState variant="place" description={t('placeDetail.loading')} />) : content.type === 'place-preview' && selectedPlace ? (
         snapPoint === 'expanded' ? (
@@ -1574,6 +1583,6 @@ export default function MapBottomSheet({
         placeName={photoViewer?.placeName ?? ''}
         visible={photoViewer !== null}
       />
-    </GlassStyles.BottomSheetContainer>
+    </GlassStyles.BottomSheetContainer></TranslationAttributionGroup>
   );
 }

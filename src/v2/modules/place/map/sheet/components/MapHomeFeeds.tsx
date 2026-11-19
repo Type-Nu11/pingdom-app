@@ -1,3 +1,4 @@
+import { TranslationAttributionNotice } from '../../../../../shared/translation/TranslationAttributionGroup';
 import { SheetMotionView, clampSheetValue, useExpandedSheetOpacity, useSheetMotion, useSheetMotionStyle } from '../hooks/useSheetMotionStyle';
 import { useMapSheetScrollToTop } from '../hooks/useMapSheetScrollToTop';
 import Skeleton from '../../../../../shared/components/Skeleton';
@@ -346,6 +347,7 @@ export const ExpandedHomeContent = ({
     <View {...feedPanHandlers} style={styles.expandedScroll} testID="map-feed-swipe">
     {/* Keep the sheet grip outside the native vertical scroll responder. */}
     <FeedSegment sheetPanHandlers={sheetPanHandlers} expanded={expandedInteractionsEnabled} feed={feed} onChange={onFeedChange} onTouchStart={blockHorizontalSwipe} />
+    <TranslationAttributionNotice />
     <ScrollView
       contentContainerStyle={styles.expandedContent}
       nestedScrollEnabled

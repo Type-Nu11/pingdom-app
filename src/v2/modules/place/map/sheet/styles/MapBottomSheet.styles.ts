@@ -196,7 +196,7 @@ const createStyles = (
     gap: 16,
     paddingBottom: 18,
     paddingHorizontal: 16,
-    paddingTop: 29,
+    paddingTop: 4,
   },
   expandedScroll: { flex: 1 },
   expandedTitle: {

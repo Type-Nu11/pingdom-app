@@ -307,3 +307,58 @@ test('installation ID is enforced across verbs and transport fallback without ac
     assert.equal(call.options.headers['x-device-id'], undefined);
   }
 });
+
+test('PUT fallback does not send a second request if canceled during authorization', async (t) => {
+  const caller = new AbortController();
+  let authorizeFallback;
+  let enteredFallback;
+  const fallbackStarted = new Promise(resolve => { enteredFallback = resolve; });
+  let tokenReads = 0;
+  const resetToken = configureApiAccessTokenProvider(() => {
+    if (++tokenReads === 1) return 'first-token';
+    return new Promise(resolve => {
+      authorizeFallback = resolve;
+      enteredFallback();
+    });
+  });
+  t.after(resetToken);
+  const { transport } = recordingTransport();
+  const put = t.mock.method(transport, 'put', async () => {
+    throw new axios.AxiosError('Network Error', 'ERR_NETWORK');
+  });
+  const fetch = t.mock.method(globalThis, 'fetch', async () => new Response('{}'));
+  const pending = createApiClient(transport).put('/users/me', {}, { signal: caller.signal });
+  await fallbackStarted;
+  caller.abort();
+  authorizeFallback('next-token');
+
+  await assert.rejects(pending, { code: 'ERR_CANCELED' });
+  assert.equal(put.mock.callCount(), 1);
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('PUT fallback forwards abort through body reading and removes the listener', async (t) => {
+  const caller = new AbortController();
+  const add = t.mock.method(caller.signal, 'addEventListener');
+  const remove = t.mock.method(caller.signal, 'removeEventListener');
+  let startBody;
+  const reading = new Promise(resolve => { startBody = resolve; });
+  const { transport } = recordingTransport({
+    put: async () => { throw new axios.AxiosError('Network Error', 'ERR_NETWORK'); },
+  });
+  t.mock.method(globalThis, 'fetch', async (_url, { signal }) => ({
+    ok: true,
+    text: () => new Promise((_, reject) => {
+      signal.addEventListener('abort', () => reject(new Error('body aborted')), { once: true });
+      startBody();
+    }),
+  }));
+  const pending = createApiClient(transport).put('/users/me', {}, { signal: caller.signal });
+  await reading;
+  caller.abort();
+
+  await assert.rejects(pending, { code: 'ERR_CANCELED' });
+  assert.equal(add.mock.callCount(), 1);
+  assert.equal(remove.mock.callCount(), 1);
+  assert.equal(remove.mock.calls[0].arguments[1], add.mock.calls[0].arguments[1]);
+});

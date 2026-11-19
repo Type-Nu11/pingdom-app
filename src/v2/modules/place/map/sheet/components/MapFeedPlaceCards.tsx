@@ -1,3 +1,4 @@
+import TranslatedPlaceName from '../../../../../shared/translation/TranslatedPlaceName';
 import { UnavailableStateIcon } from '../../../../../shared/components';
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useRef, useState } from 'react';
@@ -319,9 +320,9 @@ export const RecommendationFeaturedCard = ({
           style={styles.cardBookmarkStar}
         />
         <View style={styles.placeCardBody}>
-          <AppText ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, isFigmaCard && styles.reservationPlaceCardName]}>
-            {place.name || t('map.sheet.placeMissing')}
-          </AppText>
+          <TranslatedPlaceName name={place.name}>{(name, actions) => <AppText {...actions} ellipsizeMode="tail" numberOfLines={2} style={[styles.placeCardName, isFigmaCard && styles.reservationPlaceCardName]}>
+            {name || t('map.sheet.placeMissing')}
+          </AppText>}</TranslatedPlaceName>
         </View>
       </View>
       {place.recommendationReason && isRecommendation ? (
@@ -376,9 +377,9 @@ export const RecommendationGridCard = ({
         style={styles.gridBookmarkStar}
       />
       <View style={styles.gridCardBody}>
-        <AppText ellipsizeMode="tail" numberOfLines={2} style={styles.gridCardName}>
-          {place.name || t('map.sheet.placeMissing')}
-        </AppText>
+        <TranslatedPlaceName name={place.name}>{(name, actions) => <AppText {...actions} ellipsizeMode="tail" numberOfLines={2} style={styles.gridCardName}>
+          {name || t('map.sheet.placeMissing')}
+        </AppText>}</TranslatedPlaceName>
         <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.gridCardDistance}>{place.address}</AppText>
       </View>
     </RecommendationCardPressable>
@@ -427,9 +428,9 @@ export const PlaceTrendCard = ({
       <BookmarkStar onPhoto selected={bookmarked} />
     </Pressable>
     <View style={styles.homeTrendCardBody}>
-      <AppText numberOfLines={1} style={styles.homeTrendCardName}>
-        {place.name || t('map.sheet.placeMissing')}
-      </AppText>
+      <TranslatedPlaceName name={place.name}>{(name, actions) => <AppText {...actions} numberOfLines={1} style={styles.homeTrendCardName}>
+        {name || t('map.sheet.placeMissing')}
+      </AppText>}</TranslatedPlaceName>
       <AppText numberOfLines={1} style={styles.homeTrendCardDistance}>
         {place.address}
       </AppText>
@@ -488,7 +489,7 @@ export const ExpandedPlaceCard = ({
       <BookmarkStar onPhoto selected={bookmarked} />
     </Pressable>
     <View style={styles.homeGridCardBody}>
-      <AppText ellipsizeMode="tail" numberOfLines={2} style={styles.homeGridCardName}>{place.name}</AppText>
+      <TranslatedPlaceName name={place.name}>{(name, actions) => <AppText {...actions} ellipsizeMode="tail" numberOfLines={2} style={styles.homeGridCardName}>{name}</AppText>}</TranslatedPlaceName>
       <AppText ellipsizeMode="tail" numberOfLines={1} style={styles.homeGridCardDistance}>{place.address}</AppText>
     </View>
   </Pressable>
