@@ -2045,6 +2045,24 @@ function reviewHighlightsSheet(fallback: MapPreviewFallbackContent) {
     sheetChromeBottom={new Animated.Value(0)} sheetTranslateY={new Animated.Value(0)} snapPoint="expanded" />;
 }
 
+test('리뷰 사진 모음에서 누른 사진을 전체 사진 순서로 연다', async () => {
+  const { user } = await renderWithProviders(reviewHighlightsSheet({
+    amenities: [],
+    imageUrls: [],
+    statusDescription: '',
+    statusEmphasis: '',
+    reviewState: 'ready',
+    reviews: [
+      { author: '첫 번째 리뷰', createdAt: '2026-10-22', text: '첫 사진', reasons: [], imageUrls: ['https://example.com/first.jpg'] },
+      { author: '두 번째 리뷰', createdAt: '2026-10-23', text: '두 번째 사진', reasons: [], imageUrls: ['https://example.com/second.jpg'] },
+    ],
+  }));
+
+  await user.press(screen.getByText('리뷰', { exact: true }));
+  await user.press(screen.getByRole('button', { name: `${places[0].name} 사진 2 상세 보기` }));
+  expect(screen.getByLabelText(`${places[0].name} 사진 2장 중 2번째`)).toBeVisible();
+});
+
 test('장소 카드 번역 표시는 목록에 한 번만 나오고 원래 장소 ID로 열린다', async () => {
   const previous = NativeModules.MLKitTranslation;
   NativeModules.MLKitTranslation = {
