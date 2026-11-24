@@ -5,6 +5,8 @@ import { useTheme } from 'styled-components/native';
 import type { AppTheme } from '../../../../../shared/theme';
 
 export const HOME_SHEET_HANDLE_HEIGHT = 19;
+export const REVIEW_PHOTO_SIZE = 164;
+export const REVIEW_PHOTO_GAP = 16;
 
 const absoluteFill = { bottom: 0, left: 0, position: 'absolute' as const, right: 0, top: 0 };
 
@@ -114,8 +116,8 @@ const createStyles = (
   detailReviewImageStrip: { borderRadius: 16, marginTop: 8, overflow: 'hidden' },
   detailReviewImageGrid: { flexDirection: 'row', gap: 2 },
   detailReviewMeta: { color: colors.textSecondary, fontSize: 14, lineHeight: 18, marginTop: 1 },
-  detailReviewPhoto: { borderRadius: 16, height: 164, overflow: 'hidden', width: 164 },
-  detailReviewPhotos: { columnGap: 16, paddingTop: 16 },
+  detailReviewPhoto: { borderRadius: 16, height: REVIEW_PHOTO_SIZE, overflow: 'hidden', width: REVIEW_PHOTO_SIZE },
+  detailReviewPhotos: { columnGap: REVIEW_PHOTO_GAP, paddingTop: 16 },
   detailReviewSection: { borderBottomColor: colors.surfaceMuted, borderBottomWidth: 8, paddingVertical: 16, paddingHorizontal: 24 },
   detailReviewTags: { paddingTop: 8 },
   detailReviewMore: {

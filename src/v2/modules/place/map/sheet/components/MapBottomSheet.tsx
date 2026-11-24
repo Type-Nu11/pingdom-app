@@ -36,7 +36,7 @@ import { ApiErrorState, LoadingState, ReviewFeatureTags, UnavailableStateIcon } 
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Animated, FlatList, GestureResponderHandlers, Image, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Animated, FlatList, GestureResponderHandlers, Image, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GroupAsset from '../../../../../../assets/v2/icons/place/Group.svg';
@@ -60,6 +60,7 @@ import { BookmarkStar, formatDistance } from './MapFeedPlaceCards';
 import { EmptyCard, ExpandedHomeContent, RecommendationContent } from './MapHomeFeeds';
 import type { BottomSheetContent, DecisionPlace, MapPreviewFallbackContent, VisitFilter } from './mapSheetTypes';
 import { HOME_SHEET_HANDLE_HEIGHT, useMapSheetStyles } from '../styles/MapBottomSheet.styles';
+import IosReviewPhotoGallery from './IosReviewPhotoGallery';
 
 export { ExpandedPlaceCard, getMapGridCardSize, RecommendationFeaturedCard } from './MapFeedPlaceCards';
 export type { BottomSheetContent, DecisionPlace, MapPreviewFallbackContent, VisitFilter } from './mapSheetTypes';
@@ -857,6 +858,19 @@ const ExpandedPlaceContent = ({
   const insets = useSafeAreaInsets();
   const reviewImageUrls = (fallbackContent?.reviews ?? [])
     .flatMap((review) => review.imageUrls ?? []);
+  const renderReviewPhoto = (url: string, index: number) => (
+    <Pressable
+      accessibilityLabel={t('map.detail.imageDetail', {
+        count: index + 1,
+        name: place.name,
+      })}
+      accessibilityRole="button"
+      onPress={onOpenImages ? () => onOpenImages(reviewImageUrls, index) : undefined}
+      style={styles.detailReviewPhoto}
+    >
+      <PreviewArtwork imageUrl={url} />
+    </Pressable>
+  );
   const detailAddress = selectPlaceDetailAddress(place.address, fallbackContent);
   const verificationSummary = typeof fallbackContent?.reviewParticipantCount === 'number'
     ? [t('map.detail.verifiedCount', { count: fallbackContent.reviewParticipantCount }),
@@ -1181,29 +1195,21 @@ const ExpandedPlaceContent = ({
           {reviewImageUrls.length ? (
             <View style={styles.detailReviewSection}>
               <AppText style={styles.detailSectionTitle}>{t('map.detail.photoReviews')}</AppText>
-              <FlatList
-                contentContainerStyle={styles.detailReviewPhotos}
-                data={reviewImageUrls}
-                horizontal
-                initialNumToRender={6}
-                keyExtractor={(url, index) => `${url ?? 'missing'}-review-${index}`}
-                maxToRenderPerBatch={6}
-                renderItem={({ item: url, index }) => (
-                  <Pressable
-                    accessibilityLabel={t('map.detail.imageDetail', {
-                      count: index + 1,
-                      name: place.name,
-                    })}
-                    accessibilityRole="button"
-                    onPress={onOpenImages ? () => onOpenImages(reviewImageUrls, index) : undefined}
-                    style={styles.detailReviewPhoto}
-                  >
-                    <PreviewArtwork imageUrl={url} />
-                  </Pressable>
-                )}
-                showsHorizontalScrollIndicator={false}
-                windowSize={3}
-              />
+              {Platform.OS === 'ios' ? (
+                <IosReviewPhotoGallery key={place.id} urls={reviewImageUrls} renderPhoto={renderReviewPhoto} />
+              ) : (
+                <FlatList
+                  contentContainerStyle={styles.detailReviewPhotos}
+                  data={reviewImageUrls}
+                  horizontal
+                  initialNumToRender={6}
+                  keyExtractor={(url, index) => `${url ?? 'missing'}-review-${index}`}
+                  maxToRenderPerBatch={6}
+                  renderItem={({ item: url, index }) => renderReviewPhoto(url, index)}
+                  showsHorizontalScrollIndicator={false}
+                  windowSize={3}
+                />
+              )}
             </View>
           ) : null}
 
