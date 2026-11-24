@@ -36,7 +36,7 @@ import { ApiErrorState, LoadingState, ReviewFeatureTags, UnavailableStateIcon } 
 import { Text as AppText } from '../../../../../shared/components/Typography';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Animated, GestureResponderHandlers, Image, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Animated, FlatList, GestureResponderHandlers, Image, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GroupAsset from '../../../../../../assets/v2/icons/place/Group.svg';
@@ -1181,24 +1181,29 @@ const ExpandedPlaceContent = ({
           {reviewImageUrls.length ? (
             <View style={styles.detailReviewSection}>
               <AppText style={styles.detailSectionTitle}>{t('map.detail.photoReviews')}</AppText>
-              <ScrollView contentContainerStyle={styles.detailReviewPhotos} horizontal showsHorizontalScrollIndicator={false}>
-              {reviewImageUrls.map((url, index) => (
-                <Pressable
-                  accessibilityLabel={t('map.detail.imageDetail', {
-                    count: index + 1,
-                    name: place.name,
-                  })}
-                  accessibilityRole="button"
-                  key={`${url ?? 'missing'}-review-${index}`}
-                  onPress={onOpenImages
-                    ? () => onOpenImages(reviewImageUrls, index)
-                    : undefined}
-                  style={styles.detailReviewPhoto}
-                >
-                  <PreviewArtwork imageUrl={url} />
-                </Pressable>
-              ))}
-              </ScrollView>
+              <FlatList
+                contentContainerStyle={styles.detailReviewPhotos}
+                data={reviewImageUrls}
+                horizontal
+                initialNumToRender={6}
+                keyExtractor={(url, index) => `${url ?? 'missing'}-review-${index}`}
+                maxToRenderPerBatch={6}
+                renderItem={({ item: url, index }) => (
+                  <Pressable
+                    accessibilityLabel={t('map.detail.imageDetail', {
+                      count: index + 1,
+                      name: place.name,
+                    })}
+                    accessibilityRole="button"
+                    onPress={onOpenImages ? () => onOpenImages(reviewImageUrls, index) : undefined}
+                    style={styles.detailReviewPhoto}
+                  >
+                    <PreviewArtwork imageUrl={url} />
+                  </Pressable>
+                )}
+                showsHorizontalScrollIndicator={false}
+                windowSize={3}
+              />
             </View>
           ) : null}
 
