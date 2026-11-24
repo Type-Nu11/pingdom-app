@@ -170,3 +170,5 @@ export function createCommunityApi(client: ApiClient = apiClient) {
 }
 
 export const communityApi = createCommunityApi();
+
+export type CommunityApi = typeof communityApi;
