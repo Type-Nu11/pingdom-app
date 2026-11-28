@@ -15,7 +15,7 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-test('카카오 로컬 API 요청에는 핑덤 전용 X-Client-Type 헤더를 보내지 않는다', async () => {
+test('카카오 로컬 API 요청에는 핑덤 전용 Client-Type 헤더를 보내지 않는다', async () => {
   const fetchMock = jest.fn(async () => new Response(
     JSON.stringify({ documents: [] }),
     { status: 200, headers: { 'Content-Type': 'application/json' } },
@@ -31,7 +31,7 @@ test('카카오 로컬 API 요청에는 핑덤 전용 X-Client-Type 헤더를 �
     expect(url).toMatch(/^https:\/\/dapi\.kakao\.com\//);
     const headers = new Headers(init?.headers);
     expect(headers.has('authorization')).toBe(true);
-    expect(headers.has('x-client-type')).toBe(false);
+    expect(headers.has('client-type')).toBe(false);
   }
 });
 

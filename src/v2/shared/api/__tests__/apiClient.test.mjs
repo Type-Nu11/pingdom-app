@@ -25,7 +25,7 @@ test('shared client unwraps responses and forwards bodies and abort signals unch
   assert.equal(await client.post('/conversion-events/batch', body, { signal }), responseBody);
   assert.deepEqual(calls, [{
     body,
-    options: { headers: { 'X-Client-Type': 'App', 'X-App-Version': '1.0.0', 'X-Timestamp': calls[0].options.headers['X-Timestamp'] }, signal },
+    options: { headers: { 'Client-Type': 'app', 'X-App-Version': '1.0.0', 'X-Timestamp': calls[0].options.headers['X-Timestamp'] }, signal },
     path: '/conversion-events/batch',
   }]);
 });
@@ -50,7 +50,7 @@ test('shared client preserves request content type for multipart bodies', async 
   assert.equal(calls[0].body, body);
   assert.deepEqual(calls[0].options.headers, {
     'Content-Type': 'multipart/form-data',
-    'X-Client-Type': 'App', 'X-App-Version': '1.0.0',
+    'Client-Type': 'app', 'X-App-Version': '1.0.0',
     'X-Timestamp': calls[0].options.headers['X-Timestamp'],
   });
 });
@@ -131,5 +131,5 @@ test('GET preserves the declared route for places and all other endpoints', asyn
   assert.deepEqual(calls.map(call => call.path), ['/places', '/reservations', '/coupons', '/location-check-ins', '/places/', '/places/trends', '/places/map', '/places/70095', '/places?keyword=test', '/users/me']);
   assert.ok(calls.every(call => call.options.params === options.params
     && call.options.signal === options.signal
-    && call.options.headers['X-Client-Type'] === 'App'));
+    && call.options.headers['Client-Type'] === 'app'));
 });
