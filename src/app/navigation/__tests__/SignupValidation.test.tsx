@@ -1,10 +1,10 @@
 import React from 'react';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../../v2/app/testing/testProviders';
-import SignUpDetailsScreen from '../../../features/auth/screens/signup/SignUpDetailsScreen';
+import { SignupRoute } from '../AuthFormRoutes';
 
 test.each(['abc', 'a'.repeat(51)])('signup explains invalid username length before the password step: %s', async (username) => {
-  const { i18n, user } = await renderWithProviders(<SignUpDetailsScreen />, { language: 'ko' });
+  const { i18n, user } = await renderWithProviders(<SignupRoute />, { language: 'ko' });
   await fireEvent.changeText(screen.getByPlaceholderText(i18n.t('auth.signup.usernamePlaceholder')), username);
   await fireEvent.changeText(screen.getByPlaceholderText(i18n.t('auth.signup.emailPlaceholder')), 'user@example.com');
   expect(screen.getByText('아이디는 4자 이상 50자 이하여야 합니다.')).toBeVisible();
@@ -14,7 +14,7 @@ test.each(['abc', 'a'.repeat(51)])('signup explains invalid username length befo
 });
 
 test.each(['abcd', 'a'.repeat(50)])('signup accepts the username length boundary: %s', async (username) => {
-  const { i18n, user } = await renderWithProviders(<SignUpDetailsScreen />, { language: 'ko' });
+  const { i18n, user } = await renderWithProviders(<SignupRoute />, { language: 'ko' });
   await fireEvent.changeText(screen.getByPlaceholderText(i18n.t('auth.signup.usernamePlaceholder')), username);
   await fireEvent.changeText(screen.getByPlaceholderText(i18n.t('auth.signup.emailPlaceholder')), 'user@example.com');
   await user.press(screen.getByText(i18n.t('auth.signup.next')));
@@ -22,7 +22,7 @@ test.each(['abcd', 'a'.repeat(50)])('signup accepts the username length boundary
 });
 
 test('password confirmation can be shown and hidden independently without changing either value', async () => {
-  const { i18n, user } = await renderWithProviders(<SignUpDetailsScreen />, { language: 'ko' });
+  const { i18n, user } = await renderWithProviders(<SignupRoute />, { language: 'ko' });
   await fireEvent.changeText(screen.getByPlaceholderText(i18n.t('auth.signup.usernamePlaceholder')), 'testuser');
   await fireEvent.changeText(screen.getByPlaceholderText(i18n.t('auth.signup.emailPlaceholder')), 'user@example.com');
   await user.press(screen.getByText(i18n.t('auth.signup.next')));

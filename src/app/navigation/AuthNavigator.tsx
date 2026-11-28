@@ -1,7 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { LoginFormScreen } from '../../features/auth/screens/login';
-import SignUpDetailsScreen from '../../features/auth/screens/signup/SignUpDetailsScreen';
+import { LoginRoute, SignupRoute } from './AuthFormRoutes';
 import type {
   OnboardingCompletion,
   SignupOnboardingContext,
@@ -85,7 +84,7 @@ const AuthNavigator = ({ completion, onComplete, returningUser = false }: AuthNa
       <Stack.Screen name={AUTH_ROUTES.Login}>
         {({ navigation }) => {
           return (
-            <LoginFormScreen
+            <LoginRoute
               onBack={() => goBackOrOpenOnboarding(navigation)}
               onSignup={() => navigation.navigate(AUTH_ROUTES.Signup)}
             />
@@ -95,7 +94,7 @@ const AuthNavigator = ({ completion, onComplete, returningUser = false }: AuthNa
       <Stack.Screen name={AUTH_ROUTES.Signup}>
         {({ navigation }) => {
           return (
-            <SignUpDetailsScreen
+            <SignupRoute
               onBack={() => goBackOrOpenOnboarding(navigation)}
               onboardingData={completion ? {
                 ...completion.signupContext,
