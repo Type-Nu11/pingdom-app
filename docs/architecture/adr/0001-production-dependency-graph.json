@@ -2272,6 +2272,7 @@
     {"source":"src/v2/modules/place/search/api/placeListApi.ts","target":"src/v2/modules/place/search/model/placeList.types.ts","typeOnly":true},
     {"source":"src/v2/modules/place/search/components/MapSearchOverlay.tsx","target":"src/v2/shared/translation/TranslationAttributionGroup.tsx","typeOnly":false},
     {"source":"src/v2/modules/place/search/components/MapSearchOverlay.tsx","target":"src/v2/shared/translation/TranslatedPlaceName.tsx","typeOnly":false},
+    {"source":"src/v2/modules/place/search/components/MapSearchOverlay.tsx","target":"src/assets/v2/icons/header/back-chevron.svg","typeOnly":false},
     {"source":"src/v2/modules/place/search/components/MapSearchOverlay.tsx","target":"src/v2/shared/components/Skeleton.tsx","typeOnly":false},
     {"source":"src/v2/modules/place/search/components/MapSearchOverlay.tsx","target":"src/v2/shared/components/Typography.tsx","typeOnly":false},
     {"source":"src/v2/modules/place/search/components/MapSearchOverlay.tsx","target":"src/assets/v2/icons/place/art_svg.svg","typeOnly":false},
