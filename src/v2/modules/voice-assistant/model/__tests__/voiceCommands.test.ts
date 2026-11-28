@@ -715,6 +715,17 @@ test('name or menu searches do not exclude untagged restaurants with inferred to
   expect(x.calls[0].params).not.toHaveProperty('touristCategory');
 });
 
+test.each([undefined, 'name'] as const)('place search accepts an unreported distance (%s)', async matchSource => {
+  const x = setup();
+  const place = { ...facts, id: 70095, name: '용짬뽕' };
+  x.setPlaces({ places: [{ ...place, distanceMeters: null }] });
+  x.setDetail(place);
+  await x.controller.start();
+  const result = await x.send(generalSearch({ keyword: place.name, ...(matchSource ? { matchSource } : {}) }));
+  expect(result).toMatchObject({ outcome: { status: 'succeeded', data: { places: [place] } } });
+  expect(result).not.toHaveProperty('outcome.data.places.0.distanceMeters');
+});
+
 test('a failed search route remains a request failure instead of implying a missing place', async () => {
   const x = setup();
   x.setFailure(new ApiError('route unavailable', { status: 404, code: 'RESOURCE_NOT_FOUND' }));

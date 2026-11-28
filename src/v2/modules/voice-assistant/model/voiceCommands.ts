@@ -144,7 +144,7 @@ async function searchDiscovery(request: Request<'searchNearbyPlaces'>, ex: Execu
         if (byName && (typeof candidate.name === 'string' || typeof candidate.englishName === 'string')
           && !findDiscoveryEvidence([candidate.name, candidate.englishName], terms)) continue;
         const distance = candidate.distanceMeters;
-        if (distance !== undefined && (typeof distance !== 'number' || !Number.isFinite(distance) || distance < 0)) return invalid();
+        if (distance != null && (typeof distance !== 'number' || !Number.isFinite(distance) || distance < 0)) return invalid();
         // Inspect direct evidence and related-word hits before an unfiltered nearby sample.
         const priority = findDiscoveryEvidence([candidate.name, candidate.englishName, candidate.touristSummary, candidate.category], terms)
           ? 0 : hasNearby && index === lists.length - 1 ? 2 : 1;
@@ -207,7 +207,7 @@ async function searchDiscovery(request: Request<'searchNearbyPlaces'>, ex: Execu
     ...(byName ? { scope: 'catalog_name' as const } : { radiusKm }), keywords, matchedBy: 'place_or_menu',
     candidateLimit: DISCOVERY_CANDIDATE_LIMIT, evidence: Object.freeze(matches.map(match => Object.freeze(match.evidence))) }),
     places: Object.freeze(matches.map(({ candidate, place }) => Object.freeze({ ...place,
-      ...(candidate.distanceMeters !== undefined ? { distanceMeters: candidate.distanceMeters } : {}) }))) });
+      ...(candidate.distanceMeters != null ? { distanceMeters: candidate.distanceMeters } : {}) }))) });
 }
 /** General discovery never reads availability, quotes, or reservation mutations. */
 const searchNearbyPlaces: VoiceCommandHandler<'searchNearbyPlaces'> = async (request, ex) => {
@@ -237,8 +237,8 @@ const searchNearbyPlaces: VoiceCommandHandler<'searchNearbyPlaces'> = async (req
       && candidate.touristCategories !== undefined && candidate.operatingStatus !== undefined;
     const place = projectVoicePlace(complete ? candidate : (await ex.query(ex.queries.detail(candidate.id))).data, candidate.id);
     const distance = candidate.distanceMeters;
-    if (distance !== undefined && (typeof distance !== 'number' || !Number.isFinite(distance) || distance < 0)) return invalid();
-    places.push(Object.freeze({ ...place, ...(distance !== undefined ? { distanceMeters: distance } : {}) }));
+    if (distance != null && (typeof distance !== 'number' || !Number.isFinite(distance) || distance < 0)) return invalid();
+    places.push(Object.freeze({ ...place, ...(distance != null ? { distanceMeters: distance } : {}) }));
   }
   const provenance = metadata(ex, places.map(p => p.id), { queryKey: list.queryKey, dataUpdatedAt: list.dataUpdatedAt });
   ex.commit.push(() => ex.provenance.recordPlaces(provenance));
