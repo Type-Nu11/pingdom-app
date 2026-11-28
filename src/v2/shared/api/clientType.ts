@@ -7,11 +7,11 @@ import appMetadata from '../config/appMetadata.json';
  * authentication factor: JWT handling is unchanged. Never attach it to
  * third-party services (exchange rates, Kakao, map SDKs).
  */
-export const CLIENT_TYPE_HEADER = 'X-Client-Type';
-export const CLIENT_TYPE_APP = 'App';
+export const CLIENT_TYPE_HEADER = 'Client-Type';
+export const CLIENT_TYPE_APP = 'app';
 
 /**
- * Returns a copy of `headers` with `X-Client-Type: App` enforced.
+ * Returns a copy of `headers` with `Client-Type: app` enforced.
  * Caller-provided variants of the header (any casing) are dropped so the value
  * cannot be overridden per request.
  */

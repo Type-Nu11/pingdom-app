@@ -209,7 +209,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
 // 모든 요청이 서버로 나가기 전에 실행
 // 1. 허용되지 않은 외부 도메인 차단
-// 2. X-Client-Type 헤더 고정 (호출자 헤더가 덮어쓰지 못하게 매 요청마다 재설정)
+// 2. Client-Type 헤더 고정 (호출자 헤더가 덮어쓰지 못하게 매 요청마다 재설정)
 // 3. Authorization 헤더에 accessToken 주입
 api.interceptors.request.use(
     async (config) => {

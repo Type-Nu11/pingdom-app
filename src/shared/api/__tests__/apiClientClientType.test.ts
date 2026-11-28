@@ -54,11 +54,11 @@ test.each([
   ['put', () => api.put('/users/me', { a: 1 })],
   ['patch', () => api.patch('/users/me', { a: 1 })],
   ['delete', () => api.delete('/users/me')],
-])('%s 요청은 X-Client-Type: App과 기존 Authorization을 함께 보낸다', async (_method, send) => {
+])('%s 요청은 Client-Type: app과 기존 Authorization을 함께 보낸다', async (_method, send) => {
   await send();
 
   const [config] = sentConfigs();
-  expect(config.headers.get('X-Client-Type')).toBe('App');
+  expect(config.headers.get('Client-Type')).toBe('app');
   expect(config.headers.get('X-Timestamp')).toBe('1700000000');
   expect(config.headers.get('X-App-Version')).toBe('1.0.0');
   expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
@@ -74,31 +74,31 @@ test.each([
   '/auth/email/resend',
   '/auth/password-reset/confirm',
   '/auth/logout',
-])('인증 전 요청 %s도 X-Client-Type: App을 보내고 Authorization은 보내지 않는다', async path => {
+])('인증 전 요청 %s도 Client-Type: app을 보내고 Authorization은 보내지 않는다', async path => {
   await api.post(path, { username: 'example' });
 
   const [config] = sentConfigs();
-  expect(config.headers.get('X-Client-Type')).toBe('App');
+  expect(config.headers.get('Client-Type')).toBe('app');
   expect(config.headers.get('X-Timestamp')).toBe('1700000000');
   expect(config.headers.get('X-App-Version')).toBe('1.0.0');
   expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
   expect(config.headers.has('Authorization')).toBe(false);
 });
 
-test('호출자가 넘긴 헤더와 병합하되 X-Client-Type 값은 App으로 유지한다', async () => {
-  await api.get('/users/me', { headers: { 'X-Client-Type': 'Web', 'X-Trace': 'trace-1' } });
+test('호출자가 넘긴 헤더와 병합하되 Client-Type 값은 App으로 유지한다', async () => {
+  await api.get('/users/me', { headers: { 'Client-Type': 'Web', 'X-Trace': 'trace-1' } });
   await api.post('/users/me/profile-image', new FormData(), {
-    headers: { 'Content-Type': 'multipart/form-data', 'x-client-type': false as unknown as string },
+    headers: { 'Content-Type': 'multipart/form-data', 'client-type': false as unknown as string },
   });
 
   const [first, second] = sentConfigs();
-  expect(first.headers.get('X-Client-Type')).toBe('App');
+  expect(first.headers.get('Client-Type')).toBe('app');
   expect(first.headers.get('X-Trace')).toBe('trace-1');
-  expect(second.headers.get('X-Client-Type')).toBe('App');
+  expect(second.headers.get('Client-Type')).toBe('app');
   expect(String(second.headers.get('Content-Type'))).toContain('multipart/form-data');
 });
 
-test('401 → 토큰 갱신 → 원요청 재시도 모두 X-Client-Type: App을 보낸다', async () => {
+test('401 → 토큰 갱신 → 원요청 재시도 모두 Client-Type: app을 보낸다', async () => {
   jest.mocked(getCachedAccessToken).mockReturnValue('expired-access-token');
   mockAdapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
     if (config.url === '/auth/token/refresh') {
@@ -111,13 +111,13 @@ test('401 → 토큰 갱신 → 원요청 재시도 모두 X-Client-Type: App을
     return response(config, 200, { id: 1 });
   });
 
-  await expect(api.get('/users/me', { headers: { 'X-Client-Type': 'Web' } }))
+  await expect(api.get('/users/me', { headers: { 'Client-Type': 'Web' } }))
     .resolves.toMatchObject({ status: 200, data: { id: 1 } });
 
   const configs = sentConfigs();
   expect(configs.map(config => config.url)).toEqual(['/users/me', '/auth/token/refresh', '/users/me']);
   for (const config of configs) {
-    expect(config.headers.get('X-Client-Type')).toBe('App');
+    expect(config.headers.get('Client-Type')).toBe('app');
     expect(config.headers.get('X-Timestamp')).toBe('1700000000');
     expect(config.headers.get('X-App-Version')).toBe('1.0.0');
     expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
@@ -131,7 +131,7 @@ test('abort signal은 그대로 전달하고 취소된 요청은 갱신·재시�
   const controller = new AbortController();
   mockAdapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
     expect(config.signal).toBe(controller.signal);
-    expect(config.headers.get('X-Client-Type')).toBe('App');
+    expect(config.headers.get('Client-Type')).toBe('app');
     expect(config.headers.get('X-Timestamp')).toBe('1700000000');
     expect(config.headers.get('X-App-Version')).toBe('1.0.0');
     expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
@@ -144,7 +144,7 @@ test('abort signal은 그대로 전달하고 취소된 요청은 갱신·재시�
   expect(clearExpiredSession).not.toHaveBeenCalled();
 });
 
-test('외부 절대 URL은 차단되어 X-Client-Type이 전송되지 않는다', async () => {
+test('외부 절대 URL은 차단되어 Client-Type이 전송되지 않는다', async () => {
   await expect(api.get('https://api.frankfurter.dev/v2/rate/KRW/USD'))
     .rejects.toThrow('허용되지 않은 절대 URL 요청입니다.');
   await expect(api.get('https://dapi.kakao.com/v2/local/search/keyword.json'))
@@ -153,25 +153,25 @@ test('외부 절대 URL은 차단되어 X-Client-Type이 전송되지 않는다'
   expect(mockAdapter).not.toHaveBeenCalled();
 });
 
-test('운영 조합(V2 클라이언트 → 공용 api transport)에서도 X-Client-Type: App을 한 번만 보낸다', async () => {
+test('운영 조합(V2 클라이언트 → 공용 api transport)에서도 Client-Type: app을 한 번만 보낸다', async () => {
   const client = createApiClient(api);
   const form = new FormData();
   form.append('file', 'x');
 
-  await client.get('/users/me', { headers: { 'x-client-type': 'Web' } });
+  await client.get('/users/me', { headers: { 'client-type': 'Web' } });
   await client.post('/users/me/profile-image', form, {
-    headers: { 'Content-Type': 'multipart/form-data', 'X-Client-Type': 'Web' },
+    headers: { 'Content-Type': 'multipart/form-data', 'Client-Type': 'Web' },
   });
 
   const [getConfig, postConfig] = sentConfigs();
   for (const config of [getConfig, postConfig]) {
-    expect(config.headers.get('X-Client-Type')).toBe('App');
+    expect(config.headers.get('Client-Type')).toBe('app');
     expect(config.headers.get('X-Timestamp')).toBe('1700000000');
     expect(config.headers.get('X-App-Version')).toBe('1.0.0');
     expect(config.headers.get('X-Device-Id')).toBe('6f1a0f58-34b3-4f7a-81e0-9959c76283cb');
     expect(config.headers.get('Authorization')).toBe('Bearer access-token');
     const clientTypeKeys = Object.keys(config.headers.toJSON())
-      .filter(key => key.toLowerCase() === 'x-client-type');
+      .filter(key => key.toLowerCase() === 'client-type');
     expect(clientTypeKeys).toHaveLength(1);
   }
   expect(String(postConfig.headers.get('Content-Type'))).toContain('multipart/form-data');

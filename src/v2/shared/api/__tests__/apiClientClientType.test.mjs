@@ -46,18 +46,18 @@ function recordingTransport(overrides = {}) {
   return { calls, transport };
 }
 
-test('header constant is exactly X-Client-Type: App', () => {
-  assert.equal(CLIENT_TYPE_HEADER, 'X-Client-Type');
-  assert.equal(CLIENT_TYPE_APP, 'App');
+test('header constant is exactly Client-Type: app', () => {
+  assert.equal(CLIENT_TYPE_HEADER, 'Client-Type');
+  assert.equal(CLIENT_TYPE_APP, 'app');
   assert.deepEqual(
-    withClientTypeHeader({ Accept: 'application/json', 'x-client-type': 'Web' }),
-    { Accept: 'application/json', 'X-Client-Type': 'App' },
+    withClientTypeHeader({ Accept: 'application/json', 'client-type': 'Web' }),
+    { Accept: 'application/json', 'Client-Type': 'app' },
   );
-  assert.deepEqual(withClientTypeHeader(), { 'X-Client-Type': 'App' });
+  assert.deepEqual(withClientTypeHeader(), { 'Client-Type': 'app' });
 });
 
 for (const withToken of [true, false]) {
-  test(`GET/POST/PUT/PATCH/DELETE send X-Client-Type: App (${withToken ? 'authenticated' : 'anonymous'})`, async () => {
+  test(`GET/POST/PUT/PATCH/DELETE send Client-Type: app (${withToken ? 'authenticated' : 'anonymous'})`, async () => {
     const { calls, transport } = recordingTransport();
     const resetTransport = configureApiTransport(transport);
     const resetToken = configureApiAccessTokenProvider(() => (withToken ? 'access-token' : null));
@@ -73,7 +73,7 @@ for (const withToken of [true, false]) {
 
       assert.deepEqual(calls.map(({ method }) => method), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
       for (const call of calls) {
-        assert.equal(clientTypeOf(call.options.headers), 'App', call.method);
+        assert.equal(clientTypeOf(call.options.headers), 'app', call.method);
         assert.match(call.options.headers['X-Timestamp'], /^\d+$/);
         assert.equal(call.options.headers['X-App-Version'], '1.0.0');
         assert.equal(call.options.signal, signal, `${call.method} keeps abort signal`);
@@ -91,11 +91,11 @@ for (const withToken of [true, false]) {
   });
 }
 
-test('caller headers are merged but cannot override X-Client-Type', async () => {
+test('caller headers are merged but cannot override Client-Type', async () => {
   const { calls, transport } = recordingTransport();
   const resetToken = configureApiAccessTokenProvider(() => 'access-token');
   const client = createApiClient(transport);
-  const headers = { 'X-Client-Type': 'Web', 'x-client-type': 'Browser', 'X-Trace': 'trace-1' };
+  const headers = { 'Client-Type': 'Web', 'client-type': 'Browser', 'X-Trace': 'trace-1' };
 
   try {
     await client.get('/users/me', { headers });
@@ -105,13 +105,13 @@ test('caller headers are merged but cannot override X-Client-Type', async () => 
     await client.delete('/users/me', undefined, { headers });
 
     for (const call of calls) {
-      assert.equal(clientTypeOf(call.options.headers), 'App', call.method);
+      assert.equal(clientTypeOf(call.options.headers), 'app', call.method);
         assert.match(call.options.headers['X-Timestamp'], /^\d+$/);
         assert.equal(call.options.headers['X-App-Version'], '1.0.0');
       assert.equal(call.options.headers['X-Trace'], 'trace-1', call.method);
       assert.equal(call.options.headers.Authorization, 'Bearer access-token', call.method);
     }
-    assert.deepEqual(headers, { 'X-Client-Type': 'Web', 'x-client-type': 'Browser', 'X-Trace': 'trace-1' });
+    assert.deepEqual(headers, { 'Client-Type': 'Web', 'client-type': 'Browser', 'X-Trace': 'trace-1' });
   } finally {
     resetToken();
   }
@@ -124,14 +124,14 @@ test('multipart POST keeps client type alongside the multipart content type', as
   form.append('file', 'x');
 
   await client.post('/reviews/media', form, {
-    headers: { 'Content-Type': 'multipart/form-data', 'X-Client-Type': 'Web' },
+    headers: { 'Content-Type': 'multipart/form-data', 'Client-Type': 'Web' },
   });
 
-  assert.equal(clientTypeOf(calls[0].options.headers), 'App');
+  assert.equal(clientTypeOf(calls[0].options.headers), 'app');
   assert.equal(calls[0].options.headers['Content-Type'], 'multipart/form-data');
 });
 
-test('default axios transport sends X-Client-Type with existing timeout and credentials', async () => {
+test('default axios transport sends Client-Type with existing timeout and credentials', async () => {
   const seen = [];
   const resetToken = configureApiAccessTokenProvider(() => 'access-token');
   const client = createApiClient();
@@ -142,10 +142,10 @@ test('default axios transport sends X-Client-Type with existing timeout and cred
 
   try {
     assert.deepEqual(
-      await client.get('/users/me', { adapter, headers: { 'x-client-type': 'Web' } }),
+      await client.get('/users/me', { adapter, headers: { 'client-type': 'Web' } }),
       { ok: true },
     );
-    assert.equal(seen[0].headers.get('X-Client-Type'), 'App');
+    assert.equal(seen[0].headers.get('Client-Type'), 'app');
     assert.equal(seen[0].headers.get('Authorization'), 'Bearer access-token');
     assert.equal(seen[0].headers.get('Accept'), 'application/json');
     assert.equal(seen[0].timeout, 10_000);
@@ -155,7 +155,7 @@ test('default axios transport sends X-Client-Type with existing timeout and cred
   }
 });
 
-test('PUT fetch fallback sends X-Client-Type: App and keeps headers', async () => {
+test('PUT fetch fallback sends Client-Type: app and keeps headers', async () => {
   const originalFetch = globalThis.fetch;
   const fetchCalls = [];
   const { transport } = recordingTransport({
@@ -172,12 +172,12 @@ test('PUT fetch fallback sends X-Client-Type: App and keeps headers', async () =
 
   try {
     assert.deepEqual(
-      await client.put('/users/me/travel-purposes', { a: 1 }, { headers: { 'X-Client-Type': 'Web' } }),
+      await client.put('/users/me/travel-purposes', { a: 1 }, { headers: { 'Client-Type': 'Web' } }),
       { ok: true },
     );
     assert.equal(fetchCalls.length, 1);
     assert.equal(fetchCalls[0].url, 'http://127.0.0.1/api/v1/users/me/travel-purposes');
-    assert.equal(clientTypeOf(fetchCalls[0].options.headers), 'App');
+    assert.equal(clientTypeOf(fetchCalls[0].options.headers), 'app');
     assert.match(fetchCalls[0].options.headers['X-Timestamp'], /^\d+$/);
     assert.equal(fetchCalls[0].options.headers['X-App-Version'], '1.0.0');
     assert.equal(fetchCalls[0].options.headers.Authorization, 'Bearer access-token');
@@ -210,7 +210,7 @@ test('PUT fetch fallback keeps caller abort and timeout behavior', async (t) => 
   await new Promise((resolve) => setImmediate(resolve));
   caller.abort();
   await assert.rejects(aborted, (error) => error.code !== 'REQUEST_TIMEOUT');
-  assert.equal(clientTypeOf(fetchSignals[0].headers), 'App');
+  assert.equal(clientTypeOf(fetchSignals[0].headers), 'app');
 
   mock.timers.enable({ apis: ['setTimeout'] });
   t.after(() => mock.timers.reset());
@@ -218,7 +218,7 @@ test('PUT fetch fallback keeps caller abort and timeout behavior', async (t) => 
   await new Promise((resolve) => setImmediate(resolve));
   mock.timers.tick(10_000);
   await assert.rejects(timedOut, { code: 'REQUEST_TIMEOUT' });
-  assert.equal(clientTypeOf(fetchSignals[1].headers), 'App');
+  assert.equal(clientTypeOf(fetchSignals[1].headers), 'app');
 });
 
 test('non-network PUT failures do not fall back and keep ApiError mapping', async () => {
@@ -278,7 +278,7 @@ test('device Unix seconds are regenerated and stale timestamp casing is replaced
   const clock = mock.method(Date, 'now', () => 1700000000123);
   t.after(() => clock.mock.restore());
   const headers = { 'x-timestamp': 'old', 'X-Timestamp': 'older', 'X-Trace': 'trace' };
-  assert.deepEqual(withAppRequestHeaders(headers), { 'X-Trace': 'trace', 'X-Client-Type': 'App', 'X-Timestamp': '1700000000', 'X-App-Version': '1.0.0' });
+  assert.deepEqual(withAppRequestHeaders(headers), { 'X-Trace': 'trace', 'Client-Type': 'app', 'X-Timestamp': '1700000000', 'X-App-Version': '1.0.0' });
   const { calls, transport } = recordingTransport();
   const client = createApiClient(transport);
   await client.get('/users/me', { headers });

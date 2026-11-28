@@ -1,21 +1,21 @@
-# `X-Client-Type` 요청 헤더 (#410)
+# 앱 요청의 Client-Type 헤더
 
-앱이 핑덤 서버로 보내는 요청을 프록시가 웹 요청과 구분할 수 있도록 `X-Client-Type` 헤더를 붙인다.
-이 문서는 앱 측 구현 범위와, 프록시·서버 담당자와 **아직 합의가 필요한** 사항을 정리한다.
-아래 "확인 필요" 항목은 요청 사항이며 합의된 내용이 아니다.
+운영 Hover는 `Client-Type: app`을 읽어 앱 요청을 API로 라우팅한다. 이전 앱의 `X-Client-Type: App`만 보내면 웹 요청으로 분류된다.
+2026-11-28 운영 `POST /auth/login`에 빈 JSON 본문을 보냈을 때 이전 헤더는 HTML 405, 현재 헤더는 API의 JSON 400(`VALIDATION_FAILED`)을 반환했다.
+[배포된 Hover의 헤더 판정](https://github.com/Type-Nu11/Pingdom-ReverseProxy/blob/5e3769c92572fb73814e0e4edb3cc04ef633dc69/src/main.rs#L212-L229)과 [라우팅 규칙](https://github.com/Type-Nu11/Pingdom-ReverseProxy/blob/5e3769c92572fb73814e0e4edb3cc04ef633dc69/src/routes.rs)을 따른다.
 
 ## 앱 측 정의 (구현 완료)
 
 | 항목 | 값 |
 | --- | --- |
-| 헤더 이름 | `X-Client-Type` |
-| 앱 값 | `App` (대소문자 포함 정확히 이 값) |
+| 헤더 이름 | `Client-Type` |
+| 앱 값 | `app` (대소문자 포함 정확히 이 값) |
 | 정의 위치 | `src/v2/shared/api/clientType.ts` (`CLIENT_TYPE_HEADER`, `CLIENT_TYPE_APP`) — 유일한 정의 |
 | 용도 | 클라이언트 종류 식별. **인증 수단이 아니다.** |
 
 - JWT(`Authorization: Bearer …`) 정책, 공개 인증 경로의 Authorization 제거, 토큰 갱신 정책은 변경하지 않았다.
 - 헤더는 위조가 쉬우므로 서버·프록시는 이 값만으로 사용자나 신뢰 기기를 판단하면 안 된다.
-- 호출자가 요청별 헤더로 다른 값을 넘겨도 전송 직전에 `App`으로 고정된다.
+- 호출자가 요청별 헤더로 다른 값을 넘겨도 전송 직전에 `app`으로 고정된다.
 
 ## 헤더가 붙는 요청 경로
 
@@ -41,7 +41,7 @@
 공용 클라이언트는 외부 URL로 새지 않는다. V2 클라이언트는 상대 경로가 아니면 transport 호출 전에 거부하고,
 공용 axios `api`는 `API_BASE_URL`과 다른 origin의 절대 URL을 요청 인터셉터에서 차단한다.
 
-## 확인 필요 (프록시·서버 담당자)
+## 이전 X-Client-Type 도입 당시 확인 항목 (#410)
 
 1. **적용 경로**: 프록시가 헤더를 읽을 경로 범위(전체 `/api/v1/**`인지, 인증·갱신 경로 포함인지).
 2. **허용 값**: 앱은 `App`만 보낸다. 웹 값(예: `Web`)과 대소문자 처리 규칙을 프록시 측에서 확정해야 한다.
