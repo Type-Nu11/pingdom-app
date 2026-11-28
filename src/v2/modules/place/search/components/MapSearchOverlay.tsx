@@ -1,5 +1,6 @@
 import { TranslationAttributionGroup, TranslationAttributionNotice } from '../../../../shared/translation/TranslationAttributionGroup';
 import TranslatedPlaceName from '../../../../shared/translation/TranslatedPlaceName';
+import BackChevron from '../../../../../assets/v2/icons/header/back-chevron.svg';
 import Skeleton from '../../../../shared/components/Skeleton';
 import { Text as AppText, TextInput as AppTextInput } from '../../../../shared/components/Typography';
 import React, { useMemo, useRef } from 'react';
@@ -190,7 +191,7 @@ const MapSearchOverlay = ({
             style={styles.backButton}
             onPress={onClose}
           >
-            <AppText style={styles.backIcon}>‹</AppText>
+            <BackChevron width={44} height={44} color={colors.text} accessible={false} />
           </Pressable>
           <AppTextInput
             autoCapitalize="none"
@@ -319,13 +320,7 @@ const createStyles = (colors: AppTheme['colors']): Record<string, object> => ({
     alignItems: 'center',
     height: 44,
     justifyContent: 'center',
-    width: 26,
-  },
-  backIcon: {
-    color: colors.textMuted,
-    fontSize: 36,
-    fontWeight: '300',
-    lineHeight: 40,
+    width: 44,
   },
   categoryChip: {
     alignItems: 'center',

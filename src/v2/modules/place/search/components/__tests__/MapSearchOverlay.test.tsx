@@ -58,6 +58,16 @@ describe('MapSearchOverlay registered-place search', () => {
     );
   }
 
+  test('뒤로가기 아이콘을 누르면 검색을 닫는다', async () => {
+    const onClose = jest.fn();
+    const { user, i18n } = await renderWithProviders(
+      <MapSearchOverlay onClose={onClose} onSelectPlace={jest.fn()} />,
+    );
+    expect(screen.queryByText('‹')).toBeNull();
+    await user.press(screen.getByRole('button', { name: i18n.t('map.searchOverlay.close') }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   test('위치가 없어도 검색 화면을 열고 좌표 없이 검색한다', async () => {
     const view = await renderWithProviders(<MapSearchOverlay onClose={jest.fn()} onSelectPlace={jest.fn()} />);
     await view.user.type(screen.getByPlaceholderText('검색하기'), '카페');
