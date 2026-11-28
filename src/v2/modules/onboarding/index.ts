@@ -5,3 +5,5 @@ export { LanguageSelectionScreen } from './language';
 export type { LanguageSelectionScreenProps } from './language';
 export { default as AuthLandingScreen } from './entry/screens/AuthLandingScreen';
 export { default as OnboardingFlow } from './flow/OnboardingFlow';
+export { default as LoginFormScreen } from './entry/screens/LoginFormScreen';
+export { default as SignUpDetailsScreen } from './entry/screens/SignUpDetailsScreen';
